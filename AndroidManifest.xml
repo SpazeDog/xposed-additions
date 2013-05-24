@@ -1,0 +1,20 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.spazedog.xposed.additions"
+    android:versionCode="1"
+    android:versionName="1.0.1" >
+
+    <uses-sdk
+        android:minSdkVersion="16"
+        android:targetSdkVersion="17" />
+
+    <application
+        android:icon="@drawable/ic_launcher"
+        android:label="Xposed Additions" >
+        
+        <meta-data android:value="true" android:name="xposedmodule" />
+        <meta-data android:value="2.0*" android:name="xposedminversion" />
+        <meta-data android:value="Additional Settings for CM and AOKP Jellybean ROM's" android:name="xposeddescription" />
+        
+    </application>
+
+</manifest>
