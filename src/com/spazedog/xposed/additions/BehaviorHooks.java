@@ -17,7 +17,7 @@ public class BehaviorHooks implements IXposedHookLoadPackage {
 	    		@Override
 	    		protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
 	    			if ( ((KeyEvent) param.args[0]).getKeyCode() == KeyEvent.KEYCODE_POWER && !((Boolean) param.args[2])) {
-	    				if (Settings.System.getInt(((Context) XposedHelpers.getObjectField(param.thisObject, "mContext")).getContentResolver(), "disable_power_button", 0) == 1) {
+	    				if (Settings.System.getInt(((Context) XposedHelpers.getObjectField(param.thisObject, "mContext")).getContentResolver(), "xposed_disable_power_button", 0) == 1) {
 	    					param.setResult(0);
 	    				}
 	    			}
@@ -27,7 +27,7 @@ public class BehaviorHooks implements IXposedHookLoadPackage {
     		findAndHookMethod("com.android.internal.policy.impl.keyguard.KeyguardViewManager", lpparam.classLoader, "shouldEnableScreenRotation", new XC_MethodReplacement() {
 				@Override
 				protected Object replaceHookedMethod(MethodHookParam param) throws Throwable {
-					return Settings.System.getInt(((Context) XposedHelpers.getObjectField(param.thisObject, "mContext")).getContentResolver(), "enable_lockscreen_rotation", 0) == 1;
+					return Settings.System.getInt(((Context) XposedHelpers.getObjectField(param.thisObject, "mContext")).getContentResolver(), "xposed_enable_lockscreen_rotation", 0) == 1;
 				}
     		});
 

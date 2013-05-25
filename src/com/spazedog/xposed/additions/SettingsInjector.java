@@ -28,18 +28,18 @@ public class SettingsInjector implements IXposedHookLoadPackage, OnPreferenceCha
 	    			preferenceCategory.setTitle("Xposed Additions");
 	    			
 	    			CheckBoxPreference checkBoxPreferencePower = new CheckBoxPreference(context);
-	    			checkBoxPreferencePower.setKey("powerDisable");
+	    			checkBoxPreferencePower.setKey("xposed_pref_disable_power_button");
 	    			checkBoxPreferencePower.setTitle("Disable power button");
 	    			checkBoxPreferencePower.setSummary("Do not turn on the screen when the power button is pressed");
 	    			checkBoxPreferencePower.setOnPreferenceClickListener(SettingsInjector.this);
-	    			checkBoxPreferencePower.setChecked( Settings.System.getInt(context.getContentResolver(), "disable_power_button", 0) == 1 );
+	    			checkBoxPreferencePower.setChecked( Settings.System.getInt(context.getContentResolver(), "xposed_disable_power_button", 0) == 1 );
 	    			
 	    			CheckBoxPreference checkBoxPreferenceRotation = new CheckBoxPreference(context);
-	    			checkBoxPreferenceRotation.setKey("lockscreenRotation");
+	    			checkBoxPreferenceRotation.setKey("xposed_pref_enable_lockscreen_rotation");
 	    			checkBoxPreferenceRotation.setTitle("Include lockscreen rotation");
 	    			checkBoxPreferenceRotation.setSummary("Include display rotation settings in the lock screen");
 	    			checkBoxPreferenceRotation.setOnPreferenceClickListener(SettingsInjector.this);
-	    			checkBoxPreferenceRotation.setChecked( Settings.System.getInt(context.getContentResolver(), "enable_lockscreen_rotation", 0) == 1 );
+	    			checkBoxPreferenceRotation.setChecked( Settings.System.getInt(context.getContentResolver(), "xposed_enable_lockscreen_rotation", 0) == 1 );
 	    			
 	    			ListPreference listPreferencePlugged = new ListPreference(context);
 	    			listPreferencePlugged.setKey("xposed_pref_wakeon_usb_change");
@@ -67,13 +67,13 @@ public class SettingsInjector implements IXposedHookLoadPackage, OnPreferenceCha
 
 	@Override
 	public boolean onPreferenceClick(Preference preference) {
-		if (preference.getKey().equals("powerDisable")) {
-			Settings.System.putInt(preference.getContext().getContentResolver(), "disable_power_button", ((CheckBoxPreference) preference).isChecked() ? 1 : 0);
+		if (preference.getKey().equals("xposed_pref_disable_power_button")) {
+			Settings.System.putInt(preference.getContext().getContentResolver(), "xposed_disable_power_button", ((CheckBoxPreference) preference).isChecked() ? 1 : 0);
 			
 			return true;
 			
-		} else if (preference.getKey().equals("lockscreenRotation")) {
-			Settings.System.putInt(preference.getContext().getContentResolver(), "enable_lockscreen_rotation", ((CheckBoxPreference) preference).isChecked() ? 1 : 0);
+		} else if (preference.getKey().equals("xposed_pref_enable_lockscreen_rotation")) {
+			Settings.System.putInt(preference.getContext().getContentResolver(), "xposed_enable_lockscreen_rotation", ((CheckBoxPreference) preference).isChecked() ? 1 : 0);
 			
 			return true;
 		}
