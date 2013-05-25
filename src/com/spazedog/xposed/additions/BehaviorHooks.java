@@ -34,12 +34,14 @@ public class BehaviorHooks implements IXposedHookLoadPackage {
     		findAndHookMethod("com.android.server.power.PowerManagerService", lpparam.classLoader, "shouldWakeUpWhenPluggedOrUnpluggedLocked", Boolean.TYPE, Integer.TYPE, Boolean.TYPE, new XC_MethodHook() {
 				@Override
 				protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-					if (Settings.System.getInt(((Context) XposedHelpers.getObjectField(param.thisObject, "mContext")).getContentResolver(), "wake_on_usb_change", 0) != 1) {
-						param.setResult(false);
-						
-					} else {
+					String actions = Settings.System.getString(((Context) XposedHelpers.getObjectField(param.thisObject, "mContext")).getContentResolver(), "xposed_wakeon_usb_change");
+					
+					if (actions == null || (actions.contains("pluggedin") && !((Boolean) param.args[0])) || (actions.contains("pluggedout") && ((Boolean) param.args[0]))) {
 						// Make sure that shouldWakeUpWhenPluggedOrUnpluggedLocked() does not stop the device from waking
 						XposedHelpers.setBooleanField(param.thisObject, "mWakeUpWhenPluggedOrUnpluggedConfig", true);
+						
+					} else {
+						param.setResult(false);
 					}
 				}
     		});
