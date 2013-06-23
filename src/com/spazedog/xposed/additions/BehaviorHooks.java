@@ -23,8 +23,11 @@ public class BehaviorHooks implements IXposedHookLoadPackage {
     public final XC_MethodHook PhoneWindowManager_interceptKeyBeforeQueueing = new XC_MethodHook() {
 		@Override
 		protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-			if ( ((KeyEvent) param.args[0]).getKeyCode() == KeyEvent.KEYCODE_POWER && !((Boolean) param.args[2])) {
-				if (Settings.System.getInt(((Context) XposedHelpers.getObjectField(param.thisObject, "mContext")).getContentResolver(), "xposed_disable_power_button", 0) == 1) {
+			if ( (((KeyEvent) param.args[0]).getKeyCode() == KeyEvent.KEYCODE_POWER || ((KeyEvent) param.args[0]).getKeyCode() == KeyEvent.KEYCODE_HOME) && !((Boolean) param.args[2])) {
+				String button = ((KeyEvent) param.args[0]).getKeyCode() == KeyEvent.KEYCODE_POWER ? "power" : "home";
+				String allowed = Settings.System.getString(((Context) XposedHelpers.getObjectField(param.thisObject, "mContext")).getContentResolver(), "xposed_wakeon_button");
+				
+				if (allowed != null && !allowed.contains(button)) {
 					param.setResult(0);
 				}
 			}

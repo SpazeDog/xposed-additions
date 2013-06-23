@@ -31,20 +31,22 @@ public class SettingsInjector implements IXposedHookLoadPackage, OnPreferenceCha
 			
 			PreferenceCategory preferenceCategory = new PreferenceCategory(context);
 			preferenceCategory.setTitle("Xposed Additions");
-			
-			CheckBoxPreference checkBoxPreferencePower = new CheckBoxPreference(context);
-			checkBoxPreferencePower.setKey("xposed_pref_disable_power_button");
-			checkBoxPreferencePower.setTitle("Disable power button");
-			checkBoxPreferencePower.setSummary("Do not turn on the screen when the power button is pressed");
-			checkBoxPreferencePower.setOnPreferenceClickListener(SettingsInjector.this);
-			checkBoxPreferencePower.setChecked( Settings.System.getInt(context.getContentResolver(), "xposed_disable_power_button", 0) == 1 );
-			
+
 			CheckBoxPreference checkBoxPreferenceRotation = new CheckBoxPreference(context);
 			checkBoxPreferenceRotation.setKey("xposed_pref_enable_lockscreen_rotation");
 			checkBoxPreferenceRotation.setTitle("Include lockscreen rotation");
 			checkBoxPreferenceRotation.setSummary("Include display rotation settings in the lock screen");
 			checkBoxPreferenceRotation.setOnPreferenceClickListener(SettingsInjector.this);
 			checkBoxPreferenceRotation.setChecked( Settings.System.getInt(context.getContentResolver(), "xposed_enable_lockscreen_rotation", 0) == 1 );
+
+			ListPreference listPreferenceScreen = new ListPreference(context);
+			listPreferenceScreen.setKey("xposed_pref_wakeon_button");
+			listPreferenceScreen.setEntryValues(new String[]{"power", "home", "power|home"});
+			listPreferenceScreen.setEntries(new String[]{"Allow Power Button", "Allow Home Botton", "Allow Both"});
+			listPreferenceScreen.setTitle("Wake on Key Pressed");
+			listPreferenceScreen.setSummary("Which buttons that is allowed to turn on the screen");
+			listPreferenceScreen.setOnPreferenceChangeListener(SettingsInjector.this);
+			listPreferenceScreen.setValue( Settings.System.getString(context.getContentResolver(), "xposed_wakeon_button") );
 			
 			ListPreference listPreferencePlugged = new ListPreference(context);
 			listPreferencePlugged.setKey("xposed_pref_wakeon_usb_change");
@@ -56,27 +58,27 @@ public class SettingsInjector implements IXposedHookLoadPackage, OnPreferenceCha
 			listPreferencePlugged.setValue( Settings.System.getString(context.getContentResolver(), "xposed_wakeon_usb_change") );
 			
 			screen.addPreference(preferenceCategory);
-			screen.addPreference(checkBoxPreferencePower);
 			screen.addPreference(checkBoxPreferenceRotation);
+			screen.addPreference(listPreferenceScreen);
 			screen.addPreference(listPreferencePlugged);
 		}
 	};
 	
 	@Override
 	public boolean onPreferenceChange(Preference preference, Object newValue) {
-		Settings.System.putString(preference.getContext().getContentResolver(), "xposed_wakeon_usb_change", (String) newValue);
+		if (preference.getKey().equals("xposed_pref_wakeon_button")) {
+			Settings.System.putString(preference.getContext().getContentResolver(), "xposed_wakeon_button", (String) newValue);
+			
+		} else if (preference.getKey().equals("xposed_pref_wakeon_usb_change")) {
+			Settings.System.putString(preference.getContext().getContentResolver(), "xposed_wakeon_usb_change", (String) newValue);
+		}
 
 		return true;
 	}
 
 	@Override
 	public boolean onPreferenceClick(Preference preference) {
-		if (preference.getKey().equals("xposed_pref_disable_power_button")) {
-			Settings.System.putInt(preference.getContext().getContentResolver(), "xposed_disable_power_button", ((CheckBoxPreference) preference).isChecked() ? 1 : 0);
-			
-			return true;
-			
-		} else if (preference.getKey().equals("xposed_pref_enable_lockscreen_rotation")) {
+		if (preference.getKey().equals("xposed_pref_enable_lockscreen_rotation")) {
 			Settings.System.putInt(preference.getContext().getContentResolver(), "xposed_enable_lockscreen_rotation", ((CheckBoxPreference) preference).isChecked() ? 1 : 0);
 			
 			return true;
