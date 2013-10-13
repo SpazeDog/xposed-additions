@@ -36,14 +36,6 @@ public class ActivityMainSettings extends PreferenceActivity implements OnShared
 		
 		updateDescription("display_usb_plug");
 		updateDescription("display_usb_unplug");
-		
-		/*
-		 * TODO: Add support for 2.3+
-		 */
-		if (android.os.Build.VERSION.SDK_INT < 16) {
-			getPreferenceManager().findPreference("display_usb_plug").setEnabled(false);
-			getPreferenceManager().findPreference("display_usb_unplug").setEnabled(false);
-		}
 	}
 
 	@Override
