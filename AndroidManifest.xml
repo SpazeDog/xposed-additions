@@ -1,0 +1,40 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.spazedog.xposed.additionsgb"
+    android:versionCode="25"
+    android:versionName="2.0.0b5" >
+
+    <uses-sdk
+        android:minSdkVersion="9"
+        android:targetSdkVersion="18" />
+
+    <application
+        android:icon="@drawable/ic_launcher"
+        android:label="Xposed Additions"
+        android:theme="@style/AppTheme" >
+        
+        <meta-data android:value="true" android:name="xposedmodule" />
+        <meta-data android:value="2.0*" android:name="xposedminversion" />
+        <meta-data android:value="Additional Settings Gingerbread and up" android:name="xposeddescription" />
+        
+        <activity
+            android:name="com.spazedog.xposed.additionsgb.ActivityMainSettings"
+            android:label="Xposed Additions" >
+            
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            
+        </activity>
+        
+        <activity android:label="Button Re-map" android:name="com.spazedog.xposed.additionsgb.ActivityButtonsMapping">
+            <action android:name="android.intent.action.VIEW" />
+        </activity>
+        
+        <activity android:label="Button Re-map" android:name="com.spazedog.xposed.additionsgb.ActivityButtonMap">
+            <action android:name="android.intent.action.VIEW" />
+        </activity>
+        
+    </application>
+
+</manifest>

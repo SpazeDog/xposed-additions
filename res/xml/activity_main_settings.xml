@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+    
+    <PreferenceCategory
+        android:title="Display">
+        
+        <ListPreference
+	    	android:key="display_usb_plug"
+	    	android:title="Wake on plug"
+	    	android:persistent="true"
+	    	android:defaultValue="default"
+	    	android:entries="@array/wakeplug_names"
+	    	android:entryValues="@array/wakeplug_values" />
+        
+        <ListPreference
+	    	android:key="display_usb_unplug"
+	    	android:title="Wake on unplug"
+	    	android:persistent="true"
+	    	android:defaultValue="default"
+	    	android:entries="@array/wakeplug_names"
+	    	android:entryValues="@array/wakeplug_values" />
+        
+	</PreferenceCategory>
+    
+    <PreferenceCategory
+        android:title="Buttons">
+
+	    <ListPreference
+	    	android:key="btn_longpress_delay"
+	    	android:title="Button Longpress Delay"
+	    	android:persistent="true"
+	    	android:defaultValue="500"
+	    	android:entries="@array/delay_names"
+	    	android:entryValues="@array/delay_values"
+	    	android:summary="Add custom mapping to each button to be used when the device is sleeping" />
+	    
+	    <Preference
+	        android:title="Button Re-map Sleep"
+	        android:summary="Select which buttons are allowed to wake the device">
+	        
+	        <intent
+	            android:action="android.intent.action.VIEW"
+	            android:targetPackage="com.spazedog.xposed.additionsgb"
+	            android:targetClass="com.spazedog.xposed.additionsgb.ActivityButtonsMapping">
+	            
+	            <extra android:name="mapType" android:value="off" />
+	            <extra android:name="title" android:value="Button Re-map Sleep" />
+	            
+	        </intent>
+	        
+	    </Preference>
+	    
+	    <Preference
+	        android:title="Button Re-map Awake"
+	        android:summary="Add custom mapping to each button to be used when the device is awake">
+	        
+	        <intent
+	            android:action="android.intent.action.VIEW"
+	            android:targetPackage="com.spazedog.xposed.additionsgb"
+	            android:targetClass="com.spazedog.xposed.additionsgb.ActivityButtonsMapping">
+	            
+	            <extra android:name="mapType" android:value="on" />
+	            <extra android:name="title" android:value="Button Re-map Awake" />
+	            
+	        </intent>
+	        
+	    </Preference>
+	    
+	</PreferenceCategory>
+
+</PreferenceScreen>
