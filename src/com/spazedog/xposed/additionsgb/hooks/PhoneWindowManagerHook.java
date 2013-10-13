@@ -379,8 +379,8 @@ public final class PhoneWindowManagerHook extends XC_ClassHook {
 			
 		} else {
 	        try {
-	            mWindowManager.injectKeyEvent(downEvent, true);
-	            mWindowManager.injectKeyEvent(upEvent, true);
+	            mWindowManager.injectInputEventNoWait(downEvent);
+	            mWindowManager.injectInputEventNoWait(upEvent);
 	            
 	        } catch (RemoteException e) {
 	            e.printStackTrace();
