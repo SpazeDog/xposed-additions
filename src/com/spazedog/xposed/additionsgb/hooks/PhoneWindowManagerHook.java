@@ -270,7 +270,17 @@ public final class PhoneWindowManagerHook extends XC_ClassHook {
 				} else if (down && mKeyPressed != 0) {
 					param.setResult(0);
 				}
-			}	
+			}
+			
+		} else {
+			if (mKeyCancelDefault) {
+				int pos = SDK_GB ? 5 : 1;
+				
+				/*
+				 * Remove the Injected policy before sending this to the original method
+				 */
+				param.args[pos] = policyFlags^FLAG_INJECTED;
+			}
 		}
 	}
 	
@@ -286,6 +296,9 @@ public final class PhoneWindowManagerHook extends XC_ClassHook {
 		final boolean isInjected = (policyFlags & FLAG_INJECTED) != 0;
 		
 		if (!isInjected) {
+			Log.d("xposed.testing", "flags normal: " + param.args[2]);
+			Log.d("xposed.testing", "policyFlags normal: " + param.args[7]);
+			
 			if (mKeyCancelDefault) {
 				if (Common.DEBUG) {
 					Log.d(Common.PACKAGE_NAME, "Default actions is currentl disabled, skipping dispatching");
@@ -326,8 +339,13 @@ public final class PhoneWindowManagerHook extends XC_ClassHook {
 			}
 			
 		} else {
-			if (Common.DEBUG) {
-				Log.d(Common.PACKAGE_NAME, "This event was injected, skipping dispatching");
+			if (mKeyCancelDefault) {
+				int pos = SDK_GB ? 7 : 2;
+				
+				/*
+				 * Remove the Injected policy before sending this to the original method
+				 */
+				param.args[pos] = policyFlags^FLAG_INJECTED;
 			}
 		}
 	}
