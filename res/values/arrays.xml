@@ -22,6 +22,9 @@
 		<item>Search</item>
 		<item>Volume Up</item>
 		<item>Volume Down</item>
+		<item>Media Play/Pause</item>
+		<item>Media Previous</item>
+		<item>Media Next</item>
 		<item>Recent Apps</item>
 		<item>Power Menu</item>
 	</string-array>
@@ -35,6 +38,9 @@
 		<item>btn_search</item>
 		<item>btn_volup</item>
 		<item>btn_voldown</item>
+		<item>btn_play</item>
+		<item>btn_previous</item>
+		<item>btn_next</item>
 		<item>recentapps</item>
 		<item>powermenu</item>
 	</string-array>
@@ -43,12 +49,22 @@
 		<item>Disabled</item>
 		<item>Power</item>
 		<item>Power Forced</item>
+		<item>Volume Up</item>
+		<item>Volume Down</item>
+		<item>Media Play/Pause</item>
+		<item>Media Previous</item>
+		<item>Media Next</item>
 	</string-array>
 	
     <string-array name="remap_off_values">
 		<item>disabled</item>
 		<item>btn_power</item>
 		<item>poweron</item>
+		<item>btn_volup</item>
+		<item>btn_voldown</item>
+		<item>btn_play</item>
+		<item>btn_previous</item>
+		<item>btn_next</item>
 	</string-array>
 	
 	<string-array name="wakeplug_names">

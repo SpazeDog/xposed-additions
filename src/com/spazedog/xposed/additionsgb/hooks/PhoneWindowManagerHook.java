@@ -443,6 +443,9 @@ public final class PhoneWindowManagerHook extends XC_ClassHook {
 		else if (map.endsWith("_search")) return KeyEvent.KEYCODE_SEARCH;
 		else if (map.endsWith("_volup")) return KeyEvent.KEYCODE_VOLUME_UP;
 		else if (map.endsWith("_voldown")) return KeyEvent.KEYCODE_VOLUME_DOWN;
+		else if (map.endsWith("_play")) return KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE;
+		else if (map.endsWith("_previous")) return KeyEvent.KEYCODE_MEDIA_PREVIOUS;
+		else if (map.endsWith("_next")) return KeyEvent.KEYCODE_MEDIA_NEXT;
 		
 		return null;
 	}
@@ -457,6 +460,9 @@ public final class PhoneWindowManagerHook extends XC_ClassHook {
 				case KeyEvent.KEYCODE_SEARCH: return "btn_on_search";
 				case KeyEvent.KEYCODE_VOLUME_UP: return "btn_on_volup";
 				case KeyEvent.KEYCODE_VOLUME_DOWN: return "btn_on_voldown";
+				case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE: return "btn_on_play";
+				case KeyEvent.KEYCODE_MEDIA_PREVIOUS: return "btn_on_previous";
+				case KeyEvent.KEYCODE_MEDIA_NEXT: return "btn_on_next";
 			}
 			
 		} else {
@@ -468,6 +474,9 @@ public final class PhoneWindowManagerHook extends XC_ClassHook {
 				case KeyEvent.KEYCODE_SEARCH: return "btn_off_search";
 				case KeyEvent.KEYCODE_VOLUME_UP: return "btn_off_volup";
 				case KeyEvent.KEYCODE_VOLUME_DOWN: return "btn_off_voldown";
+				case KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE: return "btn_off_play";
+				case KeyEvent.KEYCODE_MEDIA_PREVIOUS: return "btn_off_previous";
+				case KeyEvent.KEYCODE_MEDIA_NEXT: return "btn_off_next";
 			}
 		}
 		
