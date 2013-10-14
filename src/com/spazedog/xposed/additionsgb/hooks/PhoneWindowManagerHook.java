@@ -274,6 +274,10 @@ public final class PhoneWindowManagerHook extends XC_ClassHook {
 			
 		} else {
 			if (mKeyCancelDefault) {
+				if (Common.DEBUG) {
+					Log.d(Common.PACKAGE_NAME, "Removing Injected flag before Queueing");
+				}
+				
 				int pos = SDK_GB ? 5 : 1;
 				
 				/*
@@ -296,9 +300,6 @@ public final class PhoneWindowManagerHook extends XC_ClassHook {
 		final boolean isInjected = (policyFlags & FLAG_INJECTED) != 0;
 		
 		if (!isInjected) {
-			Log.d("xposed.testing", "flags normal: " + param.args[2]);
-			Log.d("xposed.testing", "policyFlags normal: " + param.args[7]);
-			
 			if (mKeyCancelDefault) {
 				if (Common.DEBUG) {
 					Log.d(Common.PACKAGE_NAME, "Default actions is currentl disabled, skipping dispatching");
@@ -340,6 +341,10 @@ public final class PhoneWindowManagerHook extends XC_ClassHook {
 			
 		} else {
 			if (mKeyCancelDefault) {
+				if (Common.DEBUG) {
+					Log.d(Common.PACKAGE_NAME, "Removing Injected flag before Dispatching");
+				}
+				
 				int pos = SDK_GB ? 7 : 2;
 				
 				/*
