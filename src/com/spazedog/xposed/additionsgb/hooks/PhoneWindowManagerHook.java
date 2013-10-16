@@ -12,6 +12,7 @@ import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.os.SystemClock;
 import android.util.Log;
+import android.view.HapticFeedbackConstants;
 import android.view.IWindowManager;
 import android.view.InputDevice;
 import android.view.KeyCharacterMap;
@@ -28,6 +29,7 @@ public final class PhoneWindowManagerHook extends XC_ClassHook {
 
     public final static int ACTION_PASS_TO_USER = 0x00000001;
     public final static int FLAG_INJECTED = 0x01000000;
+    public final static int FLAG_VIRTUAL = 0x00000100;
 	
     protected Context mContext;
     protected PowerManager mPowerManager;
@@ -60,6 +62,10 @@ public final class PhoneWindowManagerHook extends XC_ClassHook {
         	String action = (mKeyFlags & KEY_REPEAT) != 0 ? 
         			mKeyActions[1] : (mKeyFlags & KEY_DOWN) != 0 ? 
         					mKeyActions[2] : mKeyActions[0];
+        					
+        	if ((mKeyFlags & KEY_REPEAT) != 0 || (mKeyFlags & KEY_DOWN) != 0) {
+        		performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+        	}
         					
         	mKeyFlags = KEY_CANCEL;
         					
@@ -231,6 +237,10 @@ public final class PhoneWindowManagerHook extends XC_ClassHook {
 					if (mKeyName != null && preferences.getBoolean(mKeyName + "_mapped", false)) {
 						if (Common.DEBUG) {
 							Log.d(Common.PACKAGE_NAME, "Found Re-map for the key code '" + keyCode + " (" + mKeyName + ")'");
+						}
+						
+						if ((policyFlags & FLAG_VIRTUAL) != 0) {
+							performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
 						}
 						
 						mKeyPressDelay = Integer.parseInt(preferences.getString("btn_longpress_delay", "500"));
@@ -431,6 +441,13 @@ public final class PhoneWindowManagerHook extends XC_ClassHook {
             } catch (RemoteException e) {}
         }
     }
+	
+	protected void performHapticFeedback(Integer effectId) {
+		/*
+		 * TODO: Make our own version 
+		 */
+		invokeMethod("performHapticFeedbackLw", null, effectId, false);
+	}
 	
 	protected Integer getKeyCode(String map) {		
 		if (map.endsWith("_power")) return KeyEvent.KEYCODE_POWER;
