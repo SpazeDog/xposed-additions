@@ -16,6 +16,7 @@
     <string-array name="remap_on_names">
 		<item>Disabled</item>
 		<item>Power</item>
+		<item>Power Forced</item>
 		<item>Home</item>
 		<item>Menu</item>
 		<item>Back</item>
@@ -32,6 +33,7 @@
     <string-array name="remap_on_values">
 		<item>disabled</item>
 		<item>btn_power</item>
+		<item>poweroff</item>
 		<item>btn_home</item>
 		<item>btn_menu</item>
 		<item>btn_back</item>

@@ -25,98 +25,7 @@ import com.spazedog.xposed.additionsgb.hooks.tools.XC_ClassHook;
 import de.robv.android.xposed.XSharedPreferences;
 
 public final class PhoneWindowManagerHook extends XC_ClassHook {
-	
-	protected final Runnable mMappingRunnable = new Runnable() {
-        @Override
-        public void run() {
-        	Boolean longpress = mKeyPressed != 0;
-        	String action = longpress ? mKeyPressAction : mKeyClickAction;
-        	
-        	if (action.equals("disabled")) {
-        		// Disable the button
 
-        	} else if (action.startsWith("btn_")) {
-				if (Common.DEBUG) {
-					Log.d(Common.PACKAGE_NAME, "Executing key map '" + action + "'");
-				}
-				
-				triggerKeyEvent( getKeyCode(action) );
-        		
-        	} else if (action.equals("poweron")) {
-        		/*
-        		 * Using triggerKeyEvent() while the device is sleeping
-        		 * does not work on all devices. So we add this forced wakeup feature
-        		 * for these devices. 
-        		 */
-        		
-				if (Common.DEBUG) {
-					Log.d(Common.PACKAGE_NAME, "Executing key map 'poweron'");
-				}
-
-        		mWakeLock.acquire();
-        		
-        		/*
-        		 * WakeLock.acquire(timeout) causes Gingerbread to produce
-        		 * soft reboots when trying to manually release them.
-        		 * So we make our own timeout feature to avoid this.
-        		 */
-        		mHandler.postDelayed(mWakelockRunnable, 10000);
-        		
-        	} else if (action.equals("recentapps")) {
-        		recentAppsDialog();
-        		
-        	} else if (action.equals("powermenu")) {
-        		globalActionsDialog();
-        		
-        	} else {
-        		if (Common.DEBUG) {
-					Log.d(Common.PACKAGE_NAME, "Executing default key action");
-				}
-        		
-        		triggerKeyEvent(mKeyLast);
-        	}
-        }
-    };
-    
-    protected final Runnable mLongpressRunnable = new Runnable() {
-        @Override
-        public void run() {
-        	Integer delay = mKeyDelay;
-        	
-			while (mKeyPressed != 0 && delay > 0) {
-				try {
-					Thread.sleep(10);
-					
-					delay -= 10;
-					
-				} catch (InterruptedException e) {}
-			}
-			
-			mMappingRunnable.run();
-			
-			try {
-				/*
-				 * Give some time before releasing the partial wakelock
-				 */
-				Thread.sleep(300);
-				
-			} catch (InterruptedException e) {}
-			
-			if (mWakeLockPartial.isHeld()) {
-				mWakeLockPartial.release();
-			}
-        }
-    };
-    
-    protected final Runnable mWakelockRunnable = new Runnable() {
-        @Override
-        public void run() {
-        	if (mWakeLock.isHeld()) {
-        		mWakeLock.release();
-        	}
-        }
-    };
-	
     public final static int ACTION_PASS_TO_USER = 0x00000001;
     public final static int FLAG_INJECTED = 0x01000000;
 	
@@ -130,15 +39,121 @@ public final class PhoneWindowManagerHook extends XC_ClassHook {
     protected RecentApplicationsDialog mRecentApplicationsDialog;
     protected IStatusBarService mStatusBarService;
     
-    protected Boolean mKeyCancelDefault = false;
-    protected Integer mKeyPressed = 0;
-    protected Integer mKeyLast = 0;
-    protected Integer mKeyDelay;
-    protected String mKeyClickAction;
-    protected String mKeyPressAction;
-    
-    protected Boolean mScreenIsOn = false;
-    protected Boolean mScreenWasOn = false;
+	public static final int KEY_DOWN = 8;
+	public static final int KEY_CANCEL = 32;
+	public static final int KEY_REPEAT = 128;
+	public static final int KEY_ONGOING = 512;
+	public static final int KEY_INJECTED = 2048;
+	
+	protected int mKeyPressDelay = 0;
+	protected int mKeyDoubleDelay = 0;
+	protected int mKeyFlags = 0;
+	protected int mKeyCode = 0;
+	protected String mKeyName;
+	protected String[] mKeyActions;
+	
+	protected Boolean mScreenWasOn;
+	
+	protected final Runnable mMappingRunnable = new Runnable() {
+        @Override
+        public void run() {
+        	String action = (mKeyFlags & KEY_REPEAT) != 0 ? 
+        			mKeyActions[1] : (mKeyFlags & KEY_DOWN) != 0 ? 
+        					mKeyActions[2] : mKeyActions[0];
+        					
+        	mKeyFlags = KEY_CANCEL;
+        					
+			if (action.equals("disabled")) {
+				// Disable the button
+				
+			} else if (action.startsWith("btn_")) {
+				if (Common.DEBUG) {
+					Log.d(Common.PACKAGE_NAME, "Invoking Re-map key '" + action + "'");
+				}
+				
+				mKeyFlags |= KEY_INJECTED;
+				
+				triggerKeyEvent( getKeyCode(action) );
+				
+			} else if (action.equals("poweron")) { 
+        		/*
+        		 * Using triggerKeyEvent() while the device is sleeping
+        		 * does not work on all devices. So we add this forced wakeup feature
+        		 * for these devices. 
+        		 */
+				
+				if (Common.DEBUG) {
+					Log.d(Common.PACKAGE_NAME, "Invoking key action 'poweron'");
+				}
+
+        		mWakeLock.acquire();
+        		
+        		/*
+        		 * WakeLock.acquire(timeout) causes Gingerbread to produce
+        		 * soft reboots when trying to manually release them.
+        		 * So we make our own timeout feature to avoid this.
+        		 */
+        		mHandler.postDelayed(mReleaseWakelock, 3000);
+			
+        	} else if (action.equals("poweroff")) { 
+        		/*
+        		 * Parsing the power code does not always work on Gingerbread.
+        		 * So like poweron, we also make a poweroff to force the device off.
+        		 */
+        		
+				if (Common.DEBUG) {
+					Log.d(Common.PACKAGE_NAME, "Invoking key action 'poweroff'");
+				}
+        		
+        		mPowerManager.goToSleep(SystemClock.uptimeMillis());
+			
+        	} else if (action.equals("recentapps")) {
+        		recentAppsDialog();
+        		
+        	} else if (action.equals("powermenu")) {
+        		globalActionsDialog();
+        		
+        	} else {
+				if (Common.DEBUG) {
+					Log.d(Common.PACKAGE_NAME, "Invoking default key code '" + mKeyCode + "'");
+				}
+				
+				mKeyFlags |= KEY_INJECTED;
+				
+				triggerKeyEvent(mKeyCode);
+			}
+			
+			if (mWakeLockPartial.isHeld()) {
+				mHandler.postDelayed(mReleasePartialWakelock, 100);
+			}
+        }
+	};
+	
+	protected final Runnable mReleasePartialWakelock = new Runnable() {
+        @Override
+        public void run() {
+        	if (mWakeLockPartial.isHeld()) {
+				if (Common.DEBUG) {
+					Log.d(Common.PACKAGE_NAME, "Releasing partial Wakelock");
+				}
+				
+        		mWakeLockPartial.release();
+        	}
+        }
+	};
+	
+    protected final Runnable mReleaseWakelock = new Runnable() {
+        @Override
+        public void run() {
+        	if (mWakeLock.isHeld()) {
+				if (Common.DEBUG) {
+					Log.d(Common.PACKAGE_NAME, "Releasing poweron Wakelock");
+				}
+				
+        		mWakeLock.release();
+        	}
+        }
+    };
 
 	public PhoneWindowManagerHook(String className, ClassLoader classLoader) {
 		super(className, classLoader);
@@ -162,7 +177,7 @@ public final class PhoneWindowManagerHook extends XC_ClassHook {
     	mHandler = new Handler();
     	mWindowManager = (IWindowManager) param.args[1];
 	}
-	
+
 	/**
 	 * Gingerbread uses arguments interceptKeyBeforeQueueing(Long whenNanos, Integer action, Integer flags, Integer keyCode, Integer scanCode, Integer policyFlags, Boolean isScreenOn)
 	 * ICS/JellyBean uses arguments interceptKeyBeforeQueueing(KeyEvent event, Integer policyFlags, Boolean isScreenOn)
@@ -177,114 +192,141 @@ public final class PhoneWindowManagerHook extends XC_ClassHook {
 		final boolean down = action == KeyEvent.ACTION_DOWN;
 		final boolean isInjected = (policyFlags & FLAG_INJECTED) != 0;
 		
-		/*
-		 * If you leave out ACTION_PASS_TO_USER, Gingerbread will not call interceptKeyBeforeDispatching.
-		 * And if you leave out '0' or pass something like '-1', Gingerbread will turn off the screen.
-		 */
-		int result = 0 | ACTION_PASS_TO_USER;
-		
-		/*
-		 * Do not handle injected events.
-		 * We might have triggered these ourself.
-		 */
-		if (!isInjected) {
-			mScreenIsOn = isScreenOn;
-			
-			if (down) {
-				mScreenWasOn = isScreenOn;
-				mKeyCancelDefault = false;
-				
-				if (mWakeLock.isHeld()) {
-					mWakeLock.release();
-					mHandler.removeCallbacks(mWakelockRunnable);
+		if (!isInjected || (mKeyFlags & KEY_INJECTED) == 0) {
+			if ((mKeyFlags & KEY_ONGOING) != 0) {
+				if (Common.DEBUG) {
+					Log.d(Common.PACKAGE_NAME, "Removing Re-map handler");
 				}
 				
-				/*
-				 * If the screen was turned of by a on-the-screen button (Hardware-like button), 
-				 * interceptKeyBeforeQueueing is not called on keyup and so mKeyPressed will remain 'true'
-				 */
-				if (mKeyPressed != 0 && !isScreenOn) {
-					mKeyPressed = 0;
-				}
+				mHandler.removeCallbacks(mMappingRunnable);
 			}
 			
-			if (!down && mKeyPressed != 0) {
-				if (Common.DEBUG) {
-					Log.d(Common.PACKAGE_NAME, "Key event is currently locked. Unlocking and releasing keyup event");
+			if (down) {
+				/*
+				 * If the screen was turned of by a on-the-screen button (Hardware-like button), 
+				 * interceptKeyBeforeQueueing is not called on keyup.
+				 */
+				if ((mKeyFlags & KEY_CANCEL) != 0 && !isScreenOn) {
+					mKeyFlags = 0;
 				}
 				
-				mKeyPressed = 0;
-				
-				param.setResult(0);
-			
-			} else {
-				if (down && mKeyPressed == 0) {
-					SharedPreferences preferences = new XSharedPreferences(Common.PACKAGE_NAME, Common.HOOK_PREFERENCES);
-					String button = getMappedKey(keyCode);
-					
-					if (preferences.getBoolean(button + "_mapped", false)) {
+				if ((mKeyFlags & KEY_ONGOING) == 0 || (mKeyFlags & KEY_REPEAT) != 0) {
+		        	if (mWakeLock.isHeld()) {
 						if (Common.DEBUG) {
-							Log.d(Common.PACKAGE_NAME, "Found mapping for the key event " + button);
+							Log.d(Common.PACKAGE_NAME, "Releasing poweron Wakelock");
 						}
 						
-						mKeyClickAction = preferences.getString(button + "_action_click", button);
-						mKeyPressAction = preferences.getString(button + "_action_press", "disabled");
-						mKeyDelay = Integer.parseInt(preferences.getString("btn_longpress_delay", "500"));
-						mKeyPressed = mKeyLast = keyCode;
+						mHandler.removeCallbacks(mReleaseWakelock);
+		        		mWakeLock.release();
+		        	}
+		        	
+					if (Common.DEBUG) {
+						Log.d(Common.PACKAGE_NAME, "Checking Re-map settings for the key code '" + keyCode + "'");
+					}
+					
+					SharedPreferences preferences = new XSharedPreferences(Common.PACKAGE_NAME, Common.HOOK_PREFERENCES);
+					mScreenWasOn = isScreenOn;
+					mKeyName = getMappedKey(keyCode);
+					
+					if (mKeyName != null && preferences.getBoolean(mKeyName + "_mapped", false)) {
+						if (Common.DEBUG) {
+							Log.d(Common.PACKAGE_NAME, "Found Re-map for the key code '" + keyCode + " (" + mKeyName + ")'");
+						}
 						
-						/* 
-						 * interceptKeyBeforeDispatching is not called while the screen is off.
-						 * So instead we use a handler to do this job.
-						 */
+						mKeyPressDelay = Integer.parseInt(preferences.getString("btn_longpress_delay", "500"));
+						mKeyDoubleDelay = Integer.parseInt(preferences.getString("btn_doubleclick_delay", "100"));
+						mKeyFlags = KEY_DOWN|KEY_ONGOING;
+						mKeyCode = keyCode;
+						mKeyActions = new String[]{
+							preferences.getString(mKeyName + "_action_click", mKeyName),
+							preferences.getString(mKeyName + "_action_double", "disabled"),
+							preferences.getString(mKeyName + "_action_press", "disabled"),
+						};
+						
 						if (!isScreenOn) {
 							if (Common.DEBUG) {
-								Log.d(Common.PACKAGE_NAME, "Handling screen off event");
+								Log.d(Common.PACKAGE_NAME, "Acquiring a partial Wakelock");
 							}
 							
-							mKeyCancelDefault = true;
-							
-							/*
-							 * Some devices refuses to run the handler while in deep sleep.
-							 * So we have to acquire a partial wakelock (start the CPU) to ensure
-							 * that our request get's handled. 
-							 */
 							mWakeLockPartial.acquire();
-							
-							/*
-							 * Key events are not dispatched during sleep, so
-							 * we have to go another way in this state. 
-							 */
-							mHandler.post(mLongpressRunnable);
 						}
 						
-						param.setResult(result);
+						if (!mKeyActions[2].equals("disabled")) {
+							if (Common.DEBUG) {
+								Log.d(Common.PACKAGE_NAME, "Posting delayed long press handler");
+							}
+							
+							mHandler.postDelayed(mMappingRunnable, mKeyPressDelay);
+						}
+						
+						param.setResult(0);
 						
 					} else {
 						if (Common.DEBUG) {
-							Log.d(Common.PACKAGE_NAME, "No mapping available for the key event " + button);
+							Log.d(Common.PACKAGE_NAME, "No Re-map found for the key code '" + keyCode + "'");
 						}
 						
-						mKeyCancelDefault = false;
+						mKeyFlags = 0;
 					}
 					
-				} else if (down && mKeyPressed != 0) {
+				} else if (mKeyCode == keyCode && (mKeyFlags & KEY_CANCEL) == 0) {
+					mKeyFlags |= KEY_REPEAT|KEY_DOWN;
+					
+					if (Common.DEBUG) {
+						Log.d(Common.PACKAGE_NAME, "Posting double click handler");
+					}
+					
+					mHandler.post(mMappingRunnable);
+					
+					param.setResult(0);
+					
+				} else {
+					param.setResult(0);
+				}
+				
+			} else {
+				if ((mKeyFlags & KEY_ONGOING) != 0 && mKeyCode == keyCode) {
+					mKeyFlags ^= KEY_DOWN;
+					
+					if (!mKeyActions[1].equals("disabled")) {
+						if (Common.DEBUG) {
+							Log.d(Common.PACKAGE_NAME, "Posting delayed click handler");
+						}
+						
+						mHandler.postDelayed(mMappingRunnable, mKeyDoubleDelay);
+						
+					} else {
+						if (Common.DEBUG) {
+							Log.d(Common.PACKAGE_NAME, "Posting click handler");
+						}
+
+						mHandler.post(mMappingRunnable);
+					}
+					
+					param.setResult(0);
+					
+				} else if (((mKeyFlags & KEY_ONGOING) != 0 && mKeyCode != keyCode)) {
 					param.setResult(0);
 				}
 			}
 			
 		} else {
-			if (mKeyCancelDefault) {
+			if (!down) {
 				if (Common.DEBUG) {
-					Log.d(Common.PACKAGE_NAME, "Removing Injected flag before Queueing");
+					Log.d(Common.PACKAGE_NAME, "Resetting all flags");
 				}
 				
-				int pos = SDK_GB ? 5 : 1;
-				
-				/*
-				 * Remove the Injected policy before sending this to the original method
-				 */
-				param.args[pos] = policyFlags^FLAG_INJECTED;
+				mKeyFlags = 0;
 			}
+			
+			if (Common.DEBUG) {
+				Log.d(Common.PACKAGE_NAME, "Parsing injected key code '" + keyCode + "' to the system");
+			}
+
+			/*
+			 * Remove the Injected policy before sending this to the original method
+			 */
+			param.args[ (SDK_GB ? 5 : 1) ] = policyFlags^FLAG_INJECTED;
 		}
 	}
 	
@@ -293,65 +335,20 @@ public final class PhoneWindowManagerHook extends XC_ClassHook {
 	 * ICS/JellyBean uses arguments interceptKeyBeforeDispatching(WindowState win, KeyEvent event, Integer policyFlags)
 	 */
 	public void xb_interceptKeyBeforeDispatching(final MethodHookParam param) {
-		final int action = (Integer) (SDK_GB ? param.args[1] : ((KeyEvent) param.args[1]).getAction());
-		final int policyFlags = (Integer) (SDK_GB ? param.args[7] : param.args[2]);
-		
-		final boolean down = (action == KeyEvent.ACTION_DOWN);
-		final boolean isInjected = (policyFlags & FLAG_INJECTED) != 0;
-		
-		if (!isInjected) {
-			if (mKeyCancelDefault) {
-				if (Common.DEBUG) {
-					Log.d(Common.PACKAGE_NAME, "Default actions is currentl disabled, skipping dispatching");
-				}
-				
-				param.setResult(SDK_GB ? true : -1);
-				
-			} else if (down && mKeyPressed != 0) {
-				if (Common.DEBUG) {
-					Log.d(Common.PACKAGE_NAME, "Checking current event type");
-				}
-				
-				Integer delay = mKeyDelay;
-				
-				mKeyCancelDefault = true;
-				
-				while (mKeyPressed != 0 && delay > 0) {
-					try {
-						Thread.sleep(10);
-						
-						delay -= 10;
-						
-					} catch (InterruptedException e) {}
-				}
-				
-				if (Common.DEBUG) {
-					if (mKeyPressed != 0) {
-						Log.d(Common.PACKAGE_NAME, "Handling long press event");
-						
-					} else {
-						Log.d(Common.PACKAGE_NAME, "Handling click event");
-					}
-				}
-				
-				mHandler.post(mMappingRunnable);
-				
-				param.setResult(SDK_GB ? true : -1);
+		if ((mKeyFlags & KEY_INJECTED) == 0 && ((mKeyFlags & KEY_ONGOING) != 0 || (mKeyFlags & KEY_CANCEL) != 0)) {
+			if (Common.DEBUG) {
+				Log.d(Common.PACKAGE_NAME, "Canceling Dispatching");
 			}
 			
+			param.setResult(SDK_GB ? true : -1);
+			
 		} else {
-			if (mKeyCancelDefault) {
-				if (Common.DEBUG) {
-					Log.d(Common.PACKAGE_NAME, "Removing Injected flag before Dispatching");
-				}
-				
-				int pos = SDK_GB ? 7 : 2;
-				
-				/*
-				 * Remove the Injected policy before sending this to the original method
-				 */
-				param.args[pos] = policyFlags^FLAG_INJECTED;
-			}
+			/*
+			 * Remove the Injected policy before sending this to the original method
+			 */
+			final int policyFlags = (Integer) (SDK_GB ? param.args[7] : param.args[2]);
+			
+			param.args[ (SDK_GB ? 7 : 2) ] = policyFlags^FLAG_INJECTED;
 		}
 	}
 	

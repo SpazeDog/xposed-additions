@@ -16,6 +16,7 @@ public class ActivityButtonMap extends PreferenceActivity implements OnSharedPre
 	private CheckBoxPreference mOptionEnable;
 	private ListPreference mOptionLongPress;
 	private ListPreference mOptionClick;
+	private ListPreference mOptionDoubleClick;
 	
 	private String mOptionArray = "";
 	
@@ -60,6 +61,15 @@ public class ActivityButtonMap extends PreferenceActivity implements OnSharedPre
 		mOptionClick.setDefaultValue("btn_" + key);
 		preferenceScreen.addPreference(mOptionClick);
 		
+		mOptionDoubleClick = new ListPreference(this);
+		mOptionDoubleClick.setTitle("Double Click");
+		mOptionDoubleClick.setKey(button + "_action_double");
+		mOptionDoubleClick.setPersistent(true);
+		mOptionDoubleClick.setEntryValues(values);
+		mOptionDoubleClick.setEntries(names);
+		mOptionDoubleClick.setDefaultValue("disabled");
+		preferenceScreen.addPreference(mOptionDoubleClick);
+		
 		mOptionLongPress = new ListPreference(this);
 		mOptionLongPress.setTitle("Long Press");
 		mOptionLongPress.setKey(button + "_action_press");
@@ -85,6 +95,7 @@ public class ActivityButtonMap extends PreferenceActivity implements OnSharedPre
 		
 		updateDescription(mOptionEnable.getKey());
 		updateDescription(mOptionClick.getKey());
+		updateDescription(mOptionDoubleClick.getKey());
 		updateDescription(mOptionLongPress.getKey());
 	}
 
