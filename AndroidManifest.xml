@@ -6,6 +6,10 @@
     <uses-sdk
         android:minSdkVersion="9"
         android:targetSdkVersion="18" />
+    
+    <permission android:name="com.spazedog.xposed.additionsgb.permission.REQUEST" android:protectionLevel="dangerous" />
+    
+    <uses-permission android:name="com.spazedog.xposed.additionsgb.permission.REQUEST" />
 
     <application
         android:icon="@drawable/ic_launcher"
@@ -13,12 +17,13 @@
         android:theme="@style/AppTheme" >
         
         <meta-data android:value="true" android:name="xposedmodule" />
-        <meta-data android:value="2.0*" android:name="xposedminversion" />
-        <meta-data android:value="Additional Settings Gingerbread and up" android:name="xposeddescription" />
+        <meta-data android:value="30+" android:name="xposedminversion" />
+        <meta-data android:value="Additional Settings for Gingerbread and up" android:name="xposeddescription" />
         
         <activity
             android:name="com.spazedog.xposed.additionsgb.ActivityMainSettings"
-            android:label="Xposed Additions" >
+            android:label="Xposed Additions"
+             android:configChanges="orientation|screenSize" >
             
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -27,11 +32,11 @@
             
         </activity>
         
-        <activity android:label="Button Re-map" android:name="com.spazedog.xposed.additionsgb.ActivityButtonsMapping">
+        <activity android:label="@string/preference_title_remap" android:name="com.spazedog.xposed.additionsgb.ActivityRemapSettings" android:configChanges="orientation|screenSize">
             <action android:name="android.intent.action.VIEW" />
         </activity>
         
-        <activity android:label="Button Re-map" android:name="com.spazedog.xposed.additionsgb.ActivityButtonMap">
+        <activity android:label="@string/preference_title_remap" android:name="com.spazedog.xposed.additionsgb.ActivityRemapButton" android:configChanges="orientation|screenSize">
             <action android:name="android.intent.action.VIEW" />
         </activity>
         

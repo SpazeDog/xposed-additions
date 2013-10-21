@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+    
+	<Preference
+        android:key="remove_button"
+        android:persistent="false"
+        android:title="@string/preference_title_remove_button"
+        android:summary="@string/preference_summary_remove_button" />
+        
+	<PreferenceCategory
+        android:key="category_remap_options"
+        android:title="@string/category_title_remap_options">
+        
+		<ListPreference 
+		    android:key="pref_options"
+		    android:entryValues="@array/remap_options_values"
+		    android:entries="@array/remap_options_names"
+		    android:persistent="false"
+		    android:title="@string/preference_title_remap_options" />
+        
+	</PreferenceCategory>
+	
+	<PreferenceCategory
+        android:key="category_remap_sleep_actions"
+        android:title="@string/category_title_remap_sleep_actions" />
+	
+	<PreferenceCategory
+        android:key="category_remap_awake_actions"
+        android:title="@string/category_title_remap_awake_actions" />
+
+</PreferenceScreen>

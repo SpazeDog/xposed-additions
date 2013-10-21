@@ -1,13 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
     
-    <PreferenceCategory
-        android:key="category_layout"
-        android:title="@string/category_title_layout" />
-    
-    <PreferenceCategory
-        android:key="category_usbplug"
-        android:title="@string/category_title_usbplug" />
+    <Preference
+        android:key="add_button"
+        android:persistent="false" />
     
     <PreferenceCategory
         android:key="category_buttons"

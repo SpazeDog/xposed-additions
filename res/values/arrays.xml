@@ -1,74 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     
-    <string-array name="delay_names">
-		<item>Short</item>
-		<item>Normal</item>
-		<item>Long</item>
-	</string-array>
-	
-	<string-array name="delay_values">
-		<item>200</item>
-		<item>500</item>
-		<item>1000</item>
-	</string-array>
-	
-    <string-array name="remap_on_names">
-		<item>Disabled</item>
-		<item>Power</item>
-		<item>Power Forced</item>
-		<item>Home</item>
-		<item>Menu</item>
-		<item>Back</item>
-		<item>Search</item>
-		<item>Volume Up</item>
-		<item>Volume Down</item>
-		<item>Media Play/Pause</item>
-		<item>Media Previous</item>
-		<item>Media Next</item>
-		<item>Recent Apps</item>
-		<item>Power Menu</item>
-	</string-array>
-	
-    <string-array name="remap_on_values">
-		<item>disabled</item>
-		<item>btn_power</item>
-		<item>poweroff</item>
-		<item>btn_home</item>
-		<item>btn_menu</item>
-		<item>btn_back</item>
-		<item>btn_search</item>
-		<item>btn_volup</item>
-		<item>btn_voldown</item>
-		<item>btn_play</item>
-		<item>btn_previous</item>
-		<item>btn_next</item>
-		<item>recentapps</item>
-		<item>powermenu</item>
-	</string-array>
-	
-    <string-array name="remap_off_names">
-		<item>Disabled</item>
-		<item>Power</item>
-		<item>Power Forced</item>
-		<item>Volume Up</item>
-		<item>Volume Down</item>
-		<item>Media Play/Pause</item>
-		<item>Media Previous</item>
-		<item>Media Next</item>
-	</string-array>
-	
-    <string-array name="remap_off_values">
-		<item>disabled</item>
-		<item>btn_power</item>
-		<item>poweron</item>
-		<item>btn_volup</item>
-		<item>btn_voldown</item>
-		<item>btn_play</item>
-		<item>btn_previous</item>
-		<item>btn_next</item>
-	</string-array>
-	
 	<string-array name="wakeplug_names">
 		<item>System Default</item>
 		<item>Always</item>
@@ -83,6 +15,100 @@
 		<item>ac</item>
 		<item>usb</item>
 		<item>off</item>
+	</string-array>
+	
+	<string-array name="delay_names">
+		<item>Short</item>
+		<item>Normal</item>
+		<item>Long</item>
+	</string-array>
+	
+	<string-array name="delay_tap_values">
+		<item>75</item>
+		<item>100</item>
+		<item>150</item>
+	</string-array>
+	
+	<string-array name="delay_press_values">
+		<item>200</item>
+		<item>500</item>
+		<item>1000</item>
+	</string-array>
+	
+	<string-array name="remap_options_names">
+		<item>Screen On</item>
+		<item>Screen Off</item>
+	</string-array>
+	
+	<string-array name="remap_options_values">
+		<item>awake</item>
+		<item>sleep</item>
+	</string-array>
+
+    <string-array name="remap_actions_on_names">
+		<item>Default</item>
+		<item>Disabled</item>
+		<item>Power</item>
+		<item>Power Forced</item>
+		<item>Home</item>
+		<item>Menu</item>
+		<item>Back</item>
+		<item>Search</item>
+		<item>Volume Up</item>
+		<item>Volume Down</item>
+		<item>Media Play/Pause</item>
+		<item>Media Previous</item>
+		<item>Media Next</item>
+		<item>Recent Apps</item>
+		<item>Power Menu</item>
+		<item>Orientation Toggle</item>
+		<item>Orientation Left</item>
+		<item>Orientation Right</item>
+	</string-array>
+	
+    <string-array name="remap_actions_on_values">
+		<item>default</item>
+		<item>disabled</item>
+		<item>26</item>
+		<item>poweroff</item>
+		<item>3</item>
+		<item>82</item>
+		<item>4</item>
+		<item>84</item>
+		<item>24</item>
+		<item>25</item>
+		<item>85</item>
+		<item>88</item>
+		<item>87</item>
+		<item>recentapps</item>
+		<item>powermenu</item>
+		<item>fliptoggle</item>
+		<item>flipleft</item>
+		<item>flipright</item>
+	</string-array>
+
+    <string-array name="remap_actions_off_names">
+        <item>Default</item>
+		<item>Disabled</item>
+		<item>Power</item>
+		<item>Power Forced</item>
+		<item>Volume Up</item>
+		<item>Volume Down</item>
+		<item>Media Play/Pause</item>
+		<item>Media Previous</item>
+		<item>Media Next</item>
+	</string-array>
+	
+    <string-array name="remap_actions_off_values">
+        <item>default</item>
+		<item>disabled</item>
+		<item>26</item>
+		<item>poweron</item>
+		<item>24</item>
+		<item>25</item>
+		<item>85</item>
+		<item>88</item>
+		<item>87</item>
 	</string-array>
     
 </resources>

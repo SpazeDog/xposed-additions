@@ -1,5 +1,43 @@
 <resources>
 
-    <string name="app_name">com.spazedog.xposed.additionsgb</string>
-
+	<string name='category_title_usbplug'>USB Plug/UnPlug</string>
+	<string name='preference_title_plug_wake'>Wake on plug</string>
+	<string name='preference_title_unplug_wake'>Wake on unplug</string>
+	
+	<string name='category_title_buttons'>Buttons</string>
+	<string name='preference_title_delay_tap'>Double click delay</string>
+	<string name='preference_title_delay_press'>Long press delay</string>
+	<string name='preference_title_remap'>Re-map Settings</string>
+	<string name='preference_summary_remap'>Configure button Re-map</string>
+	
+	<string name='category_title_layout'>Layout</string>
+	<string name='preference_title_layout_orientation'>Global User Rotation</string>
+	<string name='preference_summary_layout_orientation'>Allow all applications to rotate. Needs a reboot to work properly</string>
+	
+	<string name='preference_title_add_button'>Add new button</string>
+	<string name='preference_summary_add_button'>Click here to add a new button to the list of selections</string>
+	
+	<string name='preference_title_remove_button'>Remove button</string>
+	<string name='preference_summary_remove_button'>Click here to remove this button and it\'s configuration</string>
+	
+	<string name='alert_dialog_name_intercept_key'>Key Code</string>
+	<string name='alert_dialog_title_intercept_key'>Intercept Key Code</string>
+	<string name='alert_dialog_summary_intercept_key'>Press the key that you wish to add</string>
+	<string name='alert_dialog_title_key_exists'>The key already exists in the collection</string>
+	
+	<string name='category_title_remap_options'>Display Option</string>
+	<string name='category_title_remap_sleep_actions'>Actions Sleep</string>
+	<string name='category_title_remap_awake_actions'>Actions Awake</string>
+	
+	<string name='preference_title_remap_options'>Select screen state</string>
+	
+	<string name='key_removed'>The selected key has been removed</string>
+	
+	<string name='preference_title_remap_enabled'>Enable Re-map</string>
+	<string name='preference_title_remap_click'>Click Action</string>
+	<string name='preference_title_remap_tap'>Double Click Action</string>
+	<string name='preference_title_remap_press'>Long Press Action</string>
+	
+	<string name='config_updated'>The module configurations has been reloaded</string>
+	
 </resources>
