@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    
+	<string-array name="wakeplug_names">
+		<item>システムの既定</item>
+		<item>常時有効</item>
+		<item>AC接続時</item>
+		<item>USB接続時</item>
+		<item>無効</item>
+	</string-array>
+	
+	<string-array name="delay_names">
+		<item>短</item>
+		<item>中</item>
+		<item>長</item>
+	</string-array>
+	
+	<string-array name="remap_options_names">
+		<item>画面オン</item>
+		<item>画面オフ</item>
+	</string-array>
+
+    <string-array name="remap_actions_on_names">
+		<item>デフォルト</item>
+		<item>無効</item>
+		<item>電源</item>
+		<item>電源(強制)</item>
+		<item>ホーム</item>
+		<item>メニュー</item>
+		<item>バック</item>
+		<item>検索</item>
+		<item>音量 上</item>
+		<item>音量 下</item>
+		<item>メディア 再生/一時停止</item>
+		<item>メディア 前へ</item>
+		<item>メディア 次へ</item>
+		<item>最近のアプリ</item>
+		<item>電源メニュー</item>
+		<item>画面の向きトグル</item>
+		<item>画面の向き 左</item>
+		<item>画面の向き 右</item>
+	</string-array>
+
+    <string-array name="remap_actions_off_names">
+        <item>デフォルト</item>
+		<item>無効</item>
+		<item>電源</item>
+		<item>電源(強制)</item>
+		<item>音量 上</item>
+		<item>音量 下</item>
+		<item>メディア 再生/一時停止</item>
+		<item>メディア 前へ</item>
+		<item>メディア 次へ</item>
+	</string-array>
+    
+</resources>
