@@ -2,7 +2,9 @@ package com.spazedog.xposed.additionsgb;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -166,6 +168,7 @@ public final class Common {
 		}
 	}
 	
+	@SuppressLint("NewApi")
 	public static String keycodeToString(Integer keyCode) {
 		/*
 		 * KeyEvent to string is not supported in Gingerbread, 
@@ -214,6 +217,29 @@ public final class Common {
 				case KeyEvent.KEYCODE_3D_MODE: return "3D Mode";
 				case KeyEvent.KEYCODE_ASSIST: return "Assist";
 			}
+			
+			if (android.os.Build.VERSION.SDK_INT >= 12) {
+				String codeName = KeyEvent.keyCodeToString(keyCode);
+				
+				if (codeName.startsWith("KEYCODE_")) {
+					String[] codeWords = codeName.toLowerCase(Locale.US).split("_");
+					
+					for (int i=1; i < codeWords.length; i++) {
+						char[] codeChars = codeWords[i].trim().toCharArray();
+						
+						codeChars[0] = Character.toUpperCase(codeChars[0]);
+						
+						if (i == 1) {
+							codeName = codeChars.toString();
+							
+						} else {
+							codeName += " " + codeChars.toString();
+						}
+					}
+					
+					return codeName;
+				}
+			}
 		}
 		
 		return "Unknown";
@@ -226,6 +252,10 @@ public final class Common {
 		context.sendBroadcast(intent);
 		
 		Toast.makeText(context, R.string.config_updated, Toast.LENGTH_SHORT).show();
+	}
+	
+	public static Boolean isUnlocked() {
+		return true;
 	}
 	
 	public static void log(String msg) {
