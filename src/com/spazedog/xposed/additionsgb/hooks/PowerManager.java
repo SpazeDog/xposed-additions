@@ -18,22 +18,24 @@ public class PowerManager {
 	
 	public static final String TAG = Common.PACKAGE_NAME + "$PowerManager";
 
-	private static final Boolean OLD_SDK = android.os.Build.VERSION.SDK_INT < 16;
+	private static Boolean OLD_SDK = false;
 	
 	private PowerManager() {}
 	
 	public static void inject() {
 		Common.log(TAG, "Adding Power Management hooks");
 		
-		if (!OLD_SDK) {
+		XC_MethodHook hook = new ShouldWakeUpWhenPluggedOrUnplugged();
+		
+		try {
 			XposedBridge.hookAllMethods(
 					XposedHelpers.findClass("com.android.server.power.PowerManagerService", null), 
 					"shouldWakeUpWhenPluggedOrUnpluggedLocked", 
-					new ShouldWakeUpWhenPluggedOrUnplugged()
+					hook
 			);
 			
-		} else {
-			XC_MethodHook hook = new ShouldWakeUpWhenPluggedOrUnplugged();
+		} catch(Throwable e) {
+			OLD_SDK = true;
 			
 			/*
 			 * We need to have access to this object from within the hook below
