@@ -339,18 +339,6 @@ public class PhoneWindowManager extends XC_MethodHook {
 			return;
 		}
 		
-		if (mInterceptKeycode && isScreenOn) {
-			if ((policyFlags & FLAG_VIRTUAL) != 0) {
-				performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
-			}
-			
-			sendBroadcastResponse(keyCode);
-			
-			param.setResult(ACTION_DISABLE);
-			
-			return;
-		}
-		
 		/*
 		 * During the first key down while the screen is off,
 		 * we will reset everything to avoid issues if the screen was turned off by 
@@ -360,6 +348,20 @@ public class PhoneWindowManager extends XC_MethodHook {
 			if(DEBUG)Common.log(TAG, "Queueing: Re-setting old flags");
 			
 			mKeyFlags.reset();
+		}
+		
+		if (mInterceptKeycode && isScreenOn) {
+			if (down) {
+				if ((policyFlags & FLAG_VIRTUAL) != 0) {
+					performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+				}
+				
+				sendBroadcastResponse(keyCode);
+			}
+			
+			param.setResult(ACTION_DISABLE);
+			
+			return;
 		}
 		
 		if (!down && !mKeyFlags.ONGOING) {
