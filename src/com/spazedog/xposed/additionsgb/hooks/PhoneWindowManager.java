@@ -260,7 +260,7 @@ public class PhoneWindowManager extends XC_MethodHook {
 		mServiceManagerClass = XposedTools.findClass("android.os.ServiceManager");
 		mWindowStateClass = XposedTools.findClass("android.view.WindowManagerPolicy$WindowState");
 		
-		if (SDK_NUMBER > 10) {
+		if (SDK_NUMBER >= 16) {
 			mInputManagerClass = XposedTools.findClass("android.hardware.input.InputManager");
 			INJECT_INPUT_EVENT_MODE_ASYNC = (Integer) XposedTools.getField(mInputManagerClass, "INJECT_INPUT_EVENT_MODE_ASYNC");
 		}
@@ -766,7 +766,7 @@ public class PhoneWindowManager extends XC_MethodHook {
 	private void triggerKeyEvent(final int keyCode) {
 		try {
 			if (xInputEvent == null) {
-				if (SDK_NUMBER > 10) {
+				if (SDK_NUMBER >= 16) {
 					xInputManager = XposedTools.findMethod(mInputManagerClass, "getInstance");
 					xInputEvent = XposedTools.findMethod(mInputManagerClass, "injectInputEvent", KeyEvent.class, Integer.TYPE);
 					
@@ -777,7 +777,7 @@ public class PhoneWindowManager extends XC_MethodHook {
 			
 			KeyEvent downEvent = null;
 			
-			if (SDK_NUMBER > 10) {
+			if (SDK_NUMBER >= 16) {
 				long now = SystemClock.uptimeMillis();
 				
 		        downEvent = new KeyEvent(now, now, KeyEvent.ACTION_DOWN,
@@ -790,7 +790,7 @@ public class PhoneWindowManager extends XC_MethodHook {
 			
 			KeyEvent upEvent = KeyEvent.changeAction(downEvent, KeyEvent.ACTION_UP);
 			
-			if (SDK_NUMBER > 10) {
+			if (SDK_NUMBER >= 16) {
 				Object inputManager = xInputManager.invoke(null);
 				
 				xInputEvent.invoke(inputManager, downEvent, INJECT_INPUT_EVENT_MODE_ASYNC);
