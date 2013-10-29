@@ -735,13 +735,16 @@ public class PhoneWindowManager extends XC_MethodHook {
 		XposedTools.callMethod(mHookedReference.get(), "showGlobalActionsDialog");
 	}
 	
+	Method xPerformHapticFeedback;
 	private void performHapticFeedback(Integer effectId) {
-		XposedTools.callMethod(
-				mHookedReference.get(), 
-				"performHapticFeedbackLw", 
-				new Class<?>[]{mWindowStateClass, Integer.TYPE, Boolean.TYPE},
-				null, effectId, false
-		);
+		try {
+			if (xPerformHapticFeedback == null) {
+				xPerformHapticFeedback = XposedTools.findMethod(mHookedReference.get().getClass(), "performHapticFeedbackLw", mWindowStateClass, Integer.TYPE, Boolean.TYPE);
+			}
+			
+			xPerformHapticFeedback.invoke(mHookedReference.get(), null, effectId, false);
+
+		} catch (Throwable e) { e.printStackTrace(); }
 	}
 	
 	private void sendCloseSystemWindows(String reason) {
@@ -755,33 +758,48 @@ public class PhoneWindowManager extends XC_MethodHook {
 		}
     }
 	
+	Method xInputEvent;
+	Method xInputManager;
 	@SuppressLint("InlinedApi")
 	private void triggerKeyEvent(final int keyCode) {
-		KeyEvent downEvent = null;
-		
-		if (SDK_NUMBER > 10) {
-			long now = SystemClock.uptimeMillis();
+		try {
+			if (xInputEvent == null) {
+				if (SDK_NUMBER > 10) {
+					xInputManager = XposedTools.findMethod(mInputManagerClass, "getInstance");
+					xInputEvent = XposedTools.findMethod(mInputManagerClass, "injectInputEvent", KeyEvent.class, Integer.TYPE);
+					
+				} else {
+					xInputEvent = XposedTools.findMethod(mWindowManager.getClass(), "injectInputEventNoWait", KeyEvent.class);
+				}
+			}
 			
-	        downEvent = new KeyEvent(now, now, KeyEvent.ACTION_DOWN,
-	        		keyCode, 0, 0, KeyCharacterMap.VIRTUAL_KEYBOARD, 0,
-	                	KeyEvent.FLAG_FROM_SYSTEM, InputDevice.SOURCE_KEYBOARD);
-
-		} else {
-			downEvent = new KeyEvent(KeyEvent.ACTION_DOWN, keyCode);
-		}
-		
-		KeyEvent upEvent = KeyEvent.changeAction(downEvent, KeyEvent.ACTION_UP);
-		
-		if (SDK_NUMBER > 10) {
-			Object inputManager = XposedTools.callMethod(mInputManagerClass, "getInstance");
+			KeyEvent downEvent = null;
 			
-			XposedTools.callMethod(inputManager, "injectInputEvent", new Class<?>[]{KeyEvent.class, Integer.TYPE}, downEvent, INJECT_INPUT_EVENT_MODE_ASYNC);
-			XposedTools.callMethod(inputManager, "injectInputEvent", new Class<?>[]{KeyEvent.class, Integer.TYPE}, upEvent, INJECT_INPUT_EVENT_MODE_ASYNC);
+			if (SDK_NUMBER > 10) {
+				long now = SystemClock.uptimeMillis();
+				
+		        downEvent = new KeyEvent(now, now, KeyEvent.ACTION_DOWN,
+		        		keyCode, 0, 0, KeyCharacterMap.VIRTUAL_KEYBOARD, 0,
+		                	KeyEvent.FLAG_FROM_SYSTEM, InputDevice.SOURCE_KEYBOARD);
+	
+			} else {
+				downEvent = new KeyEvent(KeyEvent.ACTION_DOWN, keyCode);
+			}
 			
-		} else {
-			XposedTools.callMethod(mWindowManager, "injectInputEventNoWait", new Class<?>[]{KeyEvent.class}, downEvent);
-			XposedTools.callMethod(mWindowManager, "injectInputEventNoWait", new Class<?>[]{KeyEvent.class}, upEvent);
-		}
+			KeyEvent upEvent = KeyEvent.changeAction(downEvent, KeyEvent.ACTION_UP);
+			
+			if (SDK_NUMBER > 10) {
+				Object inputManager = xInputManager.invoke(null);
+				
+				xInputEvent.invoke(inputManager, downEvent, INJECT_INPUT_EVENT_MODE_ASYNC);
+				xInputEvent.invoke(inputManager, upEvent, INJECT_INPUT_EVENT_MODE_ASYNC);
+				
+			} else {
+				xInputEvent.invoke(mWindowManager, downEvent);
+				xInputEvent.invoke(mWindowManager, upEvent);
+			}
+			
+		} catch (Throwable e) { e.printStackTrace(); }
 	}
 	
 	private Boolean isRotationLocked() {
@@ -789,18 +807,31 @@ public class PhoneWindowManager extends XC_MethodHook {
                 Settings.System.ACCELEROMETER_ROTATION, 0) == 0;
 	}
 	
+	Method xGetRotation;
 	private Integer getRotation() {
-		return (Integer) XposedTools.callMethod(mWindowManager, "getRotation");
+		try {
+			if (xGetRotation == null) {
+				xGetRotation = XposedTools.findMethod(mWindowManager.getClass(), "getRotation");
+			}
+			
+			return (Integer) xGetRotation.invoke(mWindowManager);
+			
+		} catch (Throwable e) { e.printStackTrace(); }
+		
+		return 0;
 	}
 	
+	Method xRreezeRotation;
 	private void freezeRotation(Integer orientation) {
 		if (SDK_NUMBER > 10) {
-			XposedTools.callMethod(
-					mWindowManager, 
-					"freezeRotation",
-					new Class<?>[]{Integer.TYPE},
-					orientation
-			);
+			try {
+				if (xRreezeRotation == null) {
+					xRreezeRotation = XposedTools.findMethod(mWindowManager.getClass(), "freezeRotation", Integer.TYPE);
+				}
+				
+				xRreezeRotation.invoke(mWindowManager, orientation);
+				
+			} catch (Throwable e) { e.printStackTrace(); }
 			
 		} else {
 			/*
@@ -823,9 +854,17 @@ public class PhoneWindowManager extends XC_MethodHook {
 		}
 	}
 	
+	Method xThawRotation;
 	private void thawRotation() {
 		if (SDK_NUMBER > 10) {
-			XposedTools.callMethod(mWindowManager, "thawRotation");	
+			try {
+				if (xThawRotation == null) {
+					xThawRotation = XposedTools.findMethod(mWindowManager.getClass(), "thawRotation");
+				}
+				
+				xThawRotation.invoke(mWindowManager);
+				
+			} catch (Throwable e) { e.printStackTrace(); }
 			
 		} else {
 			Settings.System.putInt(mContext.getContentResolver(), 
