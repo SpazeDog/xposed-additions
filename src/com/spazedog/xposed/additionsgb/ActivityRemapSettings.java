@@ -139,9 +139,11 @@ public class ActivityRemapSettings extends PreferenceActivity implements OnPrefe
 	
 				@Override
 				public void OnReceive(DialogBroadcastReceiver dialog, Intent intent) {
-					mKeyCode = intent.getIntExtra("response", 0);
-					
-					((TextView) mDialog.getDialog().findViewById(R.id.content_value)).setText("" + mKeyCode + " (" + Common.keycodeToString(mKeyCode) + ")");
+					if (intent.hasExtra("response")) {
+						mKeyCode = intent.getIntExtra("response", 0);
+						
+						((TextView) mDialog.getDialog().findViewById(R.id.content_value)).setText("" + mKeyCode + " (" + Common.keycodeToString(mKeyCode) + ")");
+					}
 				}
 			});
 			

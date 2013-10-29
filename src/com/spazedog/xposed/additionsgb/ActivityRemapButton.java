@@ -314,7 +314,7 @@ public class ActivityRemapButton extends PreferenceActivity implements OnPrefere
 					dialog = null;
 					
 					if (positive) {
-						if (mKeySecondaryCode > 0) {
+						if (mKeySecondaryCode != null && mKeySecondaryCode > 0) {
 							int keyCode = Common.generateKeyCode(mKeyCurrent, mKeySecondaryCode);
 							SharedPreferences sharedPreferences = Common.getSharedPreferences(ActivityRemapButton.this);
 							String[] keyArray = sharedPreferences.getString(Common.Remap.KEY_COLLECTION_SECONDARY+mKeyCurrent, "").split(",");
@@ -358,12 +358,14 @@ public class ActivityRemapButton extends PreferenceActivity implements OnPrefere
 	
 				@Override
 				public void OnReceive(DialogBroadcastReceiver dialog, Intent intent) {
-					int key = intent.getIntExtra("response", 0);
-					
-					if (key != 0 && key != mKeyCurrent) {
-						mKeySecondaryCode = key;
-								
-						((TextView) mDialog.getDialog().findViewById(R.id.content_value)).setText("" + mKeyText + " + " + mKeySecondaryCode + " (" + Common.keycodeToString(mKeySecondaryCode) + ")");
+					if (intent.hasExtra("response")) {
+						int key = intent.getIntExtra("response", 0);
+						
+						if (key != 0 && key != mKeyCurrent) {
+							mKeySecondaryCode = key;
+									
+							((TextView) mDialog.getDialog().findViewById(R.id.content_value)).setText("" + mKeyText + " + " + mKeySecondaryCode + " (" + Common.keycodeToString(mKeySecondaryCode) + ")");
+						}
 					}
 				}
 			});
