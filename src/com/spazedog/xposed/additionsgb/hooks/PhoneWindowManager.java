@@ -24,10 +24,10 @@ import android.widget.Toast;
 
 import com.android.internal.statusbar.IStatusBarService;
 import com.spazedog.xposed.additionsgb.Common;
+import com.spazedog.xposed.additionsgb.tools.XposedTools;
 
 import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
-import de.robv.android.xposed.XposedHelpers;
 
 public class PhoneWindowManager extends XC_MethodHook {
 	
@@ -38,14 +38,14 @@ public class PhoneWindowManager extends XC_MethodHook {
 	private PhoneWindowManager() {}
 	
 	public static void inject() {
-		Class<?> phoneWindowManagerClass = XposedHelpers.findClass("com.android.internal.policy.impl.PhoneWindowManager", null);
-		
+		Class<?> phoneWindowManagerClass = XposedTools.findClass("com.android.internal.policy.impl.PhoneWindowManager");
+			
 		PhoneWindowManager instance = new PhoneWindowManager();
-		
-		XposedBridge.hookAllConstructors(phoneWindowManagerClass, instance);
-		XposedBridge.hookAllMethods(phoneWindowManagerClass, "init", instance);
-		XposedBridge.hookAllMethods(phoneWindowManagerClass, "interceptKeyBeforeQueueing", instance);
-		XposedBridge.hookAllMethods(phoneWindowManagerClass, "interceptKeyBeforeDispatching", instance);
+			
+		XposedTools.hookConstructors(phoneWindowManagerClass, instance);
+		XposedTools.hookMethods(phoneWindowManagerClass, "init", instance);
+		XposedTools.hookMethods(phoneWindowManagerClass, "interceptKeyBeforeQueueing", instance);
+		XposedTools.hookMethods(phoneWindowManagerClass, "interceptKeyBeforeDispatching", instance);
 	}
 	
 	@Override
@@ -255,19 +255,19 @@ public class PhoneWindowManager extends XC_MethodHook {
 	private void hook_construct(final MethodHookParam param) {
 		mHookedReference = new WeakReference<Object>(param.thisObject);
 		
-		mWindowManagerPolicyClass = XposedHelpers.findClass("android.view.WindowManagerPolicy", null);
-		mActivityManagerNativeClass = XposedHelpers.findClass("android.app.ActivityManagerNative", null);
-		mServiceManagerClass = XposedHelpers.findClass("android.os.ServiceManager", null);
-		mWindowStateClass = XposedHelpers.findClass("android.view.WindowManagerPolicy$WindowState", null);
+		mWindowManagerPolicyClass = XposedTools.findClass("android.view.WindowManagerPolicy");
+		mActivityManagerNativeClass = XposedTools.findClass("android.app.ActivityManagerNative");
+		mServiceManagerClass = XposedTools.findClass("android.os.ServiceManager");
+		mWindowStateClass = XposedTools.findClass("android.view.WindowManagerPolicy$WindowState");
 		
 		if (SDK_NUMBER > 10) {
-			mInputManagerClass = XposedHelpers.findClass("android.hardware.input.InputManager", null);
-			INJECT_INPUT_EVENT_MODE_ASYNC = XposedHelpers.getStaticIntField(mInputManagerClass, "INJECT_INPUT_EVENT_MODE_ASYNC");
+			mInputManagerClass = XposedTools.findClass("android.hardware.input.InputManager");
+			INJECT_INPUT_EVENT_MODE_ASYNC = (Integer) XposedTools.getField(mInputManagerClass, "INJECT_INPUT_EVENT_MODE_ASYNC");
 		}
 
-		FLAG_INJECTED = XposedHelpers.getStaticIntField(mWindowManagerPolicyClass, "FLAG_INJECTED");
-		FLAG_VIRTUAL = XposedHelpers.getStaticIntField(mWindowManagerPolicyClass, "FLAG_VIRTUAL");
-		ACTION_DISPATCH = XposedHelpers.getStaticIntField(mWindowManagerPolicyClass, "ACTION_PASS_TO_USER");
+		FLAG_INJECTED = (Integer) XposedTools.getField(mWindowManagerPolicyClass, "FLAG_INJECTED");
+		FLAG_VIRTUAL = (Integer) XposedTools.getField(mWindowManagerPolicyClass, "FLAG_VIRTUAL");
+		ACTION_DISPATCH = (Integer) XposedTools.getField(mWindowManagerPolicyClass, "ACTION_PASS_TO_USER");
 	}
 	
 	/**
@@ -704,7 +704,7 @@ public class PhoneWindowManager extends XC_MethodHook {
 		if (SDK_NUMBER > 10) {
 			if (mRecentAppsTrigger == null) {
 				mRecentAppsTrigger = IStatusBarService.Stub.asInterface(
-					(IBinder) XposedHelpers.callStaticMethod(
+					(IBinder) XposedTools.callMethod(
 						mServiceManagerClass,
 						"getService",
 						new Class<?>[]{String.class},
@@ -713,27 +713,30 @@ public class PhoneWindowManager extends XC_MethodHook {
 				);
 			}
 			
-			XposedHelpers.callMethod(mRecentAppsTrigger, "toggleRecentApps");
+			XposedTools.callMethod(mRecentAppsTrigger, "toggleRecentApps");
 			
 		} else {
 			if (mRecentAppsTrigger == null) {
-				mRecentAppsTrigger = XposedHelpers.newInstance(
-						XposedHelpers.findClass("com.android.internal.policy.impl.RecentApplicationsDialog", null),
+				mRecentAppsTrigger = XposedTools.callConstructor(
+						XposedTools.findClass("com.android.internal.policy.impl.RecentApplicationsDialog"),
 						new Class<?>[]{Context.class},
 						mContext
 				);
 			}
 			
-			XposedHelpers.callMethod(mRecentAppsTrigger, "show");
+			try {
+				XposedTools.callMethod(mRecentAppsTrigger, "show");
+				
+			} catch (Throwable e) { e.printStackTrace(); }
 		}
 	}
 
 	private void openGlobalActionsDialog() {
-		XposedHelpers.callMethod(mHookedReference.get(), "showGlobalActionsDialog");
+		XposedTools.callMethod(mHookedReference.get(), "showGlobalActionsDialog");
 	}
 	
 	private void performHapticFeedback(Integer effectId) {
-		XposedHelpers.callMethod(
+		XposedTools.callMethod(
 				mHookedReference.get(), 
 				"performHapticFeedbackLw", 
 				new Class<?>[]{mWindowStateClass, Integer.TYPE, Boolean.TYPE},
@@ -742,9 +745,9 @@ public class PhoneWindowManager extends XC_MethodHook {
 	}
 	
 	private void sendCloseSystemWindows(String reason) {
-		if ((Boolean) XposedHelpers.callStaticMethod(mActivityManagerNativeClass, "isSystemReady")) {
-			XposedHelpers.callMethod(
-					XposedHelpers.callStaticMethod(mActivityManagerNativeClass, "getDefault"), 
+		if ((Boolean) XposedTools.callMethod(mActivityManagerNativeClass, "isSystemReady")) {
+			XposedTools.callMethod(
+					XposedTools.callMethod(mActivityManagerNativeClass, "getDefault"), 
 					"closeSystemDialogs", 
 					new Class<?>[]{String.class}, 
 					reason
@@ -770,14 +773,14 @@ public class PhoneWindowManager extends XC_MethodHook {
 		KeyEvent upEvent = KeyEvent.changeAction(downEvent, KeyEvent.ACTION_UP);
 		
 		if (SDK_NUMBER > 10) {
-			Object inputManager = XposedHelpers.callStaticMethod(mInputManagerClass, "getInstance");
+			Object inputManager = XposedTools.callMethod(mInputManagerClass, "getInstance");
 			
-			XposedHelpers.callMethod(inputManager, "injectInputEvent", new Class<?>[]{KeyEvent.class, Integer.TYPE}, downEvent, INJECT_INPUT_EVENT_MODE_ASYNC);
-			XposedHelpers.callMethod(inputManager, "injectInputEvent", new Class<?>[]{KeyEvent.class, Integer.TYPE}, upEvent, INJECT_INPUT_EVENT_MODE_ASYNC);
+			XposedTools.callMethod(inputManager, "injectInputEvent", new Class<?>[]{KeyEvent.class, Integer.TYPE}, downEvent, INJECT_INPUT_EVENT_MODE_ASYNC);
+			XposedTools.callMethod(inputManager, "injectInputEvent", new Class<?>[]{KeyEvent.class, Integer.TYPE}, upEvent, INJECT_INPUT_EVENT_MODE_ASYNC);
 			
 		} else {
-			XposedHelpers.callMethod(mWindowManager, "injectInputEventNoWait", new Class<?>[]{KeyEvent.class}, downEvent);
-			XposedHelpers.callMethod(mWindowManager, "injectInputEventNoWait", new Class<?>[]{KeyEvent.class}, upEvent);
+			XposedTools.callMethod(mWindowManager, "injectInputEventNoWait", new Class<?>[]{KeyEvent.class}, downEvent);
+			XposedTools.callMethod(mWindowManager, "injectInputEventNoWait", new Class<?>[]{KeyEvent.class}, upEvent);
 		}
 	}
 	
@@ -787,12 +790,12 @@ public class PhoneWindowManager extends XC_MethodHook {
 	}
 	
 	private Integer getRotation() {
-		return (Integer) XposedHelpers.callMethod(mWindowManager, "getRotation");
+		return (Integer) XposedTools.callMethod(mWindowManager, "getRotation");
 	}
 	
 	private void freezeRotation(Integer orientation) {
 		if (SDK_NUMBER > 10) {
-			XposedHelpers.callMethod(
+			XposedTools.callMethod(
 					mWindowManager, 
 					"freezeRotation",
 					new Class<?>[]{Integer.TYPE},
@@ -822,7 +825,7 @@ public class PhoneWindowManager extends XC_MethodHook {
 	
 	private void thawRotation() {
 		if (SDK_NUMBER > 10) {
-			XposedHelpers.callMethod(mWindowManager, "thawRotation");	
+			XposedTools.callMethod(mWindowManager, "thawRotation");	
 			
 		} else {
 			Settings.System.putInt(mContext.getContentResolver(), 

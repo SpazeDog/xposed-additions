@@ -1,14 +1,14 @@
 package com.spazedog.xposed.additionsgb.hooks;
 
-import com.spazedog.xposed.additionsgb.Common;
-
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.view.Window;
+
+import com.spazedog.xposed.additionsgb.Common;
+import com.spazedog.xposed.additionsgb.tools.XposedTools;
+
 import de.robv.android.xposed.XC_MethodHook;
-import de.robv.android.xposed.XposedBridge;
-import de.robv.android.xposed.XposedHelpers;
 
 public class ApplicationLayout {
 	
@@ -19,14 +19,14 @@ public class ApplicationLayout {
 	public static void inject() {
 		Common.log(TAG, "Adding Application Layout hooks");
 		
-		XposedBridge.hookAllMethods(
-				XposedHelpers.findClass("com.android.internal.policy.impl.PhoneWindow", null), 
+		XposedTools.hookMethods(
+				"com.android.internal.policy.impl.PhoneWindow", 
 				"generateLayout", 
 				new GenerateLayout()
 		);
 		
-		XposedBridge.hookAllMethods(
-				XposedHelpers.findClass("android.app.Activity", null), 
+		XposedTools.hookMethods(
+				"android.app.Activity", 
 				"setRequestedOrientation", 
 				new SetRequestedOrientation()
 		);
@@ -36,8 +36,8 @@ public class ApplicationLayout {
 			 * TODO: Find a way for pre-jellybean
 			 */
 			if (android.os.Build.VERSION.SDK_INT > 15) {
-				XposedBridge.hookAllMethods(
-						XposedHelpers.findClass("com.android.internal.policy.impl.keyguard", null), 
+				XposedTools.hookMethods(
+						"com.android.internal.policy.impl.keyguard", 
 						"shouldEnableScreenRotation", 
 						new ShouldEnableScreenRotation()
 				);
