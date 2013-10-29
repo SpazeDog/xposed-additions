@@ -1,0 +1,43 @@
+<resources>
+
+	<string name='category_title_usbplug'>USB 接続/接続解除</string>
+	<string name='preference_title_plug_wake'>接続時に画面オン</string>
+	<string name='preference_title_unplug_wake'>接続解除時に画面オン</string>
+	
+	<string name='category_title_buttons'>ボタン</string>
+	<string name='preference_title_delay_tap'>二回押す間隔</string>
+	<string name='preference_title_delay_press'>長押し時間</string>
+	<string name='preference_title_remap'>リマップ設定</string>
+	<string name='preference_summary_remap'>ボタンの置き換えを設定します。</string>
+	
+	<string name='category_title_layout'>レイアウト</string>
+	<string name='preference_title_layout_orientation'>画面の回転を許可</string>
+	<string name='preference_summary_layout_orientation'>どのアプリでも画面の回転ができるようにします。有効にした後は再起動してください。</string>
+	
+	<string name='preference_title_add_button'>ボタンを追加</string>
+	<string name='preference_summary_add_button'>タップするとボタンをリストに追加します。</string>
+	
+	<string name='preference_title_remove_button'>ボタンを削除</string>
+	<string name='preference_summary_remove_button'>タップするとボタンとその設定を削除します。</string>
+	
+	<string name='alert_dialog_name_intercept_key'>キーコード</string>
+	<string name='alert_dialog_title_intercept_key'>キーコードの特定</string>
+	<string name='alert_dialog_summary_intercept_key'>追加したいキーを押してください。</string>
+	<string name='alert_dialog_title_key_exists'>キーはすでにリストに追加されています。</string>
+	
+	<string name='category_title_remap_options'>表示オプション</string>
+	<string name='category_title_remap_sleep_actions'>画面オフ時のアクション</string>
+	<string name='category_title_remap_awake_actions'>画面オン時のアクション</string>
+	
+	<string name='preference_title_remap_options'>画面の状態の選択</string>
+	
+	<string name='key_removed'>選択したキーを削除しました。</string>
+	
+	<string name='preference_title_remap_enabled'>リマップを有効化</string>
+	<string name='preference_title_remap_click'>押したときのアクション</string>
+	<string name='preference_title_remap_tap'>二回押したときのアクション</string>
+	<string name='preference_title_remap_press'>長押ししたときのアクション</string>
+	
+	<string name='config_updated'>モジュールの設定が再読み込みされました。</string>
+	
+</resources>
