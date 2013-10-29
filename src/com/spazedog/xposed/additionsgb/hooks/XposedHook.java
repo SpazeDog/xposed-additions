@@ -20,7 +20,7 @@ public final class XposedHook implements IXposedHookZygoteInit, IXposedHookLoadP
 	@Override
 	public void handleLoadPackage(LoadPackageParam params) throws Throwable {
 		if (params.packageName.equals("android")) {
-			// Note being used at the moment
+			// Not being used at the moment
 		}
 	}
 }

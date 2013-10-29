@@ -2,14 +2,23 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
     
 	<Preference
+        android:key="add_button"
+        android:persistent="false"
+        android:title="@string/preference_title_add_secondary_button"
+        android:summary="@string/preference_summary_add_secondary_button"
+        android:order="1" />
+    
+	<Preference
         android:key="remove_button"
         android:persistent="false"
         android:title="@string/preference_title_remove_button"
-        android:summary="@string/preference_summary_remove_button" />
+        android:summary="@string/preference_summary_remove_button"
+        android:order="2" />
         
 	<PreferenceCategory
         android:key="category_remap_options"
-        android:title="@string/category_title_remap_options">
+        android:title="@string/category_title_remap_options"
+        android:order="3">
         
 		<ListPreference 
 		    android:key="pref_options"
@@ -22,10 +31,17 @@
 	
 	<PreferenceCategory
         android:key="category_remap_sleep_actions"
-        android:title="@string/category_title_remap_sleep_actions" />
+        android:title="@string/category_title_remap_sleep_actions"
+        android:order="4" />
 	
 	<PreferenceCategory
         android:key="category_remap_awake_actions"
-        android:title="@string/category_title_remap_awake_actions" />
+        android:title="@string/category_title_remap_awake_actions"
+        android:order="4" />
+	
+    <PreferenceCategory
+        android:key="category_secondary_buttons"
+        android:title="@string/category_title_secondary_buttons"
+        android:order="5" />
 
 </PreferenceScreen>

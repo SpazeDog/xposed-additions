@@ -1,10 +1,14 @@
 <resources>
+    
+    <string name='preference_title_pro'>Get Pro Extension</string>
+	<string name='preference_summary_pro'>Add more features with the Pro Extension</string>
 
 	<string name='category_title_usbplug'>USB Plug/UnPlug</string>
 	<string name='preference_title_plug_wake'>Wake on plug</string>
 	<string name='preference_title_unplug_wake'>Wake on unplug</string>
 	
 	<string name='category_title_buttons'>Buttons</string>
+	<string name='category_title_secondary_buttons'>Secondary Buttons</string>
 	<string name='preference_title_delay_tap'>Double click delay</string>
 	<string name='preference_title_delay_press'>Long press delay</string>
 	<string name='preference_title_remap'>Re-map Settings</string>
@@ -15,7 +19,9 @@
 	<string name='preference_summary_layout_orientation'>Allow all applications to rotate. Needs a reboot to work properly</string>
 	
 	<string name='preference_title_add_button'>Add new button</string>
+	<string name='preference_title_add_secondary_button'>Add new secondary button</string>
 	<string name='preference_summary_add_button'>Click here to add a new button to the list of selections</string>
+	<string name='preference_summary_add_secondary_button'>Add a secondary button to enable multi options</string>
 	
 	<string name='preference_title_remove_button'>Remove button</string>
 	<string name='preference_summary_remove_button'>Click here to remove this button and it\'s configuration</string>
@@ -39,5 +45,14 @@
 	<string name='preference_title_remap_press'>Long Press Action</string>
 	
 	<string name='config_updated'>The module configurations has been reloaded</string>
+	
+	<string name='alert_title_welcome'>Welcome</string>
+	<string name='alert_text_welcome'>This Application only handles the configurations. The features itselfs is in the module, which you will need to enable in XposedInstaller fallowed by a reboot.\n\nSome of the configurations such as intercepting key codes will not work until the module is enabled. So please make sure to enable the module and reboot the device before continuing.</string>
+	
+	<string name='alert_title_welcome_additional'>Issues</string>
+	<string name='alert_text_welcome_additional'>Because Xposed Modules changes Android\'s behavior during Runtime in a non-standard way, and because some Custom or Stock ROM\'s might have changed some things in the original Android sources, there is always a small chance that this will not work.\n\nIf you have any issues with features not working, please send an email or visit the XDA Thread (Addresses can be found on Play Store).</string>
+	
+	<string name='message_primary_disabled_awake'>Re-map Awake is disabled on the Primary Button</string>
+	<string name='message_primary_disabled_sleep'>Re-map Sleep is disabled on the Primary Button</string>
 	
 </resources>

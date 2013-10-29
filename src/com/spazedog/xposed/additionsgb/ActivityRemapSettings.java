@@ -64,6 +64,7 @@ public class ActivityRemapSettings extends PreferenceActivity implements OnPrefe
 		
 		if (mUpdated) {
 			Common.requestConfigUpdate(this);
+			mUpdated = false;
 		}
 	}
 	
@@ -96,26 +97,28 @@ public class ActivityRemapSettings extends PreferenceActivity implements OnPrefe
 					dialog = null;
 					
 					if (positive) {
-						String keyCode = "" + mKeyCode;
-						SharedPreferences sharedPreferences = Common.getSharedPreferences(ActivityRemapSettings.this);
-						String[] keyArray = sharedPreferences.getString(Common.Remap.KEY_COLLECTION, "").split(",");
-						List<String> keyList = new ArrayList<String>();
-						
-						for (int i=0; i < keyArray.length; i++) {
-							if (!"".equals(keyArray[i])) {
-								keyList.add(keyArray[i]);
+						if (mKeyCode != null && mKeyCode > 0) {
+							String keyCode = "" + mKeyCode;
+							SharedPreferences sharedPreferences = Common.getSharedPreferences(ActivityRemapSettings.this);
+							String[] keyArray = sharedPreferences.getString(Common.Remap.KEY_COLLECTION, "").split(",");
+							List<String> keyList = new ArrayList<String>();
+							
+							for (int i=0; i < keyArray.length; i++) {
+								if (keyArray[i] != null && keyArray[i].matches("^[0-9]+$")) {
+									keyList.add(keyArray[i]);
+								}
 							}
-						}
-						
-						if (!keyList.contains(keyCode)) {
-							keyList.add(keyCode);
 							
-							sharedPreferences.edit().putString(Common.Remap.KEY_COLLECTION, TextUtils.join(",", keyList)).apply();
-							
-							createKeyPreference(mKeyCode);
-							
-						} else {
-							Toast.makeText(ActivityRemapSettings.this, R.string.alert_dialog_title_key_exists, Toast.LENGTH_LONG).show();
+							if (!keyList.contains(keyCode)) {
+								keyList.add(keyCode);
+								
+								sharedPreferences.edit().putString(Common.Remap.KEY_COLLECTION, TextUtils.join(",", keyList)).apply();
+								
+								createKeyPreference(mKeyCode);
+								
+							} else {
+								Toast.makeText(ActivityRemapSettings.this, R.string.alert_dialog_title_key_exists, Toast.LENGTH_LONG).show();
+							}
 						}
 					}
 				}
@@ -136,7 +139,7 @@ public class ActivityRemapSettings extends PreferenceActivity implements OnPrefe
 	
 				@Override
 				public void OnReceive(DialogBroadcastReceiver dialog, Intent intent) {
-					mKeyCode = intent.getIntExtra("keycode", 0);
+					mKeyCode = intent.getIntExtra("response", 0);
 					
 					((TextView) mDialog.getDialog().findViewById(R.id.content_value)).setText("" + mKeyCode + " (" + Common.keycodeToString(mKeyCode) + ")");
 				}
@@ -172,9 +175,12 @@ public class ActivityRemapSettings extends PreferenceActivity implements OnPrefe
 			if (keyList.contains(keyCode)) {
 				keyList.remove(keyCode);
 				
+				Integer[] seconds = Common.Remap.getKeyList(resultCode);
+				
 				Editor editor = sharedPreferences.edit();
 				
 				editor.putString(Common.Remap.KEY_COLLECTION, TextUtils.join(",", keyList));
+				editor.remove(Common.Remap.KEY_COLLECTION_SECONDARY + keyCode);
 				editor.remove(Common.Remap.KEY_OFF_ENABLED + keyCode);
 				editor.remove(Common.Remap.KEY_OFF_ACTION_CLICK + keyCode);
 				editor.remove(Common.Remap.KEY_OFF_ACTION_TAP + keyCode);
@@ -183,6 +189,17 @@ public class ActivityRemapSettings extends PreferenceActivity implements OnPrefe
 				editor.remove(Common.Remap.KEY_ON_ACTION_CLICK + keyCode);
 				editor.remove(Common.Remap.KEY_ON_ACTION_TAP + keyCode);
 				editor.remove(Common.Remap.KEY_ON_ACTION_PRESS + keyCode);
+				
+				for (int i=0; i < seconds.length; i++) {
+					editor.remove(Common.Remap.KEY_OFF_ENABLED + seconds[i]);
+					editor.remove(Common.Remap.KEY_OFF_ACTION_CLICK + seconds[i]);
+					editor.remove(Common.Remap.KEY_OFF_ACTION_TAP + seconds[i]);
+					editor.remove(Common.Remap.KEY_OFF_ACTION_PRESS + seconds[i]);
+					editor.remove(Common.Remap.KEY_ON_ENABLED + seconds[i]);
+					editor.remove(Common.Remap.KEY_ON_ACTION_CLICK + seconds[i]);
+					editor.remove(Common.Remap.KEY_ON_ACTION_TAP + seconds[i]);
+					editor.remove(Common.Remap.KEY_ON_ACTION_PRESS + seconds[i]);
+				}
 				
 				editor.apply();
 				

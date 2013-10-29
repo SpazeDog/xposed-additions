@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
     
+    <Preference
+        android:key="pro_link"
+        android:title="@string/preference_title_pro"
+        android:summary="@string/preference_summary_pro"
+        android:persistent="false" />
+    
     <PreferenceCategory
         android:key="category_layout"
         android:title="@string/category_title_layout" />
