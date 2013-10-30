@@ -144,7 +144,8 @@ public class PhoneWindowManager extends XC_MethodHook {
 	}
 	
 	protected final Runnable mMappingRunnable = new Runnable() {
-        @Override
+        @SuppressLint("NewApi")
+		@Override
         public void run() {
         	if (!mKeyFlags.MULTI) {
         		mKeyFlags.CANCEL = true;
@@ -169,20 +170,14 @@ public class PhoneWindowManager extends XC_MethodHook {
         		
         	} else if (mKeyAction.equals("poweron")) { 
         		if(DEBUG)Common.log(TAG, "Handler: Invoking forced power on");
+
+        		if (SDK_NUMBER >= 17) {
+        			mPowerManager.wakeUp(SystemClock.uptimeMillis());
         		
-        		/*
-        		 * Using triggerKeyEvent() while the device is sleeping
-        		 * does not work on all devices. So we add this forced wakeup feature
-        		 * for these devices. 
-        		 */
-        		mWakeLock.acquire();
-        		
-        		/*
-        		 * WakeLock.acquire(timeout) causes Gingerbread to produce
-        		 * soft reboots when trying to manually release them.
-        		 * So we make our own timeout feature to avoid this.
-        		 */
-        		aquireWakelock();
+        		} else {
+        			aquireWakelock();
+        			mPowerManager.userActivity(SystemClock.uptimeMillis(), false);
+        		}
         		
         	} else if (mKeyAction.equals("poweroff")) { 
         		if(DEBUG)Common.log(TAG, "Handler: Invoking forced power off");
@@ -278,7 +273,7 @@ public class PhoneWindowManager extends XC_MethodHook {
 	private void hook_init(final MethodHookParam param) {
     	mContext = (Context) param.args[0];
     	mPowerManager = (PowerManager) mContext.getSystemService(Context.POWER_SERVICE);
-    	mWakeLock = mPowerManager.newWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager.ON_AFTER_RELEASE | PowerManager.ACQUIRE_CAUSES_WAKEUP, "PhoneWindowManagerHook");
+    	mWakeLock = mPowerManager.newWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager.SCREEN_BRIGHT_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP, "PhoneWindowManagerHook");
     	mWakeLockPartial = mPowerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "PhoneWindowManagerHookPartial");
     	mHandler = new Handler();
     	mWindowManager = param.args[1];
