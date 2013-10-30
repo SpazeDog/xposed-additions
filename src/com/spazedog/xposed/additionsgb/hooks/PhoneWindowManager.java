@@ -772,7 +772,7 @@ public class PhoneWindowManager extends XC_MethodHook {
 			
 			KeyEvent downEvent = null;
 			
-			if (SDK_NUMBER >= 16) {
+			if (SDK_NUMBER >= 10) {
 				long now = SystemClock.uptimeMillis();
 				
 		        downEvent = new KeyEvent(now, now, KeyEvent.ACTION_DOWN,
