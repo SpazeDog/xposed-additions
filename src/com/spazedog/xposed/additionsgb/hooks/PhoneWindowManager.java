@@ -405,13 +405,6 @@ public class PhoneWindowManager extends XC_MethodHook {
 				
 				setup = true;
 				
-			} else if (mKeyFlags.ONGOING && keyCode != mKeyPrimary) {
-				if(DEBUG)Common.log(TAG, "Queueing: The key code " + keyCode + " is not ours. Disabling it as we have an ongoing event");
-				
-				param.setResult(ACTION_DISABLE);
-				
-				return;
-				
 			} else {
 				if(DEBUG)Common.log(TAG, "Queueing: Starting new event on key code " + keyCode);
 				
@@ -436,9 +429,24 @@ public class PhoneWindowManager extends XC_MethodHook {
 			mWasScreenOn = isScreenOn;
 			
 			if (!Common.Remap.isKeyEnabled(mKeyCode, !isScreenOn)) {
-				if(DEBUG)Common.log(TAG, "Queueing: The " + (keyCode == mKeyPrimary ? "primary" : "secondary") + " key is not enabled, returning it to the original method");
-				
-				mKeyFlags.reset(); return;
+				if (!mKeyFlags.MULTI) {
+					if(DEBUG)Common.log(TAG, "Queueing: The " + (keyCode == mKeyPrimary ? "primary" : "secondary") + " key is not enabled, returning it to the original method");
+					
+					mKeyFlags.reset(); return;
+					
+				} else {
+					if(DEBUG)Common.log(TAG, "Queueing: The secondary key is not enabled. Converting it into a primary key and starting a new event");
+					
+					mKeyPrimary = mKeyCode = mKeySecondary;
+					mKeySecondary = 0;
+					mKeyFlags.MULTI = false;
+					
+					if (!Common.Remap.isKeyEnabled(mKeyCode, !isScreenOn)) {
+						if(DEBUG)Common.log(TAG, "Queueing: The " + (keyCode == mKeyPrimary ? "primary" : "secondary") + " key is not enabled, returning it to the original method");
+						
+						mKeyFlags.reset(); return;
+					}
+				}
 			}
 			
 			if (mIsUnlocked) {
