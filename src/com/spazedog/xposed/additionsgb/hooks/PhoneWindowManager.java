@@ -24,6 +24,7 @@ import android.widget.Toast;
 
 import com.android.internal.statusbar.IStatusBarService;
 import com.spazedog.xposed.additionsgb.Common;
+import com.spazedog.xposed.additionsgb.Common.HapticFeedbackLw;
 import com.spazedog.xposed.additionsgb.tools.XposedTools;
 
 import de.robv.android.xposed.XC_MethodHook;
@@ -88,13 +89,13 @@ public class PhoneWindowManager extends XC_MethodHook {
 	private WakeLock mWakeLock;
 	private WakeLock mWakeLockPartial;
 	private Handler mHandler;
+	HapticFeedbackLw mHapticFeedbackLw;
 	
 	private Object mRecentAppsTrigger;
 	
 	private Class<?> mActivityManagerNativeClass;
 	private Class<?> mWindowManagerPolicyClass; 
 	private Class<?> mServiceManagerClass;
-	private Class<?> mWindowStateClass;
 	private Class<?> mInputManagerClass;
 	
 	protected Boolean mInterceptKeycode = false;
@@ -253,7 +254,6 @@ public class PhoneWindowManager extends XC_MethodHook {
 		mWindowManagerPolicyClass = XposedTools.findClass("android.view.WindowManagerPolicy");
 		mActivityManagerNativeClass = XposedTools.findClass("android.app.ActivityManagerNative");
 		mServiceManagerClass = XposedTools.findClass("android.os.ServiceManager");
-		mWindowStateClass = XposedTools.findClass("android.view.WindowManagerPolicy$WindowState");
 		
 		if (SDK_NUMBER >= 16) {
 			mInputManagerClass = XposedTools.findClass("android.hardware.input.InputManager");
@@ -278,6 +278,7 @@ public class PhoneWindowManager extends XC_MethodHook {
     	mHandler = new Handler();
     	mWindowManager = param.args[1];
     	mIsUnlocked = Common.isUnlocked(mContext);
+    	mHapticFeedbackLw = new HapticFeedbackLw(mContext);
     	
     	mContext.registerReceiver(
     		new BroadcastReceiver() {
@@ -740,16 +741,8 @@ public class PhoneWindowManager extends XC_MethodHook {
 		XposedTools.callMethod(mHookedReference.get(), "showGlobalActionsDialog");
 	}
 	
-	Method xPerformHapticFeedback;
 	private void performHapticFeedback(Integer effectId) {
-		try {
-			if (xPerformHapticFeedback == null) {
-				xPerformHapticFeedback = XposedTools.findMethod(mHookedReference.get().getClass(), "performHapticFeedbackLw", mWindowStateClass, Integer.TYPE, Boolean.TYPE);
-			}
-			
-			xPerformHapticFeedback.invoke(mHookedReference.get(), null, effectId, false);
-
-		} catch (Throwable e) { e.printStackTrace(); }
+		mHapticFeedbackLw.vibrate(effectId, false);
 	}
 	
 	private void sendCloseSystemWindows(String reason) {

@@ -5,12 +5,17 @@ import java.util.List;
 import java.util.Locale;
 
 import android.annotation.SuppressLint;
+import android.app.KeyguardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.os.UserHandle;
+import android.os.Vibrator;
 import android.preference.ListPreference;
+import android.provider.Settings;
 import android.util.Log;
+import android.view.HapticFeedbackConstants;
 import android.view.KeyEvent;
 import android.widget.Toast;
 import de.robv.android.xposed.XSharedPreferences;
@@ -323,6 +328,76 @@ public final class Common {
 		
 		return manager.checkSignatures(PACKAGE_NAME, PACKAGE_NAME_PRO)
 	    		== PackageManager.SIGNATURE_MATCH;
+	}
+	
+	public static class HapticFeedbackLw {
+		private Vibrator mVibrator;
+		private Context mContext;
+		
+		private long[] mLongpressPattern = null;
+		private long[] mVirtualPattern = null;
+		
+		public HapticFeedbackLw(Context context) {
+			mVibrator = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+			mContext = context;
+			
+			for (int i=0; i < 2; i++) {
+				int[] ar = context.getResources().getIntArray( i==0 ? com.android.internal.R.array.config_longPressVibePattern : com.android.internal.R.array.config_virtualKeyVibePattern );
+				
+				if (ar == null) {
+					continue;
+				}
+				
+				if (i == 0) mLongpressPattern = new long[ar.length];
+				else mVirtualPattern = new long[ar.length];
+
+				for (int x=0; x<ar.length; x++) {
+					if (i == 0) mLongpressPattern[x] = ar[x];
+					else mVirtualPattern[x] = ar[x];
+				}
+			}
+		}
+		
+		public boolean vibrate(int effectId, boolean always) {
+			long[] pattern = null;
+			
+	        switch (effectId) {
+	            case HapticFeedbackConstants.LONG_PRESS:
+	                pattern = mLongpressPattern;
+	                break;
+	            case HapticFeedbackConstants.VIRTUAL_KEY:
+	                pattern = mVirtualPattern;
+	                break;
+	            default:
+	                return false;
+	        }
+	        
+	        return vibrate(pattern, always);
+		}
+		
+		@SuppressLint("NewApi")
+		public boolean vibrate(long[] pattern, boolean always) {
+			if (android.os.Build.VERSION.SDK_INT >= 11 && !mVibrator.hasVibrator()) {
+				return false;
+			}
+			
+			final boolean hapticEnabled = android.os.Build.VERSION.SDK_INT >= 17 ? 
+					Settings.System.getIntForUser(mContext.getContentResolver(), Settings.System.HAPTIC_FEEDBACK_ENABLED, 0, UserHandle.USER_CURRENT) != 0: 
+						 Settings.System.getInt(mContext.getContentResolver(), Settings.System.HAPTIC_FEEDBACK_ENABLED, 0) != 0;
+
+			try {
+				if (!always && (!hapticEnabled || ((KeyguardManager) mContext.getSystemService(Context.KEYGUARD_SERVICE)).inKeyguardRestrictedInputMode())) {
+					return false;
+				}
+				
+		        mVibrator.vibrate(pattern, pattern.length==1 ? 0 : -1);
+		        
+		        return true;
+				
+			} catch (Throwable e) { e.printStackTrace(); }
+			
+			return false;
+		}
 	}
 	
 	public static void log(String msg) {
