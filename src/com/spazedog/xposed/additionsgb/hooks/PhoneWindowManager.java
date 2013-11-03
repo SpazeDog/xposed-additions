@@ -301,6 +301,25 @@ public class PhoneWindowManager extends XC_MethodHook {
 	    	Common.BroadcastOptions.PERMISSION_REQUEST, 
 	    	null
 	    );
+    	
+    	/*
+    	 * Some sd-ext scripts is not done at this time
+    	 */
+    	if (!mIsUnlocked) {
+	    	mContext.registerReceiver(
+	    		new BroadcastReceiver() {
+		    		@Override
+		    		public void onReceive(Context context, Intent intent) {
+		    			mIsUnlocked = Common.isUnlocked(mContext);
+		    			
+		    			mContext.unregisterReceiver(this);
+		    		}
+		    	}, 
+		    	new IntentFilter("android.intent.action.BOOT_COMPLETED"), 
+		    	null, 
+		    	null
+	    	);
+    	}
 	}
 
 	/**
