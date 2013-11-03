@@ -3,17 +3,22 @@ package com.spazedog.xposed.additionsgb.hooks;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
+import java.util.List;
 
 import android.annotation.SuppressLint;
+import android.app.ActivityManager.RunningAppProcessInfo;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.ResolveInfo;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
+import android.os.RemoteException;
 import android.os.SystemClock;
+import android.os.UserHandle;
 import android.provider.Settings;
 import android.view.HapticFeedbackConstants;
 import android.view.InputDevice;
@@ -97,6 +102,7 @@ public class PhoneWindowManager extends XC_MethodHook {
 	private Class<?> mWindowManagerPolicyClass; 
 	private Class<?> mServiceManagerClass;
 	private Class<?> mInputManagerClass;
+	private Class<?> mProcessClass;
 	
 	protected Boolean mInterceptKeycode = false;
 	
@@ -214,6 +220,11 @@ public class PhoneWindowManager extends XC_MethodHook {
         		
         		toggleRotation();
         		
+        	} else if (mKeyAction.equals("killapp")) {
+        		if(DEBUG)Common.log(TAG, "Handler: Invoking kill foreground application");
+        		
+        		killForegroundApplication();
+        		
         	} else {
         		if(DEBUG)Common.log(TAG, "Handler: Injecting key code " + mKeyAction);
         		
@@ -254,6 +265,7 @@ public class PhoneWindowManager extends XC_MethodHook {
 		mWindowManagerPolicyClass = XposedTools.findClass("android.view.WindowManagerPolicy");
 		mActivityManagerNativeClass = XposedTools.findClass("android.app.ActivityManagerNative");
 		mServiceManagerClass = XposedTools.findClass("android.os.ServiceManager");
+		mProcessClass = XposedTools.findClass("android.os.Process");
 		
 		if (SDK_NUMBER >= 16) {
 			mInputManagerClass = XposedTools.findClass("android.hardware.input.InputManager");
@@ -929,5 +941,47 @@ public class PhoneWindowManager extends XC_MethodHook {
 			freezeRotation(-1);
 			Toast.makeText(mContext, "Rotation has been Disabled", Toast.LENGTH_SHORT).show();
 		}
+	}
+	
+	private void killForegroundApplication() {
+		try {
+	        final Intent intent = new Intent(Intent.ACTION_MAIN);
+	        intent.addCategory(Intent.CATEGORY_HOME);
+	        
+	        final ResolveInfo res = mContext.getPackageManager().resolveActivity(intent, 0);
+	        final String defaultHomePackage = res.activityInfo != null && !res.activityInfo.packageName.equals("android") ? 
+	        		res.activityInfo.packageName : 
+	        			 "com.android.launcher";
+	        
+	        Object activityManager = XposedTools.callMethod(mActivityManagerNativeClass, "getDefault");
+	        List<RunningAppProcessInfo> apps = (List<RunningAppProcessInfo>) XposedTools.callMethod(activityManager, "getRunningAppProcesses");
+	        int firstAppUid = (Integer) XposedTools.getField(mProcessClass, "FIRST_APPLICATION_UID");
+	        int lastAppUid = (Integer) XposedTools.getField(mProcessClass, "LAST_APPLICATION_UID");
+	        
+	        for (RunningAppProcessInfo appInfo : apps) {
+	        	int uid = appInfo.uid;
+	        	
+	        	if (uid >= firstAppUid && uid <= lastAppUid
+	                    && appInfo.importance == RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {
+	        		
+	        		if (appInfo.pkgList != null && (appInfo.pkgList.length > 0)) {
+	        			for (String pkg : appInfo.pkgList) {
+	        				if (!pkg.equals("com.android.systemui") && !pkg.equals(defaultHomePackage)) {
+	        					if (SDK_NUMBER >= 17) {
+	        						XposedTools.callMethod(activityManager, "forceStopPackage", pkg, UserHandle.USER_CURRENT);
+	        						
+	        					} else {
+	        						XposedTools.callMethod(activityManager, "forceStopPackage", pkg);
+	        					}
+	        				}
+	        			}
+	        			
+	        		} else {
+	        			XposedTools.callMethod(mProcessClass, "killProcess", appInfo.pid);
+	        		}
+	        	}
+	        }
+	        
+		} catch (Throwable e) { e.printStackTrace(); }
 	}
 }
