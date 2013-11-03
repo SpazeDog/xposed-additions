@@ -1,8 +1,11 @@
 package com.spazedog.xposed.additionsgb.hooks;
 
+import android.content.Context;
 import android.os.BatteryManager;
+import android.view.HapticFeedbackConstants;
 
 import com.spazedog.xposed.additionsgb.Common;
+import com.spazedog.xposed.additionsgb.Common.HapticFeedbackLw;
 import com.spazedog.xposed.additionsgb.tools.XposedTools;
 
 import de.robv.android.xposed.XC_MethodHook;
@@ -37,6 +40,7 @@ public class PowerManager {
 		
 		private Boolean mIsPowered;
 		private Integer mPlugType;
+		HapticFeedbackLw mHapticFeedbackLw;
 		
 		@Override
 		protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
@@ -44,6 +48,12 @@ public class PowerManager {
 			
 			if (OLD_SDK) {
 				parent = XposedTools.getParentObject(param.thisObject);
+			}
+			
+			if (mHapticFeedbackLw == null) {
+				mHapticFeedbackLw = new HapticFeedbackLw(
+					(Context) XposedTools.getField(OLD_SDK ? parent : param.thisObject, "mContext")
+				);
 			}
 			
 			Object batteryService = OLD_SDK ? XposedTools.getField(parent, "mBatteryService") : null;
@@ -79,6 +89,12 @@ public class PowerManager {
 							}
 
 						} else {
+							Boolean isScreenOn = (Boolean) XposedTools.callMethod(OLD_SDK ? parent : param.thisObject, "isScreenOn");
+							
+							if (powered && !isScreenOn) {
+								mHapticFeedbackLw.vibrate(new long[] {100, 200, 200, 200}, true);
+							}
+							
 							param.setResult(false);
 						}
 					}
