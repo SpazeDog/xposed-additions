@@ -54,6 +54,10 @@
 		<item>Menu</item>
 		<item>Back</item>
 		<item>Search</item>
+		<item>Camera</item>
+		<item>Camera Focus</item>
+		<item>Call</item>
+		<item>Call End</item>
 		<item>Volume Up</item>
 		<item>Volume Down</item>
 		<item>Media Play/Pause</item>
@@ -64,6 +68,10 @@
 		<item>Orientation Toggle</item>
 		<item>Orientation Left</item>
 		<item>Orientation Right</item>
+		<item>Page Down</item>
+		<item>Page Up</item>
+		<item>Zoom In</item>
+		<item>Zoom Out</item>
 	</string-array>
 	
     <string-array name="remap_actions_on_values">
@@ -75,6 +83,10 @@
 		<item>82</item>
 		<item>4</item>
 		<item>84</item>
+		<item>27</item>
+		<item>80</item>
+		<item>5</item>
+		<item>6</item>
 		<item>24</item>
 		<item>25</item>
 		<item>85</item>
@@ -85,6 +97,10 @@
 		<item>fliptoggle</item>
 		<item>flipleft</item>
 		<item>flipright</item>
+		<item>93</item>
+		<item>92</item>
+		<item>168</item>
+		<item>169</item>
 	</string-array>
 
     <string-array name="remap_actions_off_names">
