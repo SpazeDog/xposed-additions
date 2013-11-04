@@ -122,6 +122,8 @@ public class PhoneWindowManager extends XC_MethodHook {
 	
 	protected Boolean mIsUnlocked = false;
 	
+	protected Boolean mReady = false;
+	
 	protected class Flags {
 		public volatile Boolean DOWN = false;
 		public volatile Boolean CANCEL = false;
@@ -314,25 +316,21 @@ public class PhoneWindowManager extends XC_MethodHook {
 	    	Common.BroadcastOptions.PERMISSION_REQUEST, 
 	    	null
 	    );
-    	
-    	/*
-    	 * Some sd-ext scripts is not done at this time
-    	 */
-    	if (!mIsUnlocked) {
-	    	mContext.registerReceiver(
-	    		new BroadcastReceiver() {
-		    		@Override
-		    		public void onReceive(Context context, Intent intent) {
-		    			mIsUnlocked = Common.isUnlocked(mContext);
-		    			
-		    			mContext.unregisterReceiver(this);
-		    		}
-		    	}, 
-		    	new IntentFilter("android.intent.action.BOOT_COMPLETED"), 
-		    	null, 
-		    	null
-	    	);
-    	}
+
+    	mContext.registerReceiver(
+    		new BroadcastReceiver() {
+	    		@Override
+	    		public void onReceive(Context context, Intent intent) {
+	    			mIsUnlocked = Common.isUnlocked(mContext);
+	    			mReady = true;
+	    			
+	    			mContext.unregisterReceiver(this);
+	    		}
+	    	}, 
+	    	new IntentFilter("android.intent.action.BOOT_COMPLETED"), 
+	    	null, 
+	    	null
+    	);
 	}
 
 	/**
@@ -340,6 +338,15 @@ public class PhoneWindowManager extends XC_MethodHook {
 	 * ICS/JellyBean uses arguments interceptKeyBeforeQueueing(KeyEvent event, Integer policyFlags, Boolean isScreenOn)
 	 */
 	private void hook_interceptKeyBeforeQueueing(final MethodHookParam param) {
+		/*
+		 * Do nothing until the device is done booting
+		 */
+		if (!mReady) {
+			param.setResult(ACTION_DISABLE);
+			
+			return;
+		}
+		
 		final int action = (Integer) (SDK_NUMBER <= 10 ? param.args[1] : ((KeyEvent) param.args[0]).getAction());
 		final int policyFlags = (Integer) (SDK_NUMBER <= 10 ? param.args[5] : param.args[1]);
 		final int keyCode = (Integer) (SDK_NUMBER <= 10 ? param.args[3] : ((KeyEvent) param.args[0]).getKeyCode());
