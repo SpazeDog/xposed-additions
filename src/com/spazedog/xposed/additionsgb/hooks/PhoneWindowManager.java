@@ -16,7 +16,6 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
-import android.os.RemoteException;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.provider.Settings;
@@ -103,6 +102,7 @@ public class PhoneWindowManager extends XC_MethodHook {
 	private Class<?> mServiceManagerClass;
 	private Class<?> mInputManagerClass;
 	private Class<?> mProcessClass;
+	private Class<?> mWindowStateClass;
 	
 	protected Boolean mInterceptKeycode = false;
 	
@@ -266,6 +266,7 @@ public class PhoneWindowManager extends XC_MethodHook {
 		mActivityManagerNativeClass = XposedTools.findClass("android.app.ActivityManagerNative");
 		mServiceManagerClass = XposedTools.findClass("android.os.ServiceManager");
 		mProcessClass = XposedTools.findClass("android.os.Process");
+		mWindowStateClass = XposedTools.findClass("android.view.WindowManagerPolicy$WindowState");
 		
 		if (SDK_NUMBER >= 16) {
 			mInputManagerClass = XposedTools.findClass("android.hardware.input.InputManager");
@@ -503,9 +504,9 @@ public class PhoneWindowManager extends XC_MethodHook {
 			}
 			
 			releaseWakelock();
-			
+
 			if ((policyFlags & FLAG_VIRTUAL) != 0) {
-				performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+				performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
 			}
 		}
 		
@@ -772,8 +773,16 @@ public class PhoneWindowManager extends XC_MethodHook {
 		XposedTools.callMethod(mHookedReference.get(), "showGlobalActionsDialog");
 	}
 	
+	Method xPerformHapticFeedback;
 	private void performHapticFeedback(Integer effectId) {
-		mHapticFeedbackLw.vibrate(effectId, false);
+        try {
+            if (xPerformHapticFeedback == null) {
+                    xPerformHapticFeedback = XposedTools.findMethod(mHookedReference.get().getClass(), "performHapticFeedbackLw", mWindowStateClass, Integer.TYPE, Boolean.TYPE);
+            }
+            
+            xPerformHapticFeedback.invoke(mHookedReference.get(), null, effectId, false);
+
+        } catch (Throwable e) { e.printStackTrace(); }
 	}
 	
 	private void sendCloseSystemWindows(String reason) {
