@@ -28,7 +28,6 @@ import android.widget.Toast;
 
 import com.android.internal.statusbar.IStatusBarService;
 import com.spazedog.xposed.additionsgb.Common;
-import com.spazedog.xposed.additionsgb.Common.HapticFeedbackLw;
 import com.spazedog.xposed.additionsgb.tools.XposedTools;
 
 import de.robv.android.xposed.XC_MethodHook;
@@ -93,7 +92,6 @@ public class PhoneWindowManager extends XC_MethodHook {
 	private WakeLock mWakeLock;
 	private WakeLock mWakeLockPartial;
 	private Handler mHandler;
-	HapticFeedbackLw mHapticFeedbackLw;
 	
 	private Object mRecentAppsTrigger;
 	
@@ -293,7 +291,6 @@ public class PhoneWindowManager extends XC_MethodHook {
     	mHandler = new Handler();
     	mWindowManager = param.args[1];
     	mIsUnlocked = Common.isUnlocked(mContext);
-    	mHapticFeedbackLw = new HapticFeedbackLw(mContext);
     	
     	mContext.registerReceiver(
     		new BroadcastReceiver() {
@@ -513,7 +510,7 @@ public class PhoneWindowManager extends XC_MethodHook {
 			releaseWakelock();
 
 			if ((policyFlags & FLAG_VIRTUAL) != 0) {
-				performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+				performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
 			}
 		}
 		
