@@ -12,6 +12,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.ResolveInfo;
+import android.media.AudioManager;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.PowerManager;
@@ -19,6 +20,7 @@ import android.os.PowerManager.WakeLock;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.provider.Settings;
+import android.telephony.TelephonyManager;
 import android.view.HapticFeedbackConstants;
 import android.view.InputDevice;
 import android.view.KeyCharacterMap;
@@ -229,6 +231,13 @@ public class PhoneWindowManager extends XC_MethodHook {
         		if(DEBUG)Common.log(TAG, "Handler: Injecting key code " + mKeyAction);
         		
         		Integer keyCode = Integer.parseInt(mKeyAction);
+        		
+        		if (keyCode == KeyEvent.KEYCODE_ENDCALL || keyCode == KeyEvent.KEYCODE_CALL) {
+        			AudioManager manager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
+        			
+        			keyCode = manager.getMode() == AudioManager.MODE_IN_CALL || manager.getMode() == AudioManager.MODE_IN_COMMUNICATION ? 
+        					KeyEvent.KEYCODE_ENDCALL : KeyEvent.KEYCODE_CALL;
+        		}
         		
         		mKeyFlags.INJECTED = true;
 				
@@ -664,7 +673,7 @@ public class PhoneWindowManager extends XC_MethodHook {
 					} catch (Throwable e) { e.printStackTrace(); }
 				}
 			}
-			
+
 			return;
 			
 		} else {
