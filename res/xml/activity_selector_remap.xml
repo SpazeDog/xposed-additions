@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+    
+    <PreferenceCategory
+        android:key="custom_group"
+        android:title="@string/category_custom_actions"
+        android:order="1000" />
+    
+    <PreferenceCategory
+        android:key="application_group"
+        android:title="@string/category_applications"
+        android:order="1500" />
+
+</PreferenceScreen>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+    
+    <com.spazedog.xposed.additionsgb.tools.views.WidgetListPreference
+        android:key="usb_plug_preference"
+        android:title="@string/preference_title_plug_wake"
+        android:persistent="false"
+        android:widgetLayout="@layout/widget_checkbox" />
+    
+    <com.spazedog.xposed.additionsgb.tools.views.WidgetListPreference
+        android:key="usb_unplug_preference"
+        android:title="@string/preference_title_unplug_wake"
+        android:persistent="false"
+        android:widgetLayout="@layout/widget_checkbox" />
+
+</PreferenceScreen>

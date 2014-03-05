@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+    
+    <PreferenceCategory
+        android:key="actions_group"
+        android:title="@string/category_button_states">
+        
+        <com.spazedog.xposed.additionsgb.tools.views.WidgetPreference
+            android:key="state_click_preference"
+            android:title="@string/preference_state_click"
+            android:widgetLayout="@layout/widget_checkbox" />
+        
+        <com.spazedog.xposed.additionsgb.tools.views.WidgetPreference
+            android:key="state_tap_preference"
+            android:title="@string/preference_state_tap"
+            android:widgetLayout="@layout/widget_checkbox" />
+        
+        <com.spazedog.xposed.additionsgb.tools.views.WidgetPreference
+            android:key="state_press_preference"
+            android:title="@string/preference_state_press"
+            android:widgetLayout="@layout/widget_checkbox" />
+        
+    </PreferenceCategory>
+
+</PreferenceScreen>

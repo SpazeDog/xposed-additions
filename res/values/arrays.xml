@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    
+    <!-- ================================================
+         Arrays for ActivityScreenUSB
+    ================================================ -->
+	<string-array name="wakeplug_names">
+		<item>@string/array_wakeplug_on</item>
+		<item>@string/array_wakeplug_ac</item>
+		<item>@string/array_wakeplug_usb</item>
+		<item>@string/array_wakeplug_off</item>
+	</string-array>
+	
+	<string-array name="wakeplug_values">
+		<item>on</item>
+		<item>ac</item>
+		<item>usb</item>
+		<item>off</item>
+	</string-array>
+	
+    <!-- ================================================
+         Arrays for ActivityScreenRemap
+    ================================================ -->
+	<string-array name="delay_names">
+		<item>@string/array_delay_short</item>
+		<item>@string/array_delay_normal</item>
+		<item>@string/array_delay_long</item>
+	</string-array>
+	
+	<string-array name="delay_tap_values">
+		<item>75</item>
+		<item>100</item>
+		<item>150</item>
+	</string-array>
+	
+	<string-array name="delay_press_values">
+		<item>200</item>
+		<item>500</item>
+		<item>1000</item>
+	</string-array>
+    
+</resources>

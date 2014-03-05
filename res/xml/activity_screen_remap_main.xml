@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+    
+    <PreferenceCategory
+        android:key="settings_group"
+        android:title="@string/category_settings">
+        
+        <com.spazedog.xposed.additionsgb.tools.views.WidgetListPreference
+            android:key="delay_key_tap_preference"
+            android:title="@string/preference_title_delay_key_tap"
+            android:persistent="false"
+            android:entries="@array/delay_names"
+            android:entryValues="@array/delay_tap_values" />
+        
+        <com.spazedog.xposed.additionsgb.tools.views.WidgetListPreference
+            android:key="delay_key_press_preference"
+            android:title="@string/preference_title_delay_key_press"
+            android:persistent="false"
+            android:entries="@array/delay_names"
+            android:entryValues="@array/delay_press_values" />
+        
+    </PreferenceCategory>
+    
+    <PreferenceCategory
+        android:key="keys_group"
+        android:title="@string/category_keys">
+        
+        <com.spazedog.xposed.additionsgb.tools.views.WidgetPreference
+            android:key="add_key_preference"
+            android:title="@string/preference_add_key" />
+        
+    </PreferenceCategory>
+
+</PreferenceScreen>

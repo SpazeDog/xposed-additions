@@ -1,0 +1,42 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.spazedog.xposed.additionsgb"
+    android:versionCode="42"
+    android:versionName="3.0.2-2" >
+
+    <uses-sdk
+        android:minSdkVersion="9"
+        android:targetSdkVersion="19" />
+
+    <application
+        android:icon="@drawable/ic_launcher"
+        android:label="Xposed Additions"
+        android:theme="@style/AppTheme" >
+        
+        <meta-data android:value="true" android:name="xposedmodule" />
+        <meta-data android:value="30+" android:name="xposedminversion" />
+        <meta-data android:value="Additional Settings for Gingerbread and up" android:name="xposeddescription" />
+        
+        <activity
+            android:name=".ActivityMain"
+            android:label="Xposed Additions"
+            android:configChanges="orientation|screenSize" >
+
+            <intent-filter>
+                <category android:name="android.intent.category.LAUNCHER" />
+                <action android:name="android.intent.action.MAIN" />
+            </intent-filter>
+            
+        </activity>
+        
+        <activity android:label="@string/category_title_buttons" android:name=".ActivityScreenRemapMain" android:configChanges="orientation|screenSize" />
+        <activity android:label="@string/category_title_buttons" android:name=".ActivityScreenRemapKey" android:configChanges="orientation|screenSize" />
+        <activity android:label="@string/category_title_buttons" android:name=".ActivityScreenRemapCondition" android:configChanges="orientation|screenSize" />
+        <activity android:label="@string/category_title_buttons" android:name=".ActivitySelectorRemap" android:configChanges="orientation|screenSize" />
+        
+        <activity android:label="@string/category_title_usbplug" android:name=".ActivityScreenUSB" android:configChanges="orientation|screenSize" />
+        
+        <activity android:label="@string/category_title_layout" android:name=".ActivityScreenLayout" android:configChanges="orientation|screenSize" />
+        
+    </application>
+
+</manifest>

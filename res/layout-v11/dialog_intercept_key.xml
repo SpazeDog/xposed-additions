@@ -1,0 +1,65 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_gravity="fill_vertical"
+    android:gravity="fill_vertical"
+    android:orientation="vertical">
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dip"
+        android:layout_weight="1"
+        android:fadingEdge="vertical"
+        android:fastScrollEnabled="false"
+        android:textFilterEnabled="false">
+        <LinearLayout
+            android:layout_width="match_parent"
+    		android:layout_height="wrap_content"
+    		android:orientation="vertical"
+    		android:padding="10dp">
+            <LinearLayout
+	            android:layout_width="match_parent"
+	    		android:layout_height="wrap_content"
+	    		android:orientation="horizontal"
+	    		android:paddingBottom="10dp">
+	            <TextView 
+	                android:id="@+id/content_name"
+		            android:layout_width="0dip"
+		    		android:layout_height="wrap_content"
+		    		android:layout_weight="1"
+		    		android:text="@string/alert_dialog_name_intercept_key"
+		    		android:textStyle="bold" />
+	            <TextView 
+	                android:id="@+id/content_value"
+		            android:layout_width="wrap_content"
+		    		android:layout_height="wrap_content"
+	    			android:paddingRight="10dp" />
+            </LinearLayout>
+            <TextView 
+                android:id="@+id/content_text"
+	            android:layout_width="match_parent"
+	    		android:layout_height="wrap_content"
+	    		android:text="@string/alert_dialog_summary_intercept_key" />
+        </LinearLayout>
+    </ScrollView>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        style="?android:attr/buttonBarStyle"
+        android:gravity="right"
+        android:orientation="horizontal" >
+        <Button
+            android:id="@+id/button_cancel"
+            android:layout_width="0dip"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.5"
+            style="?android:attr/buttonBarButtonStyle"
+            android:text="@android:string/cancel" />
+        <Button
+            android:id="@+id/button_okay"
+            android:layout_width="0dip"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.5"
+            style="?android:attr/buttonBarButtonStyle"
+            android:text="@android:string/ok" />
+    </LinearLayout>
+</LinearLayout>

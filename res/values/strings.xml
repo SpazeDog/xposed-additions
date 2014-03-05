@@ -1,0 +1,135 @@
+<resources>
+    
+    <!-- ================================================
+         Strings for wakeplug_names array
+    ================================================ -->
+    <string name='array_wakeplug_on'>Always</string>
+    <string name='array_wakeplug_ac'>AC Connection</string>
+    <string name='array_wakeplug_usb'>USB Connection</string>
+    <string name='array_wakeplug_off'>Never</string>
+    
+    <!-- ================================================
+         Strings for delay_names array
+    ================================================ -->
+    <string name='array_delay_short'>Short</string>
+    <string name='array_delay_normal'>Normal</string>
+    <string name='array_delay_long'>Long</string>
+    
+    <!-- ================================================
+         Strings for AsyncTask Loader
+    ================================================ -->
+    <string name='task_applocation_list'>Building Application List</string>
+    
+    <!-- ================================================
+         Strings for ActivityMain
+    ================================================ -->
+    <string name='group_options'>Options</string>
+    
+    <string name='alert_title_module_disabled'>Missing System Service</string>
+	<string name='alert_text_module_disabled'>The XposedAdditions System Service is currently not enabled. If you have just updated this module, please reboot the device to activate it. Otherwise, make sure that XposedBridge is installed and that this module is enabled.</string>
+    
+    <string name='category_title_pro'>Get Pro Extension</string>
+	<string name='category_summary_pro'>Add more features with the Pro Extension</string>
+	
+	<string name='category_title_usbplug'>USB Plug/UnPlug</string>
+	<string name='category_summary_usbplug'>Change the behavier when Plugging/UnPlugging the USB cable</string>
+    
+    <string name='category_title_layout'>Layout</string>
+    <string name='category_summary_layout'>Change layout settings such as rotation options</string>
+    
+    <string name='category_title_buttons'>Buttons</string>
+    <string name='category_summary_buttons'>Configure button re-map settings</string>
+    
+    <!-- ================================================
+         Strings for ActivityScreenUSB
+    ================================================ -->
+	<string name='preference_title_plug_wake'>Wake on plug</string>
+	<string name='preference_title_unplug_wake'>Wake on unplug</string>
+	
+    <!-- ================================================
+         Strings for ActivityScreenLayout
+    ================================================ -->
+    <string name='category_app_blacklist'>Blacklist</string>
+    <string name='preference_title_rotation'>Global User Rotation</string>
+    <string name='preference_summary_rotation'>Allow all applications to rotate (Needs a Reboot)</string>
+    
+    
+    <!-- ================================================
+         Strings for ActivityScreenRemap
+    ================================================ -->
+    <string name='category_settings'>Settings</string>
+    <string name='preference_title_delay_key_tap'>Double click delay</string>
+    <string name='preference_title_delay_key_press'>Long press delay</string>
+    
+    <string name='preference_title_haptic_forced'>Force Haptic Feedback</string>
+    <string name='preference_summary_haptic_forced'>Enable this if your device has problem detecting this as a virtual key when using the module</string>
+    
+    <string name='category_conditions'>Conditions</string>
+    <string name='preference_add_condition'>Add new Condition</string>
+    
+    <string name='category_action'>Actions</string>
+    <string name='preference_add_action'>Add new Action</string>
+    
+    <string name='category_keys'>Keys</string>
+    <string name='category_keys_secondary'>Secondary Keys</string>
+    <string name='preference_add_key'>Add new Key</string>
+    
+    <string name='category_button_states'>Button Actions</string>
+    <string name="preference_state_click">Click Action</string>
+    <string name="preference_state_tap">Double Tap Action</string>
+    <string name="preference_state_press">Long Press Action</string>
+
+    <string name="preference_condition_count_$0">No Conditions</string>
+    <string name="preference_condition_count_$1">%1$d Condition</string>
+    <string name="preference_condition_count">%1$d Conditions</string>
+    
+    <string name="preference_action_count_$0">No Active Actions</string>
+    <string name="preference_action_count_$1">%1$d Active Action</string>
+    <string name="preference_action_count">%1$d Active Actions</string>
+    
+    <string name='alert_dialog_name_intercept_key'>Key Code</string>
+	<string name='alert_dialog_title_intercept_key'>Intercept Key Code</string>
+	<string name='alert_dialog_summary_intercept_key'>Press the key that you wish to add</string>
+	<string name='alert_dialog_summary_intercept_key_second'>Press another to add a secondary key</string>
+	<string name='alert_dialog_title_key_exists'>The key already exists in the collection</string>
+	
+	<string name="condition_type_$on">Screen On</string>
+	<string name="condition_type_$off">Screen Off</string>
+	<string name="condition_type_$guard">Lock Screen</string>
+    
+    <!-- ================================================
+         Strings for ActivitySelectorRemap
+    ================================================ -->
+    <string name='category_applications'>Applications</string>
+    <string name='category_custom_actions'>Custom Actions</string>
+    
+    <string name='text_key'>Key: %1$s</string>
+    
+    <!-- ================================================
+         Strings for Common
+    ================================================ -->
+    <string name='remap_title_disabled'>Disabled</string>
+    <string name='remap_summary_disabled'>Do not perform any actions</string>
+    
+    <string name='remap_title_dismissguard'>Unlock Device</string>
+    <string name='remap_summary_dismissguard'>Unlock the device when Lock Screen is showing</string>
+    
+    <string name='remap_title_recentapps'>Recent Applications</string>
+    <string name='remap_summary_recentapps'>Toggle the Recent Application List</string>
+    
+    <string name='remap_title_powermenu'>Power Menu</string>
+    <string name='remap_summary_powermenu'>Toggle the Power Menu</string>
+    
+    <string name='remap_title_fliptoggle'>Orientation Toggle</string>
+    <string name='remap_summary_fliptoggle'>Toggle on/off state of the orientation settings</string>
+    
+    <string name='remap_title_flipleft'>Orientation Left</string>
+    <string name='remap_summary_flipleft'>Flip the display once to the left</string>
+    
+    <string name='remap_title_flipright'>Orientation Right</string>
+    <string name='remap_summary_flipright'>Flip the display once to the right</string>
+    
+    <string name='remap_title_killapp'>Kill Application</string>
+    <string name='remap_summary_killapp'>Kill the current foreground Application</string>
+	
+</resources>
