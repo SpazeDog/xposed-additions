@@ -596,11 +596,7 @@ public class PhoneWindowManager {
 		final Boolean isShowing = (Boolean) ReflectTools.getReflectClass(keyguardMediator).locateMethod("isShowing").invoke(keyguardMediator);
 		
 		if (isShowing) {
-			mHandler.post(new Runnable() {
-				public void run() {
-					ReflectTools.getReflectClass(keyguardMediator).locateMethod("keyguardDone", ReflectTools.MEMBER_MATCH_FAST, Boolean.TYPE, Boolean.TYPE).invoke(keyguardMediator, false, false, true);
-				}
-			});
+			ReflectTools.getReflectClass(keyguardMediator).locateMethod("keyguardDone", ReflectTools.MEMBER_MATCH_FAST, Boolean.TYPE, Boolean.TYPE).invoke(keyguardMediator, false, false, true);
 		}
 	}
 	
@@ -637,8 +633,11 @@ public class PhoneWindowManager {
 	protected void launchApplication(String packageName) {
 		Intent intent = mContext.getPackageManager().getLaunchIntentForPackage(packageName);
 		
+		keyGuardDismiss();
+		
 		if (intent != null) {
 			intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+			intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 			
 		} else {
 			/*
