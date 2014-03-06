@@ -75,6 +75,7 @@ public class ActivityScreenRemapMain extends PreferenceActivity implements OnPre
     protected void onStop() {
     	super.onStop();
     	
+    	mPreferences.commit();
     	mPreferences = null;
     }
     

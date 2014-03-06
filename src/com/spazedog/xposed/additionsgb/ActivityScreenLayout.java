@@ -93,6 +93,7 @@ public class ActivityScreenLayout extends PreferenceActivity {
     protected void onStop() {
     	super.onStop();
     	
+    	mPreferences.commit();
     	mPreferences = null;
     }
     

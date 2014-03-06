@@ -68,6 +68,7 @@ public class ActivityScreenUSB extends PreferenceActivity implements OnPreferenc
     protected void onStop() {
     	super.onStop();
     	
+    	mPreferences.commit();
     	mPreferences = null;
     }
     

@@ -79,6 +79,7 @@ public class ActivityMain extends PreferenceActivity {
     protected void onStop() {
     	super.onStop();
     	
+    	mPreferences.commit();
     	mPreferences = null;
     }
     
