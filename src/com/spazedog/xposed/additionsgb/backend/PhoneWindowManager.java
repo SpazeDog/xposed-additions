@@ -42,6 +42,7 @@ import android.provider.Settings;
 import android.util.Log;
 import android.view.HapticFeedbackConstants;
 import android.view.InputDevice;
+import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
 import android.view.Surface;
 import android.view.ViewConfiguration;
@@ -517,10 +518,11 @@ public class PhoneWindowManager {
 									.locateMethod("injectInputEventNoWait", ReflectTools.MEMBER_MATCH_FAST, KeyEvent.class);
 					}
 					
+					int device = SDK_NEW_CHARACTERMAP ? KeyCharacterMap.VIRTUAL_KEYBOARD : 0;
 					long now = SystemClock.uptimeMillis();
 					KeyEvent event = cancel ? 
-							new KeyEvent(now, now, KeyEvent.ACTION_UP, keyCode, 1, 0, 0, 0, KeyEvent.FLAG_FROM_SYSTEM|FLAG_INJECTED|KeyEvent.FLAG_CANCELED|KeyEvent.FLAG_CANCELED_LONG_PRESS, InputDevice.SOURCE_KEYBOARD) : 
-								new KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyCode, 0, 0, 0, 0, KeyEvent.FLAG_FROM_SYSTEM|FLAG_INJECTED, InputDevice.SOURCE_KEYBOARD);
+							new KeyEvent(now, now, KeyEvent.ACTION_UP, keyCode, 1, 0, device, 0, KeyEvent.FLAG_FROM_SYSTEM|FLAG_INJECTED|KeyEvent.FLAG_CANCELED|KeyEvent.FLAG_CANCELED_LONG_PRESS, InputDevice.SOURCE_KEYBOARD) : 
+								new KeyEvent(now, now, KeyEvent.ACTION_DOWN, keyCode, 0, 0, device, 0, KeyEvent.FLAG_FROM_SYSTEM|FLAG_INJECTED, InputDevice.SOURCE_KEYBOARD);
 					
 					if (SDK_HAS_HARDWARE_INPUT_MANAGER) {
 						xInjectInputEvent.invoke(mInputManager, false, event, INJECT_INPUT_EVENT_MODE_ASYNC);
