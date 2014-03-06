@@ -287,7 +287,7 @@ public final class Common {
 				case KeyEvent.KEYCODE_MEDIA_PLAY: return "Media Play";
 				case KeyEvent.KEYCODE_MEDIA_PAUSE: return "Media Pause";
 				case KeyEvent.KEYCODE_MEDIA_NEXT: return "Media Next";
-				case KeyEvent.KEYCODE_MEDIA_FAST_FORWARD: return "Media Fast Farward";
+				case KeyEvent.KEYCODE_MEDIA_FAST_FORWARD: return "Media Fast Forward";
 				case KeyEvent.KEYCODE_HOME: return "Home";
 				case KeyEvent.KEYCODE_FUNCTION: return "Function";
 				case KeyEvent.KEYCODE_FOCUS: return "Camera Focus";
@@ -313,7 +313,7 @@ public final class Common {
 			if (android.os.Build.VERSION.SDK_INT >= 11) {
 				switch (keyCode) {
 					case KeyEvent.KEYCODE_VOLUME_MUTE: return "Volume Mute";
-					case KeyEvent.KEYCODE_ZOOM_OUT: return "zoom Out";
+					case KeyEvent.KEYCODE_ZOOM_OUT: return "Zoom Out";
 					case KeyEvent.KEYCODE_ZOOM_IN: return "Zoom In";
 				}
 			}
