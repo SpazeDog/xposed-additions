@@ -125,7 +125,7 @@ public class ActivitySelectorRemap extends PreferenceActivity implements OnPrefe
     		}
     		
 			if (mPreferences.isPackageUnlocked() && !("add_action".equals(mAction) && "off".equals(getIntent().getStringExtra("condition")))) {
-				loadApplicationList.execute(this.getApplicationContext());
+				findPreference("load_apps_preference").setOnPreferenceClickListener(this);
 				
 			} else {
 				preferenceScreen.removePreference(findPreference("application_group"));
@@ -139,12 +139,17 @@ public class ActivitySelectorRemap extends PreferenceActivity implements OnPrefe
 		
 		@Override
 		protected void onPreExecute() {
-			mProgress = ProgressDialog.show(ActivitySelectorRemap.this, "", getResources().getString(R.string.task_applocation_list) + "...");
+			mProgress = new ProgressDialog(ActivitySelectorRemap.this);
+			mProgress.setMessage(getResources().getString(R.string.task_applocation_list));
+			mProgress.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+			mProgress.setCancelable(false);
+			mProgress.setCanceledOnTouchOutside(false);
+			mProgress.show();
 		}
 
 		@Override
 		protected List<AppInfo> doInBackground(Object... args) {
-			return Common.loadApplicationList( (Context) args[0] );
+			return Common.AppInfo.loadApplicationList((Context) args[0], mProgress);
 		}
 		
 		@Override
@@ -155,29 +160,40 @@ public class ActivitySelectorRemap extends PreferenceActivity implements OnPrefe
 				AppInfo appInfo = packages.get(i);
 				category.addPreference(
 						getSelectPreference(
-								appInfo.label,
-								appInfo.name,
-								appInfo.name,
-								appInfo.icon != null ? appInfo.icon.newDrawable(getResources()) : null,
+								appInfo.getLabel(),
+								appInfo.getName(),
+								appInfo.getName(),
+								appInfo.getIcon() != null ? appInfo.getIcon() : null,
 								null
 						)
 				);
 			}
 			
-			if (mProgress != null) {
-				mProgress.dismiss();
+			if (mProgress != null && mProgress.isShowing()) {
+				try {
+					mProgress.dismiss();
+					
+				} catch(Throwable e) {}
 			}
 		}
 	};
 	
 	@Override
 	public boolean onPreferenceClick(Preference preference) {
-		Intent intent = getIntent();
-		intent.putExtra("result", (String) ((IWidgetPreference) preference).getTag());
-		
-		setResult(RESULT_OK, intent);
-		
-		finish();
+		if ("load_apps_preference".equals(preference.getKey())) {
+			PreferenceCategory category = (PreferenceCategory) findPreference("application_group");
+			category.removePreference(preference);
+			
+			loadApplicationList.execute(this.getApplicationContext()); return true;
+			
+		} else {
+			Intent intent = getIntent();
+			intent.putExtra("result", (String) ((IWidgetPreference) preference).getTag());
+			
+			setResult(RESULT_OK, intent);
+			
+			finish();
+		}
 		
 		return false;
 	}

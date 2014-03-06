@@ -9,6 +9,12 @@
     <PreferenceCategory
         android:key="application_group"
         android:title="@string/category_applications"
-        android:order="1500" />
+        android:order="1500">
+        
+        <Preference 
+        	android:key="load_apps_preference"
+        	android:title="@string/preference_load_apps" />
+        
+    </PreferenceCategory>
 
 </PreferenceScreen>

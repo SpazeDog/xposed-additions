@@ -19,17 +19,20 @@
 
 package com.spazedog.xposed.additionsgb;
 
+import java.text.Collator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.Drawable.ConstantState;
 import android.os.Build;
 import android.text.TextUtils;
@@ -50,14 +53,6 @@ public final class Common {
 	public static final String XSERVICE_BROADCAST = PACKAGE_NAME + ".filters.XSERVICE";
 	
 	public static final String PREFERENCE_FILE = "config";
-	
-	public static List<AppInfo> oPackageListCache;
-	private static List<String> oPackageBlackList = new ArrayList<String>(1);
-	
-	static {
-		oPackageBlackList.add("com.android.systemui");
-		oPackageBlackList.add("android");
-	}
 	
 	public static final class Index {
 		public static final class integer {
@@ -369,38 +364,65 @@ public final class Common {
 		return id;
 	}
 	
-	public static List<AppInfo> loadApplicationList(Context context) {
-		if (oPackageListCache == null) {
-			oPackageListCache = new ArrayList<AppInfo>();
+	public static class AppInfo implements Comparable<AppInfo> {
+		
+		private Drawable mIcon;
+		private String mName;
+		private String mLabel;
+		
+		public static List<AppInfo> loadApplicationList(Context context, ProgressDialog progress) {
+			List<AppInfo> appList = new ArrayList<AppInfo>();
 			
 			PackageManager packageManager = context.getPackageManager();
-			List<PackageInfo> packages = packageManager.getInstalledPackages(0);
+			List<ApplicationInfo> packages = packageManager.getInstalledApplications(PackageManager.GET_META_DATA);
+			
+			if (progress != null) {
+				progress.setMax(packages.size());
+			}
 			
 			for(int i=0; i < packages.size(); i++) {
-				PackageInfo packageInfo = packages.get(i);
-				
-				if (!oPackageBlackList.contains(packageInfo.packageName)) {
-					AppInfo appInfo = new AppInfo();
-	
-					if (android.os.Build.VERSION.SDK_INT >= 11) {
-						appInfo.icon = packageInfo.applicationInfo.loadIcon(packageManager).getConstantState();
-					}
-					
-					appInfo.label = packageInfo.applicationInfo.loadLabel(packageManager).toString();
-					appInfo.name = packageInfo.packageName;
-					
-					oPackageListCache.add(appInfo);
+				if (progress != null) {
+					progress.setProgress( (i+1) );
 				}
+				
+				appList.add(new AppInfo(context, packages.get(i)));
 			}
+			
+			return appList;
 		}
 		
-		return oPackageListCache;
-	}
-	
-	public static class AppInfo {
-		public String name;
-		public String label;
-		public ConstantState icon;
+		private AppInfo(Context context, ApplicationInfo app) {
+			PackageManager packageManager = context.getPackageManager();
+			
+			/*
+			 * Gingerbread can't display pictures in default preferences, 
+			 * so we have no reason for loading them.
+			 */
+			if (android.os.Build.VERSION.SDK_INT >= 11) {
+				mIcon = app.loadIcon(packageManager);
+			}
+			
+			mName = app.packageName;
+			mLabel = (String) app.loadLabel(packageManager);
+		}
+		
+		@Override
+		public int compareTo(AppInfo comparible) {
+			return Collator.getInstance(Locale.getDefault()).
+					compare(mLabel, comparible.mLabel);
+		}
+		
+		public Drawable getIcon() {
+			return mIcon;
+		}
+		
+		public String getName() {
+			return mName;
+		}
+		
+		public String getLabel() {
+			return mLabel;
+		}
 	}
 	
 	public static Boolean debug() {

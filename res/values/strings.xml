@@ -1,5 +1,7 @@
 <resources>
     
+    <string name='preference_load_apps'>Load Application List</string>
+    
     <!-- ================================================
          Strings for wakeplug_names array
     ================================================ -->

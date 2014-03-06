@@ -25,14 +25,12 @@ import java.util.List;
 import android.annotation.TargetApi;
 import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
-import android.graphics.drawable.Drawable.ConstantState;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
 import android.preference.Preference;
+import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceScreen;
@@ -41,7 +39,7 @@ import com.spazedog.xposed.additionsgb.Common.AppInfo;
 import com.spazedog.xposed.additionsgb.Common.Index;
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
 
-public class ActivityScreenLayout extends PreferenceActivity {
+public class ActivityScreenLayout extends PreferenceActivity implements OnPreferenceClickListener {
 	
 	private XServiceManager mPreferences;
 	
@@ -108,7 +106,7 @@ public class ActivityScreenLayout extends PreferenceActivity {
     			
     			mBlacklist = (ArrayList<String>) mPreferences.getStringArray(Index.array.key.layoutRotationBlacklist, Index.array.value.layoutRotationBlacklist);
     			
-    			loadApplicationList.execute(this.getApplicationContext());
+    			findPreference("load_apps_preference").setOnPreferenceClickListener(this);
     			
     		} else {
     			getPreferenceScreen().removePreference( findPreference("app_blacklist_group") );
@@ -143,18 +141,37 @@ public class ActivityScreenLayout extends PreferenceActivity {
 		return true;
 	}
 	
+	@Override
+	public boolean onPreferenceClick(Preference preference) {
+		if (preference.getKey().equals("load_apps_preference")) {
+			PreferenceCategory category = (PreferenceCategory) findPreference("app_blacklist_group");
+			category.removePreference(preference);
+			
+			loadApplicationList.execute(this.getApplicationContext());
+			
+			return true;
+		}
+		
+		return false;
+	}
+	
 	protected AsyncTask<Object, Void, List<AppInfo>> loadApplicationList = new AsyncTask<Object, Void, List<AppInfo>>() {
 		
 		ProgressDialog mProgress;
 		
 		@Override
 		protected void onPreExecute() {
-			mProgress = ProgressDialog.show(ActivityScreenLayout.this, "", getResources().getString(R.string.task_applocation_list) + "...");
+			mProgress = new ProgressDialog(ActivityScreenLayout.this);
+			mProgress.setMessage(getResources().getString(R.string.task_applocation_list));
+			mProgress.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+			mProgress.setCancelable(false);
+			mProgress.setCanceledOnTouchOutside(false);
+			mProgress.show();
 		}
 
 		@Override
 		protected List<AppInfo> doInBackground(Object... args) {
-			return Common.loadApplicationList( (Context) args[0] );
+			return Common.AppInfo.loadApplicationList((Context) args[0], mProgress);
 		}
 		
 		@TargetApi(Build.VERSION_CODES.HONEYCOMB)
@@ -165,22 +182,25 @@ public class ActivityScreenLayout extends PreferenceActivity {
 					AppInfo appInfo = packages.get(i);
 					
 					CheckBoxPreference preference = new CheckBoxPreference(ActivityScreenLayout.this);
-					preference.setTitle(appInfo.label);
-					preference.setSummary(appInfo.name);
+					preference.setTitle(appInfo.getLabel());
+					preference.setSummary(appInfo.getName());
 					preference.setKey("application");
 					preference.setPersistent(false);
-					preference.setChecked( mBlacklist.contains(appInfo.name) );
+					preference.setChecked( mBlacklist.contains(appInfo.getName()) );
 					
-					if (appInfo.icon != null) {
-						preference.setIcon(appInfo.icon.newDrawable(getResources()));
+					if (appInfo.getIcon() != null) {
+						preference.setIcon(appInfo.getIcon());
 					}
 					
 					mBlacklistCategory.addPreference(preference);
 				}
 			}
 			
-			if (mProgress != null) {
-				mProgress.dismiss();
+			if (mProgress != null && mProgress.isShowing()) {
+				try {
+					mProgress.dismiss();
+					
+				} catch(Throwable e) {}
 			}
 		}
 	};
