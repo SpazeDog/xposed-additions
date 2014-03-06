@@ -56,6 +56,8 @@ public class XServiceManager {
 	
 	private Boolean mIsUnlocked;
 	
+	private Boolean isReady;
+	
 	private Map<String, Object> mData = new HashMap<String, Object>();
 	
 	private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
@@ -83,7 +85,7 @@ public class XServiceManager {
 					} catch (RemoteException e) { handleRemoteException(e); }
 					
 				} else {
-					if(Common.DEBUG) Log.d(TAG, "Removing unused BroadcastReceiver for '" + context.getPackageName() + "'");
+					if(Common.debug()) Log.d(TAG, "Removing unused BroadcastReceiver for '" + context.getPackageName() + "'");
 					
 					context.unregisterReceiver(this);
 				}
@@ -123,7 +125,7 @@ public class XServiceManager {
 	private XServiceManager(){}
 	
 	public void registerContext(Context context) {
-		if(Common.DEBUG) Log.d(TAG, "Adding Context and BroadcastReceiver to '" + context.getPackageName() + "' instance");
+		if(Common.debug()) Log.d(TAG, "Adding Context and BroadcastReceiver to '" + context.getPackageName() + "' instance");
 		
 		/*
 		 * The outer most System Context returns NULL on getApplicationContext()
@@ -226,12 +228,12 @@ public class XServiceManager {
 						group == null && arrKey.endsWith("#" + key)) {
 					
 					try {
-						if(Common.DEBUG) Log.d(TAG, "Removing group array '" + arrKey + "'");
+						if(Common.debug()) Log.d(TAG, "Removing group array '" + arrKey + "'");
 						
 						mService.remove(arrKey);
 						
 					} catch (RemoteException e) { 
-						if(Common.DEBUG) Log.d(TAG, "The group array '" + arrKey + "' could not be removed");
+						if(Common.debug()) Log.d(TAG, "The group array '" + arrKey + "' could not be removed");
 						
 						handleRemoteException(e); 
 						status = false; 
@@ -242,7 +244,7 @@ public class XServiceManager {
 			return status;
 			
 		} catch (RemoteException e) { 
-			if(Common.DEBUG) Log.d(TAG, "It was not possible to get all group keys in order to remove " + (group == null ? "" : group) + "#" + (key == null ? "" : key));
+			if(Common.debug()) Log.d(TAG, "It was not possible to get all group keys in order to remove " + (group == null ? "" : group) + "#" + (key == null ? "" : key));
 			
 			handleRemoteException(e); 
 		}
@@ -257,7 +259,7 @@ public class XServiceManager {
 	public Integer getInt(String key, Integer defaultValue) {
 		try {
 			if (!mUseCache) {
-				if(Common.DEBUG) Log.d(TAG, "Retrieving preference Integer '" + key + "' via IPC");
+				if(Common.debug()) Log.d(TAG, "Retrieving preference Integer '" + key + "' via IPC");
 				
 				return mService.getInt(key, defaultValue);
 				
@@ -265,7 +267,7 @@ public class XServiceManager {
 				mData.put(key, mService.getInt(key, defaultValue));
 			}
 			
-			if(Common.DEBUG) Log.d(TAG, "Retrieving preference Integer '" + key + "' from Cache");
+			if(Common.debug()) Log.d(TAG, "Retrieving preference Integer '" + key + "' from Cache");
 			
 			return (Integer) mData.get(key);
 			
@@ -279,7 +281,7 @@ public class XServiceManager {
 	public Boolean getBoolean(String key, Boolean defaultValue) {
 		try {
 			if (!mUseCache) {
-				if(Common.DEBUG) Log.d(TAG, "Retrieving preference Boolean '" + key + "' via IPC");
+				if(Common.debug()) Log.d(TAG, "Retrieving preference Boolean '" + key + "' via IPC");
 				
 				return mService.getBoolean(key, defaultValue);
 				
@@ -287,7 +289,7 @@ public class XServiceManager {
 				mData.put(key, mService.getBoolean(key, defaultValue));
 			}
 			
-			if(Common.DEBUG) Log.d(TAG, "Retrieving preference Boolean '" + key + "' from Cache");
+			if(Common.debug()) Log.d(TAG, "Retrieving preference Boolean '" + key + "' from Cache");
 			
 			return (Boolean) mData.get(key);
 			
@@ -302,7 +304,7 @@ public class XServiceManager {
 	public List<String> getStringArray(String key, ArrayList<String> defaultValue) {
 		try {
 			if (!mUseCache) {
-				if(Common.DEBUG) Log.d(TAG, "Retrieving preference StringArray '" + key + "' via IPC");
+				if(Common.debug()) Log.d(TAG, "Retrieving preference StringArray '" + key + "' via IPC");
 				
 				return mService.getStringArray(key, defaultValue);
 				
@@ -310,7 +312,7 @@ public class XServiceManager {
 				mData.put(key, mService.getStringArray(key, defaultValue));
 			}
 			
-			if(Common.DEBUG) Log.d(TAG, "Retrieving preference StringArray '" + key + "' from Cache");
+			if(Common.debug()) Log.d(TAG, "Retrieving preference StringArray '" + key + "' from Cache");
 			
 			return (List<String>) mData.get(key);
 			
@@ -320,7 +322,7 @@ public class XServiceManager {
 	public String getString(String key, String defaultValue) {
 		try {
 			if (!mUseCache) {
-				if(Common.DEBUG) Log.d(TAG, "Retrieving preference String '" + key + "' via IPC");
+				if(Common.debug()) Log.d(TAG, "Retrieving preference String '" + key + "' via IPC");
 				
 				return mService.getString(key, defaultValue);
 				
@@ -328,7 +330,7 @@ public class XServiceManager {
 				mData.put(key, mService.getString(key, defaultValue));
 			}
 			
-			if(Common.DEBUG) Log.d(TAG, "Retrieving preference String '" + key + "' from Cache");
+			if(Common.debug()) Log.d(TAG, "Retrieving preference String '" + key + "' from Cache");
 			
 			return (String) mData.get(key);
 			
@@ -455,5 +457,20 @@ public class XServiceManager {
 		}
 		
 		return mIsUnlocked;
+	}
+	
+	public Boolean isServiceReady() {
+		if (isReady == null) {
+			try {
+				if (mService.isReady()) {
+					isReady = true;
+				}
+			
+			} catch (RemoteException e) {
+				handleRemoteException(e);
+			}
+		}
+		
+		return isReady != null && isReady;
 	}
 }

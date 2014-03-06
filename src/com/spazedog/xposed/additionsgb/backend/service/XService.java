@@ -68,6 +68,8 @@ public final class XService extends IXService.Stub {
 	private Map<String, Boolean> mCachedPreserve = new HashMap<String, Boolean>();
 	private Boolean mCachedUpdated = false;
 	
+	private Boolean mIsReady = false;
+	
 	private ExecutorService mThreadExecuter = Executors.newSingleThreadExecutor();
 	
 	private static class PREFERENCE {
@@ -260,6 +262,8 @@ public final class XService extends IXService.Stub {
 			intentFilter.addDataScheme("package");
 			
 			mContextSystem.registerReceiver(applicationNotifier, intentFilter);
+			
+			mIsReady = true;
 		}
 	};
 	
@@ -501,6 +505,11 @@ public final class XService extends IXService.Stub {
 	public boolean isUnlocked() {
 		return mContextSystem.getPackageManager()
 				.checkSignatures(Common.PACKAGE_NAME, Common.PACKAGE_NAME_PRO) == PackageManager.SIGNATURE_MATCH;
+	}
+	
+	@Override
+	public boolean isReady() {
+		return mIsReady;
 	}
 	
 	@SuppressWarnings("unchecked")

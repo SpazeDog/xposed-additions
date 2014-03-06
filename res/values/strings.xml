@@ -40,6 +40,9 @@
     <string name='category_title_buttons'>Buttons</string>
     <string name='category_summary_buttons'>Configure button re-map settings</string>
     
+    <string name='preference_title_debug'>Enable Debug</string>
+    <string name='preference_summary_debug'>Generate log entries of module events (Requires Reboot).</string>
+    
     <!-- ================================================
          Strings for ActivityScreenUSB
     ================================================ -->

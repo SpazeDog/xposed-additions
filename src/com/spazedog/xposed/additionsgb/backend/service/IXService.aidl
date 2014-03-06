@@ -42,4 +42,6 @@ interface IXService {
 	void commit();
 	
 	boolean isUnlocked();
+	
+	boolean isReady();
 }

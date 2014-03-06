@@ -126,7 +126,7 @@ public class PhoneWindowManager {
 	protected XC_MethodHook hook_constructor = new XC_MethodHook() {
 		@Override
 		protected final void afterHookedMethod(final MethodHookParam param) {
-			if(Common.DEBUG) Log.d(TAG, "Handling construct of the Window Manager instance");
+			if(Common.debug()) Log.d(TAG, "Handling construct of the Window Manager instance");
 			
 			ReflectClass wmp = ReflectTools.getReflectClass("android.view.WindowManagerPolicy");
 			ReflectClass process = ReflectTools.getReflectClass("android.os.Process");
@@ -253,7 +253,7 @@ public class PhoneWindowManager {
 			}
 			
 			synchronized(mLockQueueing) {
-				if(Common.DEBUG) Log.d(TAG, "Queueing: " + (down ? "Starting" : "Stopping") + " event on the key code " + keyCode);
+				if(Common.debug()) Log.d(TAG, "Queueing: " + (down ? "Starting" : "Stopping") + " event on the key code " + keyCode);
 				
 				if (down && isVirtual) {
 					performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
@@ -281,7 +281,7 @@ public class PhoneWindowManager {
 						mKeyConfig.registerOriginalHandler(param.method, cloneArguments(param.args));
 						
 						if (!mKeyFlags.isRepeated()) {
-							if(Common.DEBUG) Log.d(TAG, "  - Configuring the key");
+							if(Common.debug()) Log.d(TAG, "  - Configuring the key");
 							
 							mWasScreenOn = isScreenOn;
 							
@@ -313,7 +313,7 @@ public class PhoneWindowManager {
 						param.setResult(ACTION_PASS_QUEUEING);
 						
 					} else if (mKeyFlags.getInternal() > 1) {
-						if(Common.DEBUG) Log.d(TAG, "  - Returning default long press event to native handler");
+						if(Common.debug()) Log.d(TAG, "  - Returning default long press event to native handler");
 						
 						return;
 					}
@@ -366,11 +366,11 @@ public class PhoneWindowManager {
 			}
 			
 			if ((down && repeatCount == 0) || !down) {
-				if(Common.DEBUG) Log.d(TAG, "Dispatching: " + (down ? "Starting" : "Stopping") + " event on the key code " + keyCode);
+				if(Common.debug()) Log.d(TAG, "Dispatching: " + (down ? "Starting" : "Stopping") + " event on the key code " + keyCode);
 			}
 			
 			if (down && mKeyFlags.getInternal() == 1 && (eventFlags & KeyEvent.FLAG_LONG_PRESS) != 0) {
-				if(Common.DEBUG) Log.d(TAG, "  - Event has been supressed by default long press...");
+				if(Common.debug()) Log.d(TAG, "  - Event has been supressed by default long press...");
 				
 				mKeyFlags.internal();
 				
@@ -382,13 +382,13 @@ public class PhoneWindowManager {
 					param.setResult(ACTION_DISABLE_DISPATCHING);
 					
 				} else {
-					if(Common.DEBUG) Log.d(TAG, "  - Repeating event...");
+					if(Common.debug()) Log.d(TAG, "  - Repeating event...");
 				}
 				
 				return;
 				
 			} else if (down && !mKeyFlags.isRepeated()) {
-				if(Common.DEBUG) Log.d(TAG, "  - Starting long press delay");
+				if(Common.debug()) Log.d(TAG, "  - Starting long press delay");
 				
 				Boolean wasMulti = mKeyFlags.isMulti();
 				Integer curDelay = 0;
@@ -408,7 +408,7 @@ public class PhoneWindowManager {
 				synchronized(mLockQueueing) {
 					if (mKeyFlags.isKeyDown() && keyCode == mKeyFlags.getCurrentKey() && wasMulti == mKeyFlags.isMulti()) {
 						if (mKeyConfig.hasLongPressAction()) {
-							if(Common.DEBUG) Log.d(TAG, "  - Invoking mapped long press action '" + mKeyConfig.getLongPressAction() + "'");
+							if(Common.debug()) Log.d(TAG, "  - Invoking mapped long press action '" + mKeyConfig.getLongPressAction() + "'");
 							
 							performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
 							handleKeyAction(mKeyConfig.getLongPressAction(), keyCode);
@@ -416,7 +416,7 @@ public class PhoneWindowManager {
 							mKeyFlags.finish();
 							
 						} else {
-							if(Common.DEBUG) Log.d(TAG, "  - Invoking default long press action");
+							if(Common.debug()) Log.d(TAG, "  - Invoking default long press action");
 							
 							mKeyConfig.invokeOriginalHandler();
 							
@@ -428,7 +428,7 @@ public class PhoneWindowManager {
 				}
 				
 			} else if (down) {
-				if(Common.DEBUG) Log.d(TAG, "  - Invoking double tap action '" + mKeyConfig.getDoubleTapAction() + "'");
+				if(Common.debug()) Log.d(TAG, "  - Invoking double tap action '" + mKeyConfig.getDoubleTapAction() + "'");
 				
 				handleKeyAction(mKeyConfig.getDoubleTapAction(), keyCode);
 				
@@ -436,7 +436,7 @@ public class PhoneWindowManager {
 
 			} else {
 				if (mKeyConfig.hasDoubleTapAction()) {
-					if(Common.DEBUG) Log.d(TAG, "  - Starting double tap delay");
+					if(Common.debug()) Log.d(TAG, "  - Starting double tap delay");
 					
 					int curDelay = 0;
 					
@@ -454,12 +454,12 @@ public class PhoneWindowManager {
 				synchronized(mLockQueueing) {
 					if (!mKeyFlags.isKeyDown() && mKeyFlags.getCurrentKey() == keyCode) {
 						if (mKeyFlags.getInternal() == 1) {
-							if(Common.DEBUG) Log.d(TAG, "  - Canceling default long press event");
+							if(Common.debug()) Log.d(TAG, "  - Canceling default long press event");
 							
 							injectKeyEvent(keyCode, true);
 						}
 						
-						if(Common.DEBUG) Log.d(TAG, "  - Invoking click action '" + mKeyConfig.getClickAction() + "'");
+						if(Common.debug()) Log.d(TAG, "  - Invoking click action '" + mKeyConfig.getClickAction() + "'");
 						
 						handleKeyAction(mKeyConfig.getClickAction(), keyCode);
 						
@@ -653,13 +653,13 @@ public class PhoneWindowManager {
 	}
 	
 	protected void sendCloseSystemWindows(String reason) {
-		if(Common.DEBUG) Log.d(TAG, "Closing all system windows");
+		if(Common.debug()) Log.d(TAG, "Closing all system windows");
 		
 		try {
 			ReflectTools.getReflectClass(mActivityManagerService).locateMethod("closeSystemDialogs", ReflectTools.MEMBER_MATCH_FAST, String.class).invoke(mActivityManagerService, false, reason);
 			
 		} catch (Throwable e) {
-			if (Common.DEBUG) {
+			if (Common.debug()) {
 				throw new Error(e.getMessage(), e);
 			}
 		}
@@ -667,7 +667,7 @@ public class PhoneWindowManager {
 	
 	Object xRecentAppsService;
 	protected void openRecentAppsDialog() {
-		if(Common.DEBUG) Log.d(TAG, "Invoking Recent Application Dialog");
+		if(Common.debug()) Log.d(TAG, "Invoking Recent Application Dialog");
 		
 		sendCloseSystemWindows("recentapps");
 		
@@ -691,14 +691,14 @@ public class PhoneWindowManager {
 		} catch (Throwable e) {
 			xRecentAppsService = null;
 			
-			if (Common.DEBUG) {
+			if (Common.debug()) {
 				throw new Error(e.getMessage(), e);
 			}
 		}
 	}
 	
 	protected void openGlobalActionsDialog() {
-		if(Common.DEBUG) Log.d(TAG, "Invoking Global Actions Dialog");
+		if(Common.debug()) Log.d(TAG, "Invoking Global Actions Dialog");
 		
 		sendCloseSystemWindows("globalactions");
 		
@@ -706,7 +706,7 @@ public class PhoneWindowManager {
 			ReflectTools.getReflectClass(mPhoneWindowManager).locateMethod("showGlobalActionsDialog").invoke(mPhoneWindowManager);
 			
 		} catch (Throwable e) {
-			if (Common.DEBUG) {
+			if (Common.debug()) {
 				throw new Error(e.getMessage(), e);
 			}
 		}
@@ -757,7 +757,7 @@ public class PhoneWindowManager {
 	ReflectMethod xForceStopPackage;
 	ReflectMethod xKillProcess;
 	protected void killForegroundApplication() {
-		if(Common.DEBUG) Log.d(TAG, "Start searching for foreground application to kill");
+		if(Common.debug()) Log.d(TAG, "Start searching for foreground application to kill");
 		
 		try {
 			if (xGetRunningAppProcesses == null ||
@@ -786,7 +786,7 @@ public class PhoneWindowManager {
 					if (appInfo.pkgList != null && appInfo.pkgList.length > 0) {
 						for (String pkg : appInfo.pkgList) {
 							if (!pkg.equals("com.android.systemui") && !pkg.equals(defaultHomePackage)) {
-								if(Common.DEBUG) Log.d(TAG, "Invoking force stop on " + pkg);
+								if(Common.debug()) Log.d(TAG, "Invoking force stop on " + pkg);
 								
 								if (SDK_HAS_MULTI_USER) {
 									xForceStopPackage.invoke(mActivityManagerService, false, pkg, ReflectTools.getReflectClass("android.os.UserHandle").getField("USER_CURRENT").get());
@@ -800,7 +800,7 @@ public class PhoneWindowManager {
 						}
 						
 					} else {
-						if(Common.DEBUG) Log.d(TAG, "Invoking kill process on " + appInfo.pid);
+						if(Common.debug()) Log.d(TAG, "Invoking kill process on " + appInfo.pid);
 						
 						xKillProcess.invoke(false, appInfo.pid);
 						
@@ -810,7 +810,7 @@ public class PhoneWindowManager {
 			}
 			
 		} catch (Throwable e) {
-			if (Common.DEBUG) {
+			if (Common.debug()) {
 				throw new Error(e.getMessage(), e);
 			}
 		}
@@ -890,7 +890,7 @@ public class PhoneWindowManager {
 		private Object[] mOriginalArgs;
 		
 		public void registerActions(String click, String tap, String press) {
-			if(Common.DEBUG) Log.d(TAG, "  - Registring key actions");
+			if(Common.debug()) Log.d(TAG, "  - Registring key actions");
 			
 			mKeyActionClick = mKeyFlags.isExtended() || (click != null && !click.contains(".")) ? click : null;
 			mKeyActionTap = mKeyFlags.isExtended() || (tap != null && !tap.contains(".")) ? tap : null;
@@ -898,14 +898,14 @@ public class PhoneWindowManager {
 		}
 		
 		public void registerDelays(Integer tap, Integer press) {
-			if(Common.DEBUG) Log.d(TAG, "  - Registring delay values");
+			if(Common.debug()) Log.d(TAG, "  - Registring delay values");
 			
 			mKeyDelayTap = tap;
 			mKeyDelayPress = press;
 		}
 		
 		public void registerOriginalHandler(Member handler, Object[] args) {
-			if(Common.DEBUG) Log.d(TAG, "  - Registring native handler");
+			if(Common.debug()) Log.d(TAG, "  - Registring native handler");
 			
 			mOriginalHandler = handler;
 			mOriginalArgs = args;
@@ -929,13 +929,13 @@ public class PhoneWindowManager {
 		
 		public Integer invokeOriginalHandler() {
 			if (mOriginalHandler != null) {
-				if(Common.DEBUG) Log.d(TAG, "  - Invoking native handler");
+				if(Common.debug()) Log.d(TAG, "  - Invoking native handler");
 				
 				try {
 					return (Integer) XposedBridge.invokeOriginalMethod(mOriginalHandler, mPhoneWindowManager, mOriginalArgs);
 					
 				} catch (Throwable e) {
-					if (Common.DEBUG) {
+					if (Common.debug()) {
 						throw new Error(e.getMessage(), e);
 					}
 				}
@@ -991,7 +991,7 @@ public class PhoneWindowManager {
 		private Integer mCurrentKey = 0;
 		
 		public void internal() {
-			if(Common.DEBUG) Log.d(TAG, "  - Changing key flags to internal");
+			if(Common.debug()) Log.d(TAG, "  - Changing key flags to internal");
 			
 			mInternal++;
 			
@@ -999,14 +999,14 @@ public class PhoneWindowManager {
 		}
 		
 		public void finish() {
-			if(Common.DEBUG) Log.d(TAG, "  - Changing key flags to finished");
+			if(Common.debug()) Log.d(TAG, "  - Changing key flags to finished");
 			
 			mFinished = true;
 			mReset = mSecondaryKey == 0;
 		}
 		
 		public void reset() {
-			if(Common.DEBUG) Log.d(TAG, "  - Changing key flags to be reset");
+			if(Common.debug()) Log.d(TAG, "  - Changing key flags to be reset");
 			
 			mReset = true;
 		}
@@ -1019,7 +1019,7 @@ public class PhoneWindowManager {
 				mInternal = 0;
 				
 				if (!isDone() && !mIsRepeated && (keyCode == mPrimaryKey || keyCode == mSecondaryKey) && mExtended) {
-					if(Common.DEBUG) Log.d(TAG, "  - Registring repeated event");
+					if(Common.debug()) Log.d(TAG, "  - Registring repeated event");
 					
 					mIsRepeated = true;
 					
@@ -1031,7 +1031,7 @@ public class PhoneWindowManager {
 					}
 					
 				} else if (!mIsRepeated && !mReset && mPrimaryKey > 0 && mIsPrimaryDown && keyCode != mPrimaryKey && (mSecondaryKey == 0 || mSecondaryKey == keyCode) && mExtended) {
-					if(Common.DEBUG) Log.d(TAG, "  - Registring secondary key");
+					if(Common.debug()) Log.d(TAG, "  - Registring secondary key");
 					
 					mIsSecondaryDown = true;
 					mFinished = false;
@@ -1039,7 +1039,7 @@ public class PhoneWindowManager {
 					mSecondaryKey = keyCode;
 					
 				} else {
-					if(Common.DEBUG) Log.d(TAG, "  - Registring primary key");
+					if(Common.debug()) Log.d(TAG, "  - Registring primary key");
 					
 					mIsPrimaryDown = true;
 					mIsSecondaryDown = false;
@@ -1053,7 +1053,7 @@ public class PhoneWindowManager {
 				
 			} else {
 				if (keyCode == mPrimaryKey) {
-					if(Common.DEBUG) Log.d(TAG, "  - Releasing primary key");
+					if(Common.debug()) Log.d(TAG, "  - Releasing primary key");
 					
 					mIsPrimaryDown = false;
 					
@@ -1062,7 +1062,7 @@ public class PhoneWindowManager {
 					}
 					
 				} else if (keyCode == mSecondaryKey && mIsRepeated) {
-					if(Common.DEBUG) Log.d(TAG, "  - Releasing secondary key");
+					if(Common.debug()) Log.d(TAG, "  - Releasing secondary key");
 					
 					mIsRepeated = false;
 				}

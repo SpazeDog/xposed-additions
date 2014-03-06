@@ -66,7 +66,7 @@ public final class PowerManager {
 	protected XC_MethodHook hook_init = new XC_MethodHook() {
 		@Override
 		protected final void afterHookedMethod(final MethodHookParam param) {
-			if(Common.DEBUG) Log.d(TAG, "Initiating Power Manager Hook");
+			if(Common.debug()) Log.d(TAG, "Initiating Power Manager Hook");
 			mContext = (Context) ReflectTools.getReflectClass(param.thisObject).getField("mContext").get(param.thisObject);
 			mBatteryService = ReflectTools.getReflectClass(param.thisObject).getField("mBatteryService").get(param.thisObject);
 			
@@ -79,7 +79,7 @@ public final class PowerManager {
 		@Override
 		protected final void beforeHookedMethod(final MethodHookParam param) {
 			synchronized (mLock) {
-				if(Common.DEBUG) Log.d(TAG, "Received USB Plug/UnPlug state change");
+				if(Common.debug()) Log.d(TAG, "Received USB Plug/UnPlug state change");
 				
 				Boolean wasPowered = (Boolean) (OLD_SDK ? ReflectTools.getReflectClass(param.thisObject).locateField("mIsPowered").get(param.thisObject) : param.args[0]);
 				Integer oldPlugType = OLD_SDK ? mPlugType : (Integer) param.args[1];
@@ -100,7 +100,7 @@ public final class PowerManager {
 									powered ? Index.string.key.usbPlugAction : Index.string.key.usbUnPlugAction, 
 											powered ? Index.string.value.usbPlugAction : Index.string.value.usbUnPlugAction);
 							
-							if(Common.DEBUG) Log.d(TAG, "Handling USB Plug/UnPlug display state");
+							if(Common.debug()) Log.d(TAG, "Handling USB Plug/UnPlug display state");
 							
 							if (OLD_SDK) {
 								ReflectTools.getReflectClass(param.thisObject).locateField("mIsPowered").set(param.thisObject, powered);
@@ -110,7 +110,7 @@ public final class PowerManager {
 									|| (pluggedAC && configAction.equals("ac")) 
 										|| (pluggedUSB && configAction.equals("usb"))) {
 								
-								if(Common.DEBUG) Log.d(TAG, "Turning display on");
+								if(Common.debug()) Log.d(TAG, "Turning display on");
 								
 								if (OLD_SDK) {
 									ReflectTools.getReflectClass(param.thisObject).locateMethod("forceUserActivityLocked").invoke(param.thisObject);
@@ -121,7 +121,7 @@ public final class PowerManager {
 								}
 								
 							} else {
-								if(Common.DEBUG) Log.d(TAG, "Disabling default handler");
+								if(Common.debug()) Log.d(TAG, "Disabling default handler");
 								
 								param.setResult(false);
 							}

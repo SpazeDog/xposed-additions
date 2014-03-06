@@ -88,7 +88,7 @@ public final class ApplicationLayout {
 			mBlackListed = mBlackList.contains( AndroidAppHelper.currentPackageName() );
 			
 			if (mEnableRotation && !mBlackListed) {
-				if(Common.DEBUG) Log.d(TAG, "+ " + param.method.getName() + ": Allowing Rotation for '" + AndroidAppHelper.currentPackageName() + "'");
+				if(Common.debug()) Log.d(TAG, "+ " + param.method.getName() + ": Allowing Rotation for '" + AndroidAppHelper.currentPackageName() + "'");
 				
 				if ("setRequestedOrientation".equals(param.method.getName())) {
 					param.args[0] = ActivityInfo.SCREEN_ORIENTATION_USER;
@@ -98,14 +98,14 @@ public final class ApplicationLayout {
 				}
 				
 			} else if (mEnableRotation) {
-				if(Common.DEBUG) Log.d(TAG, "- " + param.method.getName() + ": Rotation has been blacklisted for '" + AndroidAppHelper.currentPackageName() + "'");
+				if(Common.debug()) Log.d(TAG, "- " + param.method.getName() + ": Rotation has been blacklisted for '" + AndroidAppHelper.currentPackageName() + "'");
 			}
 		}
 		
 		@Override
 		protected final void afterHookedMethod(final MethodHookParam param) {
 			if (mEnableRotation && !mBlackListed) {
-				if(Common.DEBUG) Log.d(TAG, "+ " + param.method.getName() + ": Allowing Rotation for '" + AndroidAppHelper.currentPackageName() + "'");
+				if(Common.debug()) Log.d(TAG, "+ " + param.method.getName() + ": Allowing Rotation for '" + AndroidAppHelper.currentPackageName() + "'");
 				
 				if ("generateLayout".equals(param.method.getName())) {
 					Window window = (Window) param.thisObject;
@@ -117,7 +117,7 @@ public final class ApplicationLayout {
 				}
 				
 			} else if (mEnableRotation) {
-				if(Common.DEBUG) Log.d(TAG, "- " + param.method.getName() + ": Rotation has been blacklisted for '" + AndroidAppHelper.currentPackageName() + "'");
+				if(Common.debug()) Log.d(TAG, "- " + param.method.getName() + ": Rotation has been blacklisted for '" + AndroidAppHelper.currentPackageName() + "'");
 			}
 		}
 	};

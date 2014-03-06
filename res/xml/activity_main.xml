@@ -8,6 +8,18 @@
         android:persistent="false" />
     
     <PreferenceCategory
+        android:key="settings_group"
+        android:title="@string/category_settings">
+        
+        <CheckBoxPreference
+            android:key="debug_preference"
+            android:title="@string/preference_title_debug"
+            android:summary="@string/preference_summary_debug"
+            android:persistent="false" />
+        
+    </PreferenceCategory>
+    
+    <PreferenceCategory
         android:key="options_group"
         android:title="@string/group_options" />
     

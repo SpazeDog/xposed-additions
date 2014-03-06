@@ -23,11 +23,14 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.preference.CheckBoxPreference;
+import android.preference.Preference;
+import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceActivity;
 
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
 
-public class ActivityMain extends PreferenceActivity {
+public class ActivityMain extends PreferenceActivity implements OnPreferenceClickListener {
 	
 	private XServiceManager mPreferences;
 	
@@ -92,6 +95,23 @@ public class ActivityMain extends PreferenceActivity {
     		findPreference("usbplug_link").setIntent(new Intent(Intent.ACTION_VIEW).setClass(this, ActivityScreenUSB.class));
     		findPreference("layout_link").setIntent(new Intent(Intent.ACTION_VIEW).setClass(this, ActivityScreenLayout.class));
     		findPreference("buttons_link").setIntent(new Intent(Intent.ACTION_VIEW).setClass(this, ActivityScreenRemapMain.class));
+    		
+    		CheckBoxPreference debugPreference = (CheckBoxPreference) findPreference("debug_preference");
+    		debugPreference.setOnPreferenceClickListener(this);
+    		debugPreference.setChecked(mPreferences.getBoolean(Common.Index.bool.key.enableDebug, Common.Index.bool.value.enableDebug));
     	}
     }
+    
+	@Override
+	public boolean onPreferenceClick(Preference preference) {
+		if (preference.getKey().equals("debug_preference")) {
+			Boolean isChecked = ((CheckBoxPreference) preference).isChecked();
+
+			mPreferences.putBoolean(Common.Index.bool.key.enableDebug, isChecked, true);
+			
+			return true;
+		}
+		
+		return false;
+	}
 }

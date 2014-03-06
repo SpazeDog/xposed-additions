@@ -20,10 +20,8 @@
 package com.spazedog.xposed.additionsgb;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
@@ -37,9 +35,12 @@ import android.os.Build;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 
+import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
+
 
 public final class Common {
 	public static final Boolean DEBUG = false;
+	private static Boolean ENABLE_DEBUG;
 	
 	public static final String PACKAGE_NAME = Common.class.getPackage().getName();
 	public static final String PACKAGE_NAME_PRO = PACKAGE_NAME + ".pro";
@@ -88,12 +89,14 @@ public final class Common {
 				public static final String usbPlugSwitch = "usb_plug_switch";
 				public static final String usbUnPlugSwitch = "usb_unplug_switch";
 				public static final String layoutRotationSwitch = "layout_rotation_switch";
+				public static final String enableDebug = "enable_debug";
 			}
 			
 			public static final class value {
 				public static final Boolean usbPlugSwitch = false;
 				public static final Boolean usbUnPlugSwitch = false;
 				public static final Boolean layoutRotationSwitch = false;
+				public static final Boolean enableDebug = false;
 			}
 		}
 		
@@ -398,5 +401,25 @@ public final class Common {
 		public String name;
 		public String label;
 		public ConstantState icon;
+	}
+	
+	public static Boolean debug() {
+		if (ENABLE_DEBUG == null) {
+			/*
+			 * Avoid recursive calls
+			 */
+			ENABLE_DEBUG = false;
+			
+			XServiceManager preferences = XServiceManager.getInstance();
+			
+			if (preferences != null && preferences.isServiceReady()) {
+				ENABLE_DEBUG = preferences.getBoolean(Index.bool.key.enableDebug, Index.bool.value.enableDebug);
+				
+			} else {
+				ENABLE_DEBUG = null;
+			}
+		}
+		
+		return DEBUG || (ENABLE_DEBUG != null && ENABLE_DEBUG);
 	}
 }
