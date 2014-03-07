@@ -1080,7 +1080,6 @@ public class PhoneWindowManager {
 			mCurrentKey = keyCode;
 					
 			if (down) {
-				mExtended = mPreferences.isPackageUnlocked();
 				mInternal = 0;
 				
 				if (!isDone() && !mIsRepeated && (keyCode == mPrimaryKey || keyCode == mSecondaryKey) && mExtended) {
@@ -1115,6 +1114,7 @@ public class PhoneWindowManager {
 					mPrimaryKey = keyCode;
 					mSecondaryKey = 0;
 					
+					mExtended = mPreferences.isPackageUnlocked();
 					mInternalHandler = mPreferences.getBoolean(Common.Index.bool.key.useInternalHandler, Common.Index.bool.value.useInternalHandler);
 				}
 				
