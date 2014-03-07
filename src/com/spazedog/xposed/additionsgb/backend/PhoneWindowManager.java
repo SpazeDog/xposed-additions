@@ -440,12 +440,11 @@ public class PhoneWindowManager {
 							if (!mKeyFlags.useInternalHandler()) {
 								mKeyConfig.invokeOriginalHandler();
 								
-								return;
-								
 							} else {
-								injectLongPressEvent(keyCode, 0);
-								injectLongPressEvent(keyCode, 1);
+								injectLongPressEvent(keyCode, 1); // Force trigger default long press
 							}
+							
+							return; // Otherwise we will break default long press on some applications
 						}
 					}
 				}
