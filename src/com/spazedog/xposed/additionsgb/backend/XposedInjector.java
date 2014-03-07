@@ -38,5 +38,6 @@ public final class XposedInjector implements IXposedHookZygoteInit {
 		ApplicationLayout.init();
 		PhoneWindowManager.init();
 		InputManager.init();
+		ViewConfiguration.init();
 	}
 }
