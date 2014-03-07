@@ -44,13 +44,14 @@ public class InputManager {
 	
 	public static void init() {
 		if(Common.DEBUG) Log.d(TAG, "Adding Input Manager Hook");
-		
-		/*
-		 * This class does not exist in older Android Versions. 
-		 */
-		if (android.os.Build.VERSION.SDK_INT >= 16) {
+
+		if (android.os.Build.VERSION.SDK_INT >= 14) {
 			InputManager hook = new InputManager();
-			ReflectClass service = ReflectTools.getReflectClass("com.android.server.input.InputManagerService");
+			
+			ReflectClass service = ReflectTools.getReflectClass(
+					android.os.Build.VERSION.SDK_INT >= 16 ? 
+							"com.android.server.input.InputManagerService" : 
+								"com.android.server.wm.InputManager");
 			
 			service.inject(hook.hook_constructor);
 			service.inject("injectInputEvent", hook.hook_injectInputEvent);
@@ -62,20 +63,26 @@ public class InputManager {
 		protected final void afterHookedMethod(final MethodHookParam param) {
 			FLAG_INJECTED = (Integer) ReflectTools.getReflectClass("android.view.WindowManagerPolicy").getField("FLAG_INJECTED").get();
 			
-			/*
-			 * Once API 20 is out, this will be Long instead of Integer. 
-			 */
-			mPtr = ReflectTools.getReflectClass(param.thisObject).getField("mPtr").get(param.thisObject);
-			
-			mMethodNativeInjectInputEvent = ReflectTools.getReflectClass(param.thisObject)
-					.locateMethod("nativeInjectInputEvent", ReflectTools.MEMBER_MATCH_FAST, (mPtr instanceof Integer ? Integer.TYPE : Long.TYPE), InputEvent.class, Integer.TYPE, Integer.TYPE, Integer.TYPE, Integer.TYPE, Integer.TYPE);
+			if (android.os.Build.VERSION.SDK_INT >= 16) {
+				/*
+				 * Once API 20 is out, this will be Long instead of Integer. 
+				 */
+				mPtr = ReflectTools.getReflectClass(param.thisObject).getField("mPtr").get(param.thisObject);
+				
+				mMethodNativeInjectInputEvent = ReflectTools.getReflectClass(param.thisObject)
+						.locateMethod("nativeInjectInputEvent", ReflectTools.MEMBER_MATCH_FAST, (mPtr instanceof Integer ? Integer.TYPE : Long.TYPE), InputEvent.class, Integer.TYPE, Integer.TYPE, Integer.TYPE, Integer.TYPE, Integer.TYPE);
+				
+			} else {
+				mMethodNativeInjectInputEvent = ReflectTools.getReflectClass(param.thisObject)
+						.locateMethod("nativeInjectInputEvent", ReflectTools.MEMBER_MATCH_FAST, InputEvent.class, Integer.TYPE, Integer.TYPE, Integer.TYPE, Integer.TYPE, Integer.TYPE);
+			}
 		}
 	};
 
 	protected XC_MethodHook hook_injectInputEvent = new XC_MethodHook() {
 		@Override
 		protected final void beforeHookedMethod(final MethodHookParam param) {
-			if (param.args[0] instanceof KeyEvent) {
+			if (android.os.Build.VERSION.SDK_INT >= 16 && param.args[0] instanceof KeyEvent) {
 				if ((((KeyEvent) param.args[0]).getFlags() & FLAG_INJECTED) == 0) {
 					if(Common.debug()) Log.d(TAG, "Adding FLAG_INJECTED flag on KeyEvent " + ((KeyEvent) param.args[0]).getKeyCode());
 					
@@ -93,22 +100,32 @@ public class InputManager {
 			}
 			
 			if ((((KeyEvent) param.args[0]).getFlags() & FLAG_INTERNAL) != 0) {
-				/*
-				 * The original injectInputEvent method will disable repeating events. 
-				 * So in order to trigger long press, we will have to inject the events ourself. 
-				 */
-				final int pid = Binder.getCallingPid();
-				final int uid = Binder.getCallingUid();
-				final long ident = Binder.clearCallingIdentity();
-				
-				try {
-					mMethodNativeInjectInputEvent.invoke(param.thisObject, false, mPtr, param.args[0], pid, uid, param.args[1], 0, 0);
+				if (android.os.Build.VERSION.SDK_INT >= 16) {
+					/*
+					 * The original injectInputEvent method will disable repeating events. 
+					 * So in order to trigger long press, we will have to inject the events ourself. 
+					 */
+					final int pid = Binder.getCallingPid();
+					final int uid = Binder.getCallingUid();
+					final long ident = Binder.clearCallingIdentity();
 					
-				} finally {
-					Binder.restoreCallingIdentity(ident);
+					try {
+						mMethodNativeInjectInputEvent.invoke(param.thisObject, false, mPtr, param.args[0], pid, uid, param.args[1], 0, 0);
+						
+					} finally {
+						Binder.restoreCallingIdentity(ident);
+					}
+					
+					param.setResult(true);
+					
+				} else {
+					/*
+					 * ICS does not have an InputManagerService like JB+. Is has an InputManager
+					 * that does the same combined with the WindowManagerService. 
+					 * The job that JB+ does in one class, is split those two. 
+					 */
+					param.setResult(mMethodNativeInjectInputEvent.invoke(param.thisObject, false, param.args[0], param.args[1], param.args[2], param.args[3], param.args[4], 0));
 				}
-				
-				param.setResult(true);
 			}
 		}
 	};

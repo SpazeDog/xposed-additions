@@ -92,7 +92,7 @@ public class ActivityScreenRemapMain extends PreferenceActivity implements OnPre
 				((PreferenceCategory) findPreference("settings_group")).removePreference(findPreference("delay_key_tap_preference"));
 			}
 			
-			if (android.os.Build.VERSION.SDK_INT >= 16) {
+			if (android.os.Build.VERSION.SDK_INT >= 14) {
 				CheckBoxPreference internalHandler = (CheckBoxPreference) findPreference("internal_handler_preference");
 				internalHandler.setOnPreferenceClickListener(this);
 				internalHandler.setChecked(mPreferences.getBoolean(Common.Index.bool.key.useInternalHandler, Common.Index.bool.value.useInternalHandler));

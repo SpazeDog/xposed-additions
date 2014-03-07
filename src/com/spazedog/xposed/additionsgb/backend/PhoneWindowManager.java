@@ -82,6 +82,7 @@ public class PhoneWindowManager {
 	protected static Boolean SDK_HAS_MULTI_USER = android.os.Build.VERSION.SDK_INT >= 17;
 	protected static Boolean SDK_HAS_KEYGUARD_DELEGATE = android.os.Build.VERSION.SDK_INT >= 19;
 	protected static Boolean SDK_HAS_ROTATION_TOOLS = android.os.Build.VERSION.SDK_INT >= 11;
+	protected static Boolean SDK_SUPPORTS_INTERNAL_HANDLER = android.os.Build.VERSION.SDK_INT >= 14;
 	
 	protected static int ACTION_SLEEP_QUEUEING;
 	protected static int ACTION_WAKEUP_QUEUEING;
@@ -572,7 +573,12 @@ public class PhoneWindowManager {
 			public void run() {
 				synchronized(PhoneWindowManager.class) {
 					if (xInjectInputEvent == null) {
-						xInjectInputEvent = ReflectTools.getReflectClass(mInputManager).locateMethod("injectInputEvent", ReflectTools.MEMBER_MATCH_FAST, KeyEvent.class, Integer.TYPE);
+						xInjectInputEvent = SDK_HAS_HARDWARE_INPUT_MANAGER ? 
+								ReflectTools.getReflectClass(mInputManager)
+									.locateMethod("injectInputEvent", ReflectTools.MEMBER_MATCH_FAST, KeyEvent.class, Integer.TYPE) : 
+										
+								ReflectTools.getReflectClass(mWindowManager)
+									.locateMethod("injectInputEventNoWait", ReflectTools.MEMBER_MATCH_FAST, KeyEvent.class);
 					}
 
 					long now = SystemClock.uptimeMillis();
@@ -582,11 +588,21 @@ public class PhoneWindowManager {
 					KeyEvent event = new KeyEvent(then, now, KeyEvent.ACTION_DOWN, keyCode, (repeat >= 0 ? repeat : 1), 0, KeyCharacterMap.VIRTUAL_KEYBOARD, 0, flags|KeyEvent.FLAG_FROM_SYSTEM|FLAG_INJECTED|FLAG_INTERNAL, InputDevice.SOURCE_KEYBOARD);
 
 					if (repeat >= 0) {
-						xInjectInputEvent.invoke(mInputManager, false, event, INJECT_INPUT_EVENT_MODE_ASYNC);
+						if (SDK_HAS_HARDWARE_INPUT_MANAGER) {
+							xInjectInputEvent.invoke(mInputManager, false, event, INJECT_INPUT_EVENT_MODE_ASYNC);
+						
+						} else {
+							xInjectInputEvent.invoke(mWindowManager, false, event);
+						}
 					}
 					
 					if (repeat < 0) {
-						xInjectInputEvent.invoke(mInputManager, false, KeyEvent.changeAction(event, KeyEvent.ACTION_UP), INJECT_INPUT_EVENT_MODE_ASYNC);
+						if (SDK_HAS_HARDWARE_INPUT_MANAGER) {
+							xInjectInputEvent.invoke(mInputManager, false, KeyEvent.changeAction(event, KeyEvent.ACTION_UP), INJECT_INPUT_EVENT_MODE_ASYNC);
+							
+						} else {
+							xInjectInputEvent.invoke(mWindowManager, false, KeyEvent.changeAction(event, KeyEvent.ACTION_UP));
+						}
 					}
 				}
 			}
@@ -1100,7 +1116,7 @@ public class PhoneWindowManager {
 					mPrimaryKey = keyCode;
 					mSecondaryKey = 0;
 					
-					if (SDK_HAS_HARDWARE_INPUT_MANAGER) {
+					if (SDK_SUPPORTS_INTERNAL_HANDLER) {
 						mInternalHandler = mPreferences.getBoolean(Common.Index.bool.key.useInternalHandler, Common.Index.bool.value.useInternalHandler);
 					}
 				}
