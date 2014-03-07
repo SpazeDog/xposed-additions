@@ -93,6 +93,7 @@ public class PhoneWindowManager {
 	
 	protected static int FLAG_INJECTED;
 	protected static int FLAG_VIRTUAL;
+	protected static int FLAG_INTERNAL = 0x5000000;
 	
 	protected static int INJECT_INPUT_EVENT_MODE_ASYNC;
 	
@@ -278,7 +279,9 @@ public class PhoneWindowManager {
 					mKeyFlags.registerKey(keyCode, down);
 					
 					if (down) {
-						mKeyConfig.registerOriginalHandler(param.method, cloneArguments(param.args));
+						if (!mKeyFlags.useInternalHandler()) {
+							mKeyConfig.registerOriginalHandler(param.method, cloneArguments(param.args));
+						}
 						
 						if (!mKeyFlags.isRepeated()) {
 							if(Common.debug()) Log.d(TAG, "  - Configuring the key");
@@ -347,6 +350,7 @@ public class PhoneWindowManager {
 			final int eventFlags = (Integer) (!SDK_NEW_PHONE_WINDOW_MANAGER ? param.args[2] : ((KeyEvent) param.args[1]).getFlags());
 			final int repeatCount = (Integer) (!SDK_NEW_PHONE_WINDOW_MANAGER ? param.args[6] : ((KeyEvent) param.args[1]).getRepeatCount());
 			final boolean down = action == KeyEvent.ACTION_DOWN;
+			final boolean internal = (eventFlags & FLAG_INTERNAL) != 0;
 			
 			/*
 			 * Using KitKat work-around from the InputManager Hook
@@ -361,7 +365,20 @@ public class PhoneWindowManager {
 				} else {
 					param.args[7] = policyFlags & ~FLAG_INJECTED;
 				}
+				
+				if (repeatCount > 0 && internal && mKeyFlags.isKeyDown() && keyCode == mKeyFlags.getCurrentKey()) {
+					injectLongPressEvent(keyCode, repeatCount+1);
+				}
 			
+				return;
+				
+			} else if (mKeyFlags.useInternalHandler() && mKeyFlags.getInternal() > 0) {
+				if (!down) {
+					injectLongPressEvent(keyCode, -1);
+				}
+				
+				param.setResult(ACTION_DISABLE_DISPATCHING);
+				
 				return;
 			}
 			
@@ -392,7 +409,7 @@ public class PhoneWindowManager {
 				
 				Boolean wasMulti = mKeyFlags.isMulti();
 				Integer curDelay = 0;
-				Integer pressDelay = mKeyConfig.hasLongPressAction() ? 
+				Integer pressDelay = mKeyConfig.hasLongPressAction() && !mKeyFlags.useInternalHandler() ? 
 						(mKeyConfig.getLongPressDelay() + ViewConfiguration.getLongPressTimeout()) : mKeyConfig.getLongPressDelay();
 						
 				do {
@@ -418,11 +435,17 @@ public class PhoneWindowManager {
 						} else {
 							if(Common.debug()) Log.d(TAG, "  - Invoking default long press action");
 							
-							mKeyConfig.invokeOriginalHandler();
-							
 							mKeyFlags.internal();
 							
-							return;
+							if (!mKeyFlags.useInternalHandler()) {
+								mKeyConfig.invokeOriginalHandler();
+								
+								return;
+								
+							} else {
+								injectLongPressEvent(keyCode, 0);
+								injectLongPressEvent(keyCode, 1);
+							}
 						}
 					}
 				}
@@ -502,7 +525,7 @@ public class PhoneWindowManager {
 			((PowerManager) mPowerManager).goToSleep(SystemClock.uptimeMillis());
 		}
 	}
-	
+
 	ReflectMethod xInjectInputEvent;
 	@SuppressLint("NewApi")
 	protected void injectKeyEvent(final int keyCode, final boolean cancel) {
@@ -542,7 +565,34 @@ public class PhoneWindowManager {
 			}
 		});
 	}
-	
+
+	@SuppressLint("NewApi")
+	protected void injectLongPressEvent(final int keyCode, final int repeat) {
+		mHandler.post(new Runnable() {
+			public void run() {
+				synchronized(PhoneWindowManager.class) {
+					if (xInjectInputEvent == null) {
+						xInjectInputEvent = ReflectTools.getReflectClass(mInputManager).locateMethod("injectInputEvent", ReflectTools.MEMBER_MATCH_FAST, KeyEvent.class, Integer.TYPE);
+					}
+
+					long now = SystemClock.uptimeMillis();
+					long then = now - (ViewConfiguration.getLongPressTimeout()+100);
+					int flags = repeat == 1 ? KeyEvent.FLAG_LONG_PRESS : 0;
+
+					KeyEvent event = new KeyEvent(then, now, KeyEvent.ACTION_DOWN, keyCode, (repeat >= 0 ? repeat : 1), 0, KeyCharacterMap.VIRTUAL_KEYBOARD, 0, flags|KeyEvent.FLAG_FROM_SYSTEM|FLAG_INJECTED|FLAG_INTERNAL, InputDevice.SOURCE_KEYBOARD);
+
+					if (repeat >= 0) {
+						xInjectInputEvent.invoke(mInputManager, false, event, INJECT_INPUT_EVENT_MODE_ASYNC);
+					}
+					
+					if (repeat < 0) {
+						xInjectInputEvent.invoke(mInputManager, false, KeyEvent.changeAction(event, KeyEvent.ACTION_UP), INJECT_INPUT_EVENT_MODE_ASYNC);
+					}
+				}
+			}
+		});
+	}
+
 	ReflectMethod xPerformHapticFeedbackLw;
 	protected void performHapticFeedback(Integer effectId) {
 		if (xPerformHapticFeedbackLw == null) {
@@ -983,6 +1033,7 @@ public class PhoneWindowManager {
 		private Boolean mFinished = false;
 		private Boolean mReset = false;
 		private Boolean mExtended = false;
+		private Boolean mInternalHandler;
 		private Integer mInternal = 0;
 		
 		private Integer mPrimaryKey = 0;
@@ -1048,6 +1099,10 @@ public class PhoneWindowManager {
 					
 					mPrimaryKey = keyCode;
 					mSecondaryKey = 0;
+					
+					if (SDK_HAS_HARDWARE_INPUT_MANAGER) {
+						mInternalHandler = mPreferences.getBoolean(Common.Index.bool.key.useInternalHandler, Common.Index.bool.value.useInternalHandler);
+					}
 				}
 				
 			} else {
@@ -1102,6 +1157,10 @@ public class PhoneWindowManager {
 		
 		public Integer getCurrentKey() {
 			return mCurrentKey;
+		}
+		
+		public Boolean useInternalHandler() {
+			return mInternalHandler;
 		}
 	}
 }

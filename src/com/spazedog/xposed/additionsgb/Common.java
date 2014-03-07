@@ -85,6 +85,7 @@ public final class Common {
 				public static final String usbUnPlugSwitch = "usb_unplug_switch";
 				public static final String layoutRotationSwitch = "layout_rotation_switch";
 				public static final String enableDebug = "enable_debug";
+				public static final String useInternalHandler = "use_internal_handler";
 			}
 			
 			public static final class value {
@@ -92,6 +93,7 @@ public final class Common {
 				public static final Boolean usbUnPlugSwitch = false;
 				public static final Boolean layoutRotationSwitch = false;
 				public static final Boolean enableDebug = false;
+				public static final Boolean useInternalHandler = false;
 			}
 		}
 		

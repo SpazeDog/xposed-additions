@@ -66,6 +66,9 @@
     <string name='preference_title_delay_key_tap'>Double click delay</string>
     <string name='preference_title_delay_key_press'>Long press delay</string>
     
+    <string name='preference_title_internal_handler'>Use Internal Handler</string>
+    <string name='preference_summary_internal_handler'>Handle default long press using custom internal handler</string>
+    
     <string name='preference_title_haptic_forced'>Force Haptic Feedback</string>
     <string name='preference_summary_haptic_forced'>Enable this if your device has problem detecting this as a virtual key when using the module</string>
     

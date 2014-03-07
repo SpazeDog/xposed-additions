@@ -19,11 +19,14 @@
 
 package com.spazedog.xposed.additionsgb.backend;
 
+import android.os.Binder;
 import android.util.Log;
+import android.view.InputEvent;
 import android.view.KeyEvent;
 
 import com.spazedog.lib.reflecttools.ReflectTools;
 import com.spazedog.lib.reflecttools.ReflectTools.ReflectClass;
+import com.spazedog.lib.reflecttools.ReflectTools.ReflectMethod;
 import com.spazedog.xposed.additionsgb.Common;
 
 import de.robv.android.xposed.XC_MethodHook;
@@ -33,9 +36,18 @@ public class InputManager {
 	
 	protected int FLAG_INJECTED;
 	
+	protected Object mPtr;
+	
+	protected ReflectMethod mMethodNativeInjectInputEvent;
+	
+	protected static int FLAG_INTERNAL = 0x5000000;
+	
 	public static void init() {
 		if(Common.DEBUG) Log.d(TAG, "Adding Input Manager Hook");
 		
+		/*
+		 * This class does not exist in older Android Versions. 
+		 */
 		if (android.os.Build.VERSION.SDK_INT >= 16) {
 			InputManager hook = new InputManager();
 			ReflectClass service = ReflectTools.getReflectClass("com.android.server.input.InputManagerService");
@@ -49,6 +61,14 @@ public class InputManager {
 		@Override
 		protected final void afterHookedMethod(final MethodHookParam param) {
 			FLAG_INJECTED = (Integer) ReflectTools.getReflectClass("android.view.WindowManagerPolicy").getField("FLAG_INJECTED").get();
+			
+			/*
+			 * Once API 20 is out, this will be Long instead of Integer. 
+			 */
+			mPtr = ReflectTools.getReflectClass(param.thisObject).getField("mPtr").get(param.thisObject);
+			
+			mMethodNativeInjectInputEvent = ReflectTools.getReflectClass(param.thisObject)
+					.locateMethod("nativeInjectInputEvent", ReflectTools.MEMBER_MATCH_FAST, (mPtr instanceof Integer ? Integer.TYPE : Long.TYPE), InputEvent.class, Integer.TYPE, Integer.TYPE, Integer.TYPE, Integer.TYPE, Integer.TYPE);
 		}
 	};
 
@@ -70,6 +90,25 @@ public class InputManager {
 				} else {
 					if(Common.debug()) Log.d(TAG, "The KeyEvent " + ((KeyEvent) param.args[0]).getKeyCode() + " already contains the FLAG_INJECTED flag");
 				}
+			}
+			
+			if ((((KeyEvent) param.args[0]).getFlags() & FLAG_INTERNAL) != 0) {
+				/*
+				 * The original injectInputEvent method will disable repeating events. 
+				 * So in order to trigger long press, we will have to inject the events ourself. 
+				 */
+				final int pid = Binder.getCallingPid();
+				final int uid = Binder.getCallingUid();
+				final long ident = Binder.clearCallingIdentity();
+				
+				try {
+					mMethodNativeInjectInputEvent.invoke(param.thisObject, false, mPtr, param.args[0], pid, uid, param.args[1], 0, 0);
+					
+				} finally {
+					Binder.restoreCallingIdentity(ident);
+				}
+				
+				param.setResult(true);
 			}
 		}
 	};

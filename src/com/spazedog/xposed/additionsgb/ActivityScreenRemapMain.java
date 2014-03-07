@@ -6,6 +6,7 @@ import java.util.List;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.preference.CheckBoxPreference;
 import android.preference.Preference;
 import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.Preference.OnPreferenceClickListener;
@@ -91,6 +92,15 @@ public class ActivityScreenRemapMain extends PreferenceActivity implements OnPre
 				((PreferenceCategory) findPreference("settings_group")).removePreference(findPreference("delay_key_tap_preference"));
 			}
 			
+			if (android.os.Build.VERSION.SDK_INT >= 16) {
+				CheckBoxPreference internalHandler = (CheckBoxPreference) findPreference("internal_handler_preference");
+				internalHandler.setOnPreferenceClickListener(this);
+				internalHandler.setChecked(mPreferences.getBoolean(Common.Index.bool.key.useInternalHandler, Common.Index.bool.value.useInternalHandler));
+				
+			} else {
+				((PreferenceCategory) findPreference("settings_group")).removePreference(findPreference("internal_handler_preference"));
+			}
+			
 			WidgetListPreference pressDelayPreference = (WidgetListPreference) findPreference("delay_key_press_preference");
 			pressDelayPreference.setValue( "" + mPreferences.getInt(Index.integer.key.remapPressDelay, Index.integer.value.remapPressDelay) );
 			pressDelayPreference.setOnPreferenceChangeListener(this);
@@ -140,6 +150,9 @@ public class ActivityScreenRemapMain extends PreferenceActivity implements OnPre
 	public boolean onPreferenceClick(Preference preference) {
 		if (preference.getKey().equals("add_key_preference")) {
 			mDialog.open(this, R.layout.dialog_intercept_key, new IntentFilter(Common.XSERVICE_BROADCAST)); return true;
+			
+		} else if (preference.getKey().equals("internal_handler_preference")) {
+			mPreferences.putBoolean(Common.Index.bool.key.useInternalHandler, ((CheckBoxPreference) preference).isChecked(), true); return true;
 		}
 		
 		return false;
