@@ -44,6 +44,16 @@ public class InputManager {
 	
 	public static void init() {
 		if(Common.DEBUG) Log.d(TAG, "Adding Input Manager Hook");
+		
+		/*
+		 * This class has two goals. 
+		 * 
+		 *  1: Correct an issue that KitKat has with PolicyFlags where it always parses a key as injected
+		 *  2: Overwrite the Input Manager's Key Injection method to allow repeated keys
+		 *  
+		 *  Gingerbread does not need any of these things. It has no problems with PolicyFlags, 
+		 *  and it does not support disabling repeated keys so this is supported by default. 
+		 */
 
 		if (android.os.Build.VERSION.SDK_INT >= 14) {
 			InputManager hook = new InputManager();
@@ -101,10 +111,6 @@ public class InputManager {
 			
 			if ((((KeyEvent) param.args[0]).getFlags() & FLAG_INTERNAL) != 0) {
 				if (android.os.Build.VERSION.SDK_INT >= 16) {
-					/*
-					 * The original injectInputEvent method will disable repeating events. 
-					 * So in order to trigger long press, we will have to inject the events ourself. 
-					 */
 					final int pid = Binder.getCallingPid();
 					final int uid = Binder.getCallingUid();
 					final long ident = Binder.clearCallingIdentity();
@@ -122,7 +128,9 @@ public class InputManager {
 					/*
 					 * ICS does not have an InputManagerService like JB+. Is has an InputManager
 					 * that does the same combined with the WindowManagerService. 
-					 * The job that JB+ does in one class, is split those two. 
+					 * The job that JB+ does in one class, is split those two. So 
+					 * all we have to do, is parse the event to the native method. All preparation 
+					 * has already been done by the WindowManagerService.
 					 */
 					param.setResult(mMethodNativeInjectInputEvent.invoke(param.thisObject, false, param.args[0], param.args[1], param.args[2], param.args[3], param.args[4], 0));
 				}

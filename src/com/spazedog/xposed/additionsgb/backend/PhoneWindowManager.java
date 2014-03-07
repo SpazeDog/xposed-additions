@@ -82,7 +82,6 @@ public class PhoneWindowManager {
 	protected static Boolean SDK_HAS_MULTI_USER = android.os.Build.VERSION.SDK_INT >= 17;
 	protected static Boolean SDK_HAS_KEYGUARD_DELEGATE = android.os.Build.VERSION.SDK_INT >= 19;
 	protected static Boolean SDK_HAS_ROTATION_TOOLS = android.os.Build.VERSION.SDK_INT >= 11;
-	protected static Boolean SDK_SUPPORTS_INTERNAL_HANDLER = android.os.Build.VERSION.SDK_INT >= 14;
 	
 	protected static int ACTION_SLEEP_QUEUEING;
 	protected static int ACTION_WAKEUP_QUEUEING;
@@ -1116,9 +1115,7 @@ public class PhoneWindowManager {
 					mPrimaryKey = keyCode;
 					mSecondaryKey = 0;
 					
-					if (SDK_SUPPORTS_INTERNAL_HANDLER) {
-						mInternalHandler = mPreferences.getBoolean(Common.Index.bool.key.useInternalHandler, Common.Index.bool.value.useInternalHandler);
-					}
+					mInternalHandler = mPreferences.getBoolean(Common.Index.bool.key.useInternalHandler, Common.Index.bool.value.useInternalHandler);
 				}
 				
 			} else {
