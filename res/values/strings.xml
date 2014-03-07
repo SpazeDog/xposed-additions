@@ -139,5 +139,8 @@
     
     <string name='remap_title_killapp'>Kill Application</string>
     <string name='remap_summary_killapp'>Kill the current foreground Application</string>
+    
+    <string name='remap_title_screenshot'>Screenshot</string>
+    <string name='remap_summary_screenshot'>Capture an image of the screen content</string>
 	
 </resources>

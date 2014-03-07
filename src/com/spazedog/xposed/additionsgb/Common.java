@@ -139,6 +139,7 @@ public final class Common {
 			if (android.os.Build.VERSION.SDK_INT >= 11) {
 				new RemapAction("flipleft", R.string.remap_title_flipleft, R.string.remap_summary_flipleft, false, "off");
 				new RemapAction("flipright", R.string.remap_title_flipright, R.string.remap_summary_flipright, false, "off");
+				new RemapAction("screenshot", R.string.remap_title_screenshot, R.string.remap_summary_screenshot, false, "off");
 			}
 
 			new RemapAction("" + KeyEvent.KEYCODE_POWER, 0, 0, true);

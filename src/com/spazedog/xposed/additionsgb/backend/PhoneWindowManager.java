@@ -880,6 +880,17 @@ public class PhoneWindowManager {
 		}
 	}
 	
+	protected void takeScreenshot() {
+		try {
+			ReflectTools.getReflectClass(mPhoneWindowManager).locateMethod("takeScreenshot").invoke(mPhoneWindowManager);
+			
+		} catch (Throwable e) {
+			if (Common.debug()) {
+				throw new Error(e.getMessage(), e);
+			}
+		}
+	}
+	
 	protected void handleKeyAction(final String action, final Integer keyCode) {
 		/*
 		 * This should always be wrapped and sent to a handler. 
@@ -922,6 +933,9 @@ public class PhoneWindowManager {
 							
 						} else if ("guarddismiss".equals(action)) {
 							keyGuardDismiss();
+							
+						} else if ("screenshot".equals(action)) {
+							takeScreenshot();
 						}
 					}
 					
