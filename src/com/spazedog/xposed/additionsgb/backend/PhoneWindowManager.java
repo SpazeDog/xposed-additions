@@ -180,6 +180,11 @@ public class PhoneWindowManager {
 						mReady = true;
 						mContext.unregisterReceiver(this);
 						
+						/*
+						 * It is also best to wait with this one
+						 */
+						mActivityManagerService = ReflectTools.getReflectClass("android.app.ActivityManagerNative").getMethod("getDefault").invoke();
+						
 						if (SDK_HAS_HARDWARE_INPUT_MANAGER) {
 							/*
 							 * This cannot be placed in hook_init because it is to soon to call InputManager#getInstance.
@@ -187,11 +192,6 @@ public class PhoneWindowManager {
 							 * with anything else trying to access the InputManager methods.
 							 */
 							mInputManager = ReflectTools.getReflectClass("android.hardware.input.InputManager").getMethod("getInstance").invoke();
-							
-							/*
-							 * It is also best to wait with this one
-							 */
-							mActivityManagerService = ReflectTools.getReflectClass("android.app.ActivityManagerNative").getMethod("getDefault").invoke();
 						}
 					}
 				}, new IntentFilter("android.intent.action.BOOT_COMPLETED")
