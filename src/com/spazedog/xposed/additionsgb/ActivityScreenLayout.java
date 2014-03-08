@@ -82,7 +82,7 @@ public class ActivityScreenLayout extends PreferenceActivity implements OnPrefer
     protected void onPause() {
     	super.onPause();
     	
-    	if (mUpdateBlacklist) {
+    	if (mUpdateBlacklist && mPreferences != null) {
     		mPreferences.putStringArray(Index.array.key.layoutRotationBlacklist, mBlacklist, true);
     	}
     }
@@ -91,7 +91,9 @@ public class ActivityScreenLayout extends PreferenceActivity implements OnPrefer
     protected void onStop() {
     	super.onStop();
     	
-    	mPreferences.commit();
+    	if (mPreferences != null)
+    		mPreferences.commit();
+    	
     	mPreferences = null;
     }
     

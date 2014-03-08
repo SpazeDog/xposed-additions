@@ -82,7 +82,9 @@ public class ActivityMain extends PreferenceActivity implements OnPreferenceClic
     protected void onStop() {
     	super.onStop();
     	
-    	mPreferences.commit();
+    	if (mPreferences != null)
+    		mPreferences.commit();
+    	
     	mPreferences = null;
     }
     

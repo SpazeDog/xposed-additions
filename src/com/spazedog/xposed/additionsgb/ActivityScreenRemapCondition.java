@@ -70,7 +70,9 @@ public class ActivityScreenRemapCondition extends PreferenceActivity implements 
     protected void onStop() {
     	super.onStop();
     	
-    	mPreferences.commit();
+    	if (mPreferences != null)
+    		mPreferences.commit();
+    	
     	mPreferences = null;
     }
     
