@@ -123,6 +123,7 @@ public final class Common {
 		public final String name;
 		public final Integer labelRes;
 		public final Integer descriptionRes;
+		public final Validate validate;
 		public final List<String> blacklist = new ArrayList<String>();
 		
 		public static final List<RemapAction> VALUES = new ArrayList<RemapAction>();
@@ -141,6 +142,13 @@ public final class Common {
 				new RemapAction("flipright", R.string.remap_title_flipright, R.string.remap_summary_flipright, false, "off");
 				new RemapAction("screenshot", R.string.remap_title_screenshot, R.string.remap_summary_screenshot, false, "off");
 			}
+			
+			new RemapAction("torch", R.string.remap_title_torch, R.string.remap_summary_torch, false, new Validate(){ 
+				@Override
+				public Boolean onValidate(Context context) { 
+					return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH); 
+				} 
+			});
 
 			new RemapAction("" + KeyEvent.KEYCODE_POWER, 0, 0, true);
 			new RemapAction("" + KeyEvent.KEYCODE_HOME, 0, 0, true, "off", "guard"); 
@@ -167,14 +175,19 @@ public final class Common {
 			}
 		}
 		
-		private RemapAction(String name, Integer labelRes, Integer descriptionRes, Boolean dispatch, String... blacklist) {
+		private RemapAction(String name, Integer labelRes, Integer descriptionRes, Boolean dispatch, Object... blacklist) {
+			int x = blacklist.length-1;
+			
 			this.name = name;
 			this.labelRes = labelRes;
 			this.descriptionRes = descriptionRes;
 			this.dispatch = dispatch;
+			this.validate = blacklist.length > 0 && blacklist[x] instanceof Validate ? (Validate) blacklist[x] : null;
 			
 			for (int i=0; i < blacklist.length; i++) {
-				this.blacklist.add( blacklist[i] );
+				if (blacklist[i] instanceof String) {
+					this.blacklist.add( (String) blacklist[i] );
+				}
 			}
 			
 			VALUES.add(this);
@@ -195,6 +208,14 @@ public final class Common {
 			}
 			
 			return null;
+		}
+		
+		public Boolean isValid(Context context, String condition) {
+			return (validate == null || validate.onValidate(context)) && !blacklist.contains(condition);
+		}
+		
+		public static interface Validate {
+			public Boolean onValidate(Context context);
 		}
 	}
 	

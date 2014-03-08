@@ -31,6 +31,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Build;
@@ -50,6 +52,7 @@ import android.widget.Toast;
 
 import com.spazedog.lib.reflecttools.ReflectTools;
 import com.spazedog.lib.reflecttools.ReflectTools.ReflectClass;
+import com.spazedog.lib.reflecttools.ReflectTools.ReflectException;
 import com.spazedog.lib.reflecttools.ReflectTools.ReflectField;
 import com.spazedog.lib.reflecttools.ReflectTools.ReflectMethod;
 import com.spazedog.xposed.additionsgb.Common;
@@ -124,6 +127,8 @@ public class PhoneWindowManager {
 	
 	protected Boolean mSupportsVirtualDetection = false;
 	
+	protected Intent mTorchIntent;
+	
 	protected XC_MethodHook hook_constructor = new XC_MethodHook() {
 		@Override
 		protected final void afterHookedMethod(final MethodHookParam param) {
@@ -148,6 +153,39 @@ public class PhoneWindowManager {
 					
 			if (SDK_HAS_HARDWARE_INPUT_MANAGER) {
 				INJECT_INPUT_EVENT_MODE_ASYNC = (Integer) ReflectTools.getReflectClass("android.hardware.input.InputManager").getField("INJECT_INPUT_EVENT_MODE_ASYNC").get();
+			}
+		}
+	};
+	
+	protected Thread locateTorchApps = new Thread() {
+		@Override
+		public void run() {
+			try {
+				/*
+				 * If the ROM has CM Torch capabilities, then use that instead. 
+				 * 
+				 * Some ROM's who implements some of CM's capabilities, some times changes the name of this util.cm folder to match 
+				 * their name. In these cases we don't care about consistency. If you are going to borrow from others, 
+				 * then make sure to keep compatibility.
+				 */
+				ReflectClass torchConstants = ReflectTools.getReflectClass("com.android.internal.util.cm.TorchConstants");
+				mTorchIntent = new Intent((String) torchConstants.locateField("ACTION_TOGGLE_STATE").get());
+				
+			} catch (ReflectException re) {
+				/*
+				 * Search for Torch Apps that supports <package name>.TOGGLE_FLASHLIGHT intents
+				 */
+				PackageManager pm = mContext.getPackageManager();
+				List<PackageInfo> packages = pm.getInstalledPackages(0);
+				
+				for (PackageInfo pkg : packages) {
+					Intent intent = new Intent(pkg.packageName + ".TOGGLE_FLASHLIGHT");
+					List<ResolveInfo> recievers = pm.queryBroadcastReceivers(intent, 0);
+					
+					if (recievers.size() > 0) {
+						mTorchIntent = intent; break;
+					}
+				}
 			}
 		}
 	};
@@ -192,6 +230,14 @@ public class PhoneWindowManager {
 							 * with anything else trying to access the InputManager methods.
 							 */
 							mInputManager = ReflectTools.getReflectClass("android.hardware.input.InputManager").getMethod("getInstance").invoke();
+						}
+						
+						if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH)) {
+							/*
+							 * This could take awhile depending on the amount of apps installed. 
+							 * We use a separate thread instead of the handler to avoid blocking any key events. 
+							 */
+							locateTorchApps.start();
 						}
 					}
 				}, new IntentFilter("android.intent.action.BOOT_COMPLETED")
@@ -834,7 +880,7 @@ public class PhoneWindowManager {
 				xForceStopPackage = serviceClazz.locateMethod("forceStopPackage", ReflectTools.MEMBER_MATCH_FAST, params);
 				xKillProcess = ReflectTools.getReflectClass("android.os.Process").locateMethod("killProcess", ReflectTools.MEMBER_MATCH_FAST, Integer.TYPE);
 			}
-			
+
 			Intent intent = new Intent(Intent.ACTION_MAIN);
 			intent.addCategory(Intent.CATEGORY_HOME);
 			ResolveInfo res = mContext.getPackageManager().resolveActivity(intent, 0);
@@ -890,6 +936,12 @@ public class PhoneWindowManager {
 		}
 	}
 	
+	protected void toggleFlashLight() {
+		if (mTorchIntent != null) {
+			mContext.sendBroadcast(mTorchIntent);
+		}
+	}
+	
 	protected void handleKeyAction(final String action, final Integer keyCode) {
 		/*
 		 * This should always be wrapped and sent to a handler. 
@@ -935,6 +987,9 @@ public class PhoneWindowManager {
 							
 						} else if ("screenshot".equals(action)) {
 							takeScreenshot();
+							
+						} else if ("torch".equals(action)) {
+							toggleFlashLight();
 						}
 					}
 					

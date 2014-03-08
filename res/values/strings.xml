@@ -142,5 +142,8 @@
     
     <string name='remap_title_screenshot'>Screenshot</string>
     <string name='remap_summary_screenshot'>Capture an image of the screen content</string>
+    
+    <string name='remap_title_torch'>Torch</string>
+    <string name='remap_summary_torch'>Turn the torch on/off</string>
 	
 </resources>

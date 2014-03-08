@@ -113,7 +113,7 @@ public class ActivitySelectorRemap extends PreferenceActivity implements OnPrefe
     			String condition = getIntent().getStringExtra("condition");
     			
     			for (RemapAction value : RemapAction.VALUES) {
-    				if (!value.blacklist.contains(condition)) {
+    				if (value.isValid(this, condition)) {
     					if (value.dispatch) {
     						preferenceScreen.addPreference(getSelectPreference(value.getLabel(this), getResources().getString(R.string.text_key, value.name), value.name, null, null));
     						
