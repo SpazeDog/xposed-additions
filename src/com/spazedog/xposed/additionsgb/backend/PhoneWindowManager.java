@@ -353,15 +353,18 @@ public class PhoneWindowManager {
 							
 							Integer tapDelay = mPreferences.getInt(Common.Index.integer.key.remapTapDelay, Common.Index.integer.value.remapTapDelay);
 							Integer pressDelay = mPreferences.getInt(Common.Index.integer.key.remapPressDelay, Common.Index.integer.value.remapPressDelay);
+							List<String> actions = null;
 							
-							String keyGroupName = mKeyFlags.getPrimaryKey() + ":" + mKeyFlags.getSecondaryKey();
-							String appCondition = !isScreenOn ? null : 
-								isKeyguardShowing() ? "guard" : mKeyFlags.isExtended() ? getRunningPackage() : null;
+							if (!mKeyFlags.isMulti() || mKeyFlags.isExtended()) {
+								String keyGroupName = mKeyFlags.getPrimaryKey() + ":" + mKeyFlags.getSecondaryKey();
+								String appCondition = !isScreenOn ? null : 
+									isKeyguardShowing() ? "guard" : mKeyFlags.isExtended() ? getRunningPackage() : null;
+									
+								actions = appCondition != null ? mPreferences.getStringArrayGroup(String.format(Index.array.groupKey.remapKeyActions_$, appCondition), keyGroupName, null) : null;
 								
-							List<String> actions = appCondition != null ? mPreferences.getStringArrayGroup(String.format(Index.array.groupKey.remapKeyActions_$, appCondition), keyGroupName, null) : null;
-							
-							if (actions == null) {
-								actions = mPreferences.getStringArrayGroup(String.format(Index.array.groupKey.remapKeyActions_$, isScreenOn ? "on" : "off"), keyGroupName, null);
+								if (actions == null) {
+									actions = mPreferences.getStringArrayGroup(String.format(Index.array.groupKey.remapKeyActions_$, isScreenOn ? "on" : "off"), keyGroupName, null);
+								}
 							}
 							
 							String clickAction = actions != null && actions.size() > 0 ? actions.get(0) : null;
@@ -475,6 +478,12 @@ public class PhoneWindowManager {
 								mKeyFlags.setDefaultLongPress(true);
 								mKeyFlags.finish();
 								
+								if (mKeyFlags.isMulti()) {
+									int primary = mKeyFlags.getPrimaryKey() == keyCode ? mKeyFlags.getSecondaryKey() : mKeyFlags.getPrimaryKey();
+									
+									injectInputEvent(primary, 0);
+								}
+								
 								injectInputEvent(keyCode, 0); // Force trigger default long press
 								
 								/*
@@ -483,7 +492,7 @@ public class PhoneWindowManager {
 								 * tracking from an injected key. 
 								 */
 								param.setResult(ACTION_PASS_DISPATCHING);
-	
+		
 								return;
 							}
 						}
@@ -1038,7 +1047,7 @@ public class PhoneWindowManager {
 						mIsPrimaryDown = true;
 					}
 					
-				} else if (!mIsRepeated && !mReset && mPrimaryKey > 0 && mIsPrimaryDown && keyCode != mPrimaryKey && (mSecondaryKey == 0 || mSecondaryKey == keyCode) && mExtended) {
+				} else if (!mIsRepeated && !mReset && mPrimaryKey > 0 && mIsPrimaryDown && keyCode != mPrimaryKey && (mSecondaryKey == 0 || mSecondaryKey == keyCode)) {
 					if(Common.debug()) Log.d(tag, "Registring secondary key");
 					
 					mIsSecondaryDown = true;
