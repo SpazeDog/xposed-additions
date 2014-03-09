@@ -101,6 +101,10 @@ public class ActivityScreenRemapKey extends PreferenceActivity implements OnPref
     			hapticForced.setOnPreferenceClickListener(this);
     		}
     		
+			CheckBoxPreference callButton = (CheckBoxPreference) findPreference("call_button_preference");
+			callButton.setChecked(mPreferences.getBooleanGroup(Index.bool.key.remapCallButton, mKey, Index.bool.value.remapCallButton));
+			callButton.setOnPreferenceClickListener(this);
+    		
 			WidgetPreference addConditionPreference = (WidgetPreference) findPreference("add_condition_preference");
 			addConditionPreference.setOnPreferenceClickListener(this);
 			addConditionPreference.setIntent( 
@@ -143,6 +147,13 @@ public class ActivityScreenRemapKey extends PreferenceActivity implements OnPref
 			}
 			
 			mPreferences.putStringArray(Index.array.key.forcedHapticKeys, mForcedHapticKeys, true);
+			
+			return true;
+			
+		} else if (preference.getKey().equals("call_button_preference")) {
+			Boolean isChecked = ((CheckBoxPreference) preference).isChecked();
+			
+			mPreferences.putBooleanGroup(Index.bool.key.remapCallButton, mKey, isChecked, true);
 			
 			return true;
 		}

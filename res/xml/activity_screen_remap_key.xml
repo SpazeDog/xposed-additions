@@ -11,6 +11,12 @@
             android:summary="@string/preference_summary_haptic_forced"
             android:persistent="false" />
         
+        <CheckBoxPreference
+            android:key="call_button_preference"
+            android:title="@string/preference_title_call_button"
+            android:summary="@string/preference_summary_call_button"
+            android:persistent="false" />
+        
     </PreferenceCategory>
     
     <PreferenceCategory

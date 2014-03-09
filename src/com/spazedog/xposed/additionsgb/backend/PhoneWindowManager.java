@@ -19,7 +19,6 @@
 
 package com.spazedog.xposed.additionsgb.backend;
 
-import java.lang.reflect.Member;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,6 +33,7 @@ import android.content.IntentFilter;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
@@ -47,7 +47,6 @@ import android.view.InputDevice;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
 import android.view.Surface;
-import android.view.ViewConfiguration;
 import android.widget.Toast;
 
 import com.spazedog.lib.reflecttools.ReflectTools;
@@ -60,7 +59,6 @@ import com.spazedog.xposed.additionsgb.Common.Index;
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
 
 import de.robv.android.xposed.XC_MethodHook;
-import de.robv.android.xposed.XposedBridge;
 
 public class PhoneWindowManager {
 	public static final String TAG = PhoneWindowManager.class.getName();
@@ -115,6 +113,7 @@ public class PhoneWindowManager {
 	protected Object mInputManager;				// android.hardware.input.InputManager
 	protected Object mActivityManager;			// android.app.ActivityManager
 	protected Object mActivityManagerService;	// android.app.ISDK_NEW_KEYEVENTActivityManager (android.app.ActivityManagerNative)
+	protected Object mAudioManager;
 	
 	protected boolean mReady = false;
 	
@@ -205,6 +204,7 @@ public class PhoneWindowManager {
 			mWindowManager = param.args[1];
 			mPhoneWindowManager = param.thisObject;
 			mActivityManager = mContext.getSystemService(Context.ACTIVITY_SERVICE);
+			mAudioManager = mContext.getSystemService(Context.AUDIO_SERVICE);
 			
 			mHandler = new Handler();
 			
@@ -524,9 +524,29 @@ public class PhoneWindowManager {
 					
 					synchronized(mLockQueueing) {
 						if (!mKeyFlags.isKeyDown() && mKeyFlags.getCurrentKey() == keyCode) {
-							if(Common.debug()) Log.d(tag, "Invoking single click action");
+							int callCode = 0;
 							
-							handleKeyAction(mKeyConfig.getClickAction(), keyCode);
+							if (mKeyFlags.isCallButton()) {
+								int mode = ((AudioManager) mAudioManager).getMode();
+								
+								if (mode == AudioManager.MODE_IN_CALL || mode == AudioManager.MODE_IN_COMMUNICATION) {
+									callCode = KeyEvent.KEYCODE_ENDCALL;
+									
+								} else if (mode == AudioManager.MODE_RINGTONE) {
+									callCode = KeyEvent.KEYCODE_CALL;
+								}
+							}
+							
+							if (callCode == 0) {
+								if(Common.debug()) Log.d(tag, "Invoking single click action");
+								
+								handleKeyAction(mKeyConfig.getClickAction(), keyCode);
+								
+							} else {
+								if(Common.debug()) Log.d(tag, "Invoking call button");
+								
+								injectInputEvent(callCode);
+							}
 							
 							mKeyFlags.finish();
 						}
@@ -1015,6 +1035,7 @@ public class PhoneWindowManager {
 		private Boolean mReset = false;
 		private Boolean mExtended = false;
 		private Boolean mDefaultLongPress = false;
+		private Boolean mIsCallButton = false;
 		
 		private Integer mPrimaryKey = 0;
 		private Integer mSecondaryKey = 0;
@@ -1069,6 +1090,7 @@ public class PhoneWindowManager {
 					mSecondaryKey = 0;
 					
 					mExtended = mPreferences.isPackageUnlocked();
+					mIsCallButton = mPreferences.getBooleanGroup(Index.bool.key.remapCallButton, (mPrimaryKey + ":" + mSecondaryKey), Index.bool.value.remapCallButton);
 				}
 				
 			} else {
@@ -1112,6 +1134,10 @@ public class PhoneWindowManager {
 		
 		public Boolean isExtended() {
 			return mExtended;
+		}
+		
+		public Boolean isCallButton() {
+			return mIsCallButton;
 		}
 		
 		public Boolean isDefaultLongPress() {

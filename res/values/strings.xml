@@ -69,6 +69,9 @@
     <string name='preference_title_haptic_forced'>Force Haptic Feedback</string>
     <string name='preference_summary_haptic_forced'>Enable this if your device has problem detecting this as a virtual key when using the module</string>
     
+    <string name='preference_title_call_button'>Call Button</string>
+    <string name='preference_summary_call_button'>Use this as a call button whenever the phone is ringing or during ongoing calls</string>
+    
     <string name='category_conditions'>Conditions</string>
     <string name='preference_add_condition'>Add new Condition</string>
     
