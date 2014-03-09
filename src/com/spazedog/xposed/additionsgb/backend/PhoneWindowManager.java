@@ -265,22 +265,11 @@ public class PhoneWindowManager {
 			final int action = (Integer) (!SDK_NEW_PHONE_WINDOW_MANAGER ? param.args[1] : ((KeyEvent) param.args[0]).getAction());
 			final int policyFlags = (Integer) (!SDK_NEW_PHONE_WINDOW_MANAGER ? param.args[5] : param.args[1]);
 			final int keyCode = (Integer) (!SDK_NEW_PHONE_WINDOW_MANAGER ? param.args[3] : ((KeyEvent) param.args[0]).getKeyCode());
+			final int repeatCount = (Integer) (!SDK_NEW_PHONE_WINDOW_MANAGER ? 0 : ((KeyEvent) param.args[0]).getRepeatCount());
 			final boolean isScreenOn = (Boolean) (!SDK_NEW_PHONE_WINDOW_MANAGER ? param.args[6] : param.args[2]);
 			final boolean down = action == KeyEvent.ACTION_DOWN;
-			boolean isVirtual = (policyFlags & FLAG_VIRTUAL) != 0;
 			
-			/*
-			 * Some Stock ROM's has problems detecting virtual keys. 
-			 * Some of them just hard codes the keys into the class. 
-			 * This provides a way to force a key being detected as virtual. 
-			 */
-			if (!isVirtual) {
-				List<String> forcedKeys = (ArrayList<String>) mPreferences.getStringArray(Index.array.key.forcedHapticKeys, Index.array.value.forcedHapticKeys);
-				
-				if (forcedKeys.contains(""+keyCode)) {
-					isVirtual = true;
-				}
-			}
+			String tag = TAG + "#Queueing/" + (down ? "Down" : "Up") + ":" + keyCode;
 			
 			/*
 			 * Using KitKat work-around from the InputManager Hook
@@ -289,20 +278,48 @@ public class PhoneWindowManager {
 					(((KeyEvent) param.args[0]).getFlags() & FLAG_INJECTED) != 0 : (policyFlags & FLAG_INJECTED) != 0;
 			
 			if (isInjected) {
-				if (SDK_NEW_PHONE_WINDOW_MANAGER) {
-					param.args[1] = policyFlags & ~FLAG_INJECTED;
+				if (!down || repeatCount <= 0) {
+					if(Common.debug()) Log.d(tag, "Skipping injected key");
+					
+					if (SDK_NEW_PHONE_WINDOW_MANAGER) {
+						param.args[1] = policyFlags & ~FLAG_INJECTED;
+						
+					} else {
+						param.args[5] = policyFlags & ~FLAG_INJECTED;
+					}
 					
 				} else {
-					param.args[5] = policyFlags & ~FLAG_INJECTED;
+					if(Common.debug()) Log.d(tag, "Ignoring injected repeated key");
+					
+					/*
+					 * Normally repeated events will not continue to invoke this method. 
+					 * But it seams that repeating an event using injection will. On most devices
+					 * the original methods themselves seams to be handling this just fine, but a few 
+					 * stock ROM's are treating these as both new and repeated events. 
+					 */
+					param.setResult(ACTION_PASS_QUEUEING);
 				}
 			
 				return;
 			}
 			
 			synchronized(mLockQueueing) {
-				String tag = TAG + "#Queueing/" + (down ? "Down" : "Up") + ":" + keyCode;
-			
 				if(Common.debug()) Log.d(tag, (down ? "Starting" : "Stopping") + " event");
+				
+				boolean isVirtual = (policyFlags & FLAG_VIRTUAL) != 0;
+				
+				/*
+				 * Some Stock ROM's has problems detecting virtual keys. 
+				 * Some of them just hard codes the keys into the class. 
+				 * This provides a way to force a key being detected as virtual. 
+				 */
+				if (down && !isVirtual) {
+					List<String> forcedKeys = (ArrayList<String>) mPreferences.getStringArray(Index.array.key.forcedHapticKeys, Index.array.value.forcedHapticKeys);
+					
+					if (forcedKeys.contains(""+keyCode)) {
+						isVirtual = true;
+					}
+				}
 				
 				if (down && isVirtual) {
 					performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
@@ -456,10 +473,18 @@ public class PhoneWindowManager {
 								if(Common.debug()) Log.d(tag, "Invoking default long press action");
 								
 								mKeyFlags.setDefaultLongPress(true);
-								injectInputEvent(keyCode, 1); // Force trigger default long press
 								mKeyFlags.finish();
+								
+								injectInputEvent(keyCode, 0); // Force trigger default long press
+								
+								/*
+								 * The original methods will start by getting a 0 repeat event in order to prepare. 
+								 * Applications that use the tracking flag will need to original, as they cannot start 
+								 * tracking from an injected key. 
+								 */
+								param.setResult(ACTION_PASS_DISPATCHING);
 	
-								return; // Otherwise we will break default long press on some applications
+								return;
 							}
 						}
 					}
