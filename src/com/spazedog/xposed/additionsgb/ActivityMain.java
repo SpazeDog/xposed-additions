@@ -22,6 +22,7 @@ package com.spazedog.xposed.additionsgb;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
 import android.preference.Preference;
@@ -92,6 +93,9 @@ public class ActivityMain extends PreferenceActivity implements OnPreferenceClic
     	if (mSetup != (mSetup = true)) {
     		if (mPreferences.isPackageUnlocked()) {
     			getPreferenceScreen().removePreference( findPreference("pro_link") );
+    			
+    		} else {
+    			findPreference("pro_link").setOnPreferenceClickListener(this);
     		}
     		
     		findPreference("usbplug_link").setIntent(new Intent(Intent.ACTION_VIEW).setClass(this, ActivityScreenUSB.class));
@@ -111,6 +115,16 @@ public class ActivityMain extends PreferenceActivity implements OnPreferenceClic
 
 			mPreferences.putBoolean(Common.Index.bool.key.enableDebug, isChecked, true);
 			
+			return true;
+			
+		} else if (preference.getKey().equals("pro_link")) {
+			try {
+				startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id="+Common.PACKAGE_NAME_PRO)));
+				
+			} catch (android.content.ActivityNotFoundException anfe) {
+				startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("http://play.google.com/store/apps/details?id="+Common.PACKAGE_NAME_PRO)));
+			}
+
 			return true;
 		}
 		
