@@ -19,14 +19,10 @@
 
 package com.spazedog.xposed.additionsgb.backend;
 
-import android.os.Binder;
 import android.util.Log;
-import android.view.InputEvent;
 import android.view.KeyEvent;
 
 import com.spazedog.lib.reflecttools.ReflectTools;
-import com.spazedog.lib.reflecttools.ReflectTools.ReflectClass;
-import com.spazedog.lib.reflecttools.ReflectTools.ReflectMethod;
 import com.spazedog.xposed.additionsgb.Common;
 
 import de.robv.android.xposed.XC_MethodHook;
@@ -34,65 +30,27 @@ import de.robv.android.xposed.XC_MethodHook;
 public class InputManager {
 	public static final String TAG = InputManager.class.getName();
 	
-	protected int FLAG_INJECTED;
-	
-	protected Object mPtr;
-	
-	protected ReflectMethod mMethodNativeInjectInputEvent;
-	
-	protected static int FLAG_INTERNAL = 0x5000000;
+	protected static int FLAG_INJECTED;
 	
 	public static void init() {
 		if(Common.DEBUG) Log.d(TAG, "Adding Input Manager Hook");
-		
-		/*
-		 * This class has two goals. 
-		 * 
-		 *  1: Correct an issue that KitKat has with PolicyFlags where it always parses a key as injected
-		 *  2: Overwrite the Input Manager's Key Injection method to allow repeated keys
-		 *  
-		 *  Gingerbread does not need any of these things. It has no problems with PolicyFlags, 
-		 *  and it does not support disabling repeated keys so this is supported by default. 
-		 */
 
-		if (android.os.Build.VERSION.SDK_INT >= 14) {
+		/*
+		 * This class does not exist in older Android Versions.
+		 */
+		if (android.os.Build.VERSION.SDK_INT >= 16) {
 			InputManager hook = new InputManager();
 			
-			ReflectClass service = ReflectTools.getReflectClass(
-					android.os.Build.VERSION.SDK_INT >= 16 ? 
-							"com.android.server.input.InputManagerService" : 
-								"com.android.server.wm.InputManager");
-			
-			service.inject(hook.hook_constructor);
-			service.inject("injectInputEvent", hook.hook_injectInputEvent);
-		}
-	}
-	
-	protected XC_MethodHook hook_constructor = new XC_MethodHook() {
-		@Override
-		protected final void afterHookedMethod(final MethodHookParam param) {
 			FLAG_INJECTED = (Integer) ReflectTools.getReflectClass("android.view.WindowManagerPolicy").getField("FLAG_INJECTED").get();
 			
-			if (android.os.Build.VERSION.SDK_INT >= 16) {
-				/*
-				 * Once API 20 is out, this will be Long instead of Integer. 
-				 */
-				mPtr = ReflectTools.getReflectClass(param.thisObject).getField("mPtr").get(param.thisObject);
-				
-				mMethodNativeInjectInputEvent = ReflectTools.getReflectClass(param.thisObject)
-						.locateMethod("nativeInjectInputEvent", ReflectTools.MEMBER_MATCH_FAST, (mPtr instanceof Integer ? Integer.TYPE : Long.TYPE), InputEvent.class, Integer.TYPE, Integer.TYPE, Integer.TYPE, Integer.TYPE, Integer.TYPE);
-				
-			} else {
-				mMethodNativeInjectInputEvent = ReflectTools.getReflectClass(param.thisObject)
-						.locateMethod("nativeInjectInputEvent", ReflectTools.MEMBER_MATCH_FAST, InputEvent.class, Integer.TYPE, Integer.TYPE, Integer.TYPE, Integer.TYPE, Integer.TYPE);
-			}
+			ReflectTools.getReflectClass("com.android.server.input.InputManagerService").inject("injectInputEvent", hook.hook_injectInputEvent);
 		}
-	};
+	}
 
 	protected XC_MethodHook hook_injectInputEvent = new XC_MethodHook() {
 		@Override
 		protected final void beforeHookedMethod(final MethodHookParam param) {
-			if (android.os.Build.VERSION.SDK_INT >= 16 && param.args[0] instanceof KeyEvent) {
+			if (param.args[0] instanceof KeyEvent) {
 				if ((((KeyEvent) param.args[0]).getFlags() & FLAG_INJECTED) == 0) {
 					if(Common.debug()) Log.d(TAG, "Adding FLAG_INJECTED flag on KeyEvent " + ((KeyEvent) param.args[0]).getKeyCode());
 					
@@ -106,33 +64,6 @@ public class InputManager {
 					
 				} else {
 					if(Common.debug()) Log.d(TAG, "The KeyEvent " + ((KeyEvent) param.args[0]).getKeyCode() + " already contains the FLAG_INJECTED flag");
-				}
-			}
-			
-			if ((((KeyEvent) param.args[0]).getFlags() & FLAG_INTERNAL) != 0) {
-				if (android.os.Build.VERSION.SDK_INT >= 16) {
-					final int pid = Binder.getCallingPid();
-					final int uid = Binder.getCallingUid();
-					final long ident = Binder.clearCallingIdentity();
-					
-					try {
-						mMethodNativeInjectInputEvent.invoke(param.thisObject, false, mPtr, param.args[0], pid, uid, param.args[1], 0, 0);
-						
-					} finally {
-						Binder.restoreCallingIdentity(ident);
-					}
-					
-					param.setResult(true);
-					
-				} else {
-					/*
-					 * ICS does not have an InputManagerService like JB+. Is has an InputManager
-					 * that does the same combined with the WindowManagerService. 
-					 * The job that JB+ does in one class, is split those two. So 
-					 * all we have to do, is parse the event to the native method. All preparation 
-					 * has already been done by the WindowManagerService.
-					 */
-					param.setResult(mMethodNativeInjectInputEvent.invoke(param.thisObject, false, param.args[0], param.args[1], param.args[2], param.args[3], param.args[4], 0));
 				}
 			}
 		}

@@ -94,7 +94,6 @@ public class PhoneWindowManager {
 	
 	protected static int FLAG_INJECTED;
 	protected static int FLAG_VIRTUAL;
-	protected static int FLAG_INTERNAL = 0x5000000;
 	
 	protected static int INJECT_INPUT_EVENT_MODE_ASYNC;
 	
@@ -411,7 +410,6 @@ public class PhoneWindowManager {
 			final int eventFlags = (Integer) (!SDK_NEW_PHONE_WINDOW_MANAGER ? param.args[2] : ((KeyEvent) param.args[1]).getFlags());
 			final int repeatCount = (Integer) (!SDK_NEW_PHONE_WINDOW_MANAGER ? param.args[6] : ((KeyEvent) param.args[1]).getRepeatCount());
 			final boolean down = action == KeyEvent.ACTION_DOWN;
-			final boolean internal = (eventFlags & FLAG_INTERNAL) != 0;
 			
 			String tag = TAG + "#Dispatch/" + (down ? "Down" : "Up") + ":" + keyCode;
 			
@@ -429,7 +427,7 @@ public class PhoneWindowManager {
 					param.args[7] = policyFlags & ~FLAG_INJECTED;
 				}
 				
-				if (down && internal && mKeyFlags.isDefaultLongPress() && mKeyFlags.isKeyDown() && keyCode == mKeyFlags.getCurrentKey()) {
+				if (down && mKeyFlags.isDefaultLongPress() && mKeyFlags.isKeyDown() && keyCode == mKeyFlags.getCurrentKey()) {
 					if(Common.debug()) Log.d(tag, "Repeating default long press event count " + repeatCount);
 					
 					injectInputEvent(keyCode, repeatCount+1);
@@ -605,8 +603,7 @@ public class PhoneWindowManager {
 					int characterMap = SDK_NEW_CHARACTERMAP ? KeyCharacterMap.VIRTUAL_KEYBOARD : 0;
 					int eventType = repeat.length == 0 || repeat[0] >= 0 ? KeyEvent.ACTION_DOWN : KeyEvent.ACTION_UP;
 					
-					int flags = repeat.length == 0 ? KeyEvent.FLAG_FROM_SYSTEM|FLAG_INJECTED : 
-						repeat[0] == 1 ? KeyEvent.FLAG_LONG_PRESS|KeyEvent.FLAG_FROM_SYSTEM|FLAG_INJECTED|FLAG_INTERNAL : KeyEvent.FLAG_FROM_SYSTEM|FLAG_INJECTED|FLAG_INTERNAL;
+					int flags = repeat.length > 0 && repeat[0] == 1 ? KeyEvent.FLAG_LONG_PRESS|KeyEvent.FLAG_FROM_SYSTEM|FLAG_INJECTED : KeyEvent.FLAG_FROM_SYSTEM|FLAG_INJECTED;
 					
 					int repeatCount = repeat.length == 0 ? 0 : 
 						repeat[0] < 0 ? 1 : repeat[0];
