@@ -786,6 +786,12 @@ public class PhoneWindowManager {
 	protected void freezeRotation(Integer orientation) {
 		if (SDK_HAS_ROTATION_TOOLS) {
 			if (orientation != 1) {
+				switch (orientation) {
+					case 90: orientation = Surface.ROTATION_90; break;
+					case 180: orientation = Surface.ROTATION_180; break;
+					case 270: orientation = Surface.ROTATION_270;
+				}
+				
 				ReflectTools.getReflectClass(mWindowManager).locateMethod("freezeRotation", ReflectTools.MEMBER_MATCH_FAST, Integer.TYPE).invoke(mWindowManager, false, orientation);
 				
 			} else {
@@ -809,19 +815,10 @@ public class PhoneWindowManager {
 	}
 	
 	protected Integer getNextRotation(Boolean backwards) {
-		Integer[] positions = new Integer[]{Surface.ROTATION_0, Surface.ROTATION_90, Surface.ROTATION_180, Surface.ROTATION_270};
 		Integer  position = getCurrentRotation();
 		
-		for (int i=0; i < positions.length; i++) {
-			if ((int) positions[i] == (int) position) {
-				Integer x = backwards ? (i-1) : (i+1);
-				
-				return x >= positions.length ? positions[0] : 
-					x < positions.length ? positions[positions.length-1] : positions[x];
-			}
-		}
-		
-		return position;
+		return (position == Surface.ROTATION_90 || position == Surface.ROTATION_0) && backwards ? 270 : 
+			(position == Surface.ROTATION_270 || position == Surface.ROTATION_0) && !backwards ? 90 : 0;
 	}
 	
 	ReflectMethod xGetRunningAppProcesses;
