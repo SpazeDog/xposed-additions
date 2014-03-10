@@ -90,7 +90,7 @@ public class ActivityScreenRemapKey extends PreferenceActivity implements OnPref
     private void setup() {
     	if (mSetup != (mSetup = true)) {
     		if (!mKey.endsWith(":0")) {
-    			getPreferenceScreen().removePreference(findPreference("settings_group"));
+    			((PreferenceCategory) findPreference("settings_group")).removePreference(findPreference("haptic_forced_preference"));
     			
     		} else {
     			mKeyCode = mKey.substring(0, mKey.indexOf(":"));
