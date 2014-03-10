@@ -866,7 +866,7 @@ public class PhoneWindowManager {
 									xForceStopPackage.invoke(mActivityManagerService, false, pkg);
 								}
 								
-								break;
+								return;
 							}
 						}
 						
@@ -875,7 +875,7 @@ public class PhoneWindowManager {
 						
 						xKillProcess.invoke(false, appInfo.pid);
 						
-						break;
+						return;
 					}
 				}
 			}
