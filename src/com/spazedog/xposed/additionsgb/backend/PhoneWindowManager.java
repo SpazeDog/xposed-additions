@@ -39,6 +39,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.PowerManager;
+import android.os.PowerManager.WakeLock;
 import android.os.SystemClock;
 import android.provider.Settings;
 import android.util.Log;
@@ -127,6 +128,8 @@ public class PhoneWindowManager {
 	
 	protected Intent mTorchIntent;
 	
+	protected WakeLock mWakelock;
+	
 	protected XC_MethodHook hook_constructor = new XC_MethodHook() {
 		@Override
 		protected final void afterHookedMethod(final MethodHookParam param) {
@@ -210,6 +213,8 @@ public class PhoneWindowManager {
 			mPreferences = XServiceManager.getInstance();
 			mPreferences.registerContext(mContext);
 			
+			mWakelock = ((PowerManager) mPowerManager).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "HookedPhoneWindowManager");
+			
 			mContext.registerReceiver(
 				new BroadcastReceiver() {
 					@Override
@@ -260,7 +265,7 @@ public class PhoneWindowManager {
 				
 				return;
 			}
-			
+
 			final int action = (Integer) (!SDK_NEW_PHONE_WINDOW_MANAGER ? param.args[1] : ((KeyEvent) param.args[0]).getAction());
 			final int policyFlags = (Integer) (!SDK_NEW_PHONE_WINDOW_MANAGER ? param.args[5] : param.args[1]);
 			final int keyCode = (Integer) (!SDK_NEW_PHONE_WINDOW_MANAGER ? param.args[3] : ((KeyEvent) param.args[0]).getKeyCode());
@@ -573,7 +578,9 @@ public class PhoneWindowManager {
 			}
 			
 		} else {
-			((PowerManager) mPowerManager).userActivity(SystemClock.uptimeMillis(), true);
+			if (!mWakelock.isHeld()) {
+				mWakelock.acquire(3000);
+			}
 		}
 	}
 
