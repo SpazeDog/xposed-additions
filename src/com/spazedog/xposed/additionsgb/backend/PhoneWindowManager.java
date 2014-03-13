@@ -855,65 +855,29 @@ public class PhoneWindowManager {
 			(position == Surface.ROTATION_270 || position == Surface.ROTATION_0) && !backwards ? 90 : 0;
 	}
 	
-	ReflectMethod xGetRunningAppProcesses;
 	ReflectMethod xForceStopPackage;
-	ReflectMethod xKillProcess;
 	protected void killForegroundApplication() {
 		if(Common.debug()) Log.d(TAG, "Start searching for foreground application to kill");
 		
-		try {
-			if (xGetRunningAppProcesses == null ||
-					xForceStopPackage == null ||
-					xKillProcess == null) {
-				
-				ReflectClass serviceClazz = ReflectTools.getReflectClass(mActivityManagerService);
-				Object[] params = SDK_HAS_MULTI_USER ? new Object[]{String.class, Integer.TYPE} : new Object[]{String.class};
-				
-				xGetRunningAppProcesses = serviceClazz.locateMethod("getRunningAppProcesses");
-				xForceStopPackage = serviceClazz.locateMethod("forceStopPackage", ReflectTools.MEMBER_MATCH_FAST, params);
-				xKillProcess = ReflectTools.getReflectClass("android.os.Process").locateMethod("killProcess", ReflectTools.MEMBER_MATCH_FAST, Integer.TYPE);
-			}
-
-			Intent intent = new Intent(Intent.ACTION_MAIN);
-			intent.addCategory(Intent.CATEGORY_HOME);
-			ResolveInfo res = mContext.getPackageManager().resolveActivity(intent, 0);
-			String defaultHomePackage = res.activityInfo != null && !"android".equals(res.activityInfo.packageName) ? 
-					res.activityInfo.packageName : "com.android.launcher";
-
-			List<RunningAppProcessInfo> apps = (List<RunningAppProcessInfo>) xGetRunningAppProcesses.invoke(mActivityManagerService);
-			for (RunningAppProcessInfo appInfo : apps) {
-				int uid = appInfo.uid;
-				
-				if (uid >= FIRST_APPLICATION_UID && uid <= LAST_APPLICATION_UID && appInfo.importance == RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {
-					if (appInfo.pkgList != null && appInfo.pkgList.length > 0) {
-						for (String pkg : appInfo.pkgList) {
-							if (!pkg.equals("com.android.systemui") && !pkg.equals(defaultHomePackage)) {
-								if(Common.debug()) Log.d(TAG, "Invoking force stop on " + pkg);
-								
-								if (SDK_HAS_MULTI_USER) {
-									xForceStopPackage.invoke(mActivityManagerService, false, pkg, ReflectTools.getReflectClass("android.os.UserHandle").getField("USER_CURRENT").get());
-									
-								} else {
-									xForceStopPackage.invoke(mActivityManagerService, false, pkg);
-								}
-								
-								return;
-							}
-						}
-						
-					} else {
-						if(Common.debug()) Log.d(TAG, "Invoking kill process on " + appInfo.pid);
-						
-						xKillProcess.invoke(false, appInfo.pid);
-						
-						return;
-					}
-				}
-			}
+		if (xForceStopPackage == null) {
+			xForceStopPackage = ReflectTools.getReflectClass(mActivityManagerService).locateMethod("forceStopPackage", ReflectTools.MEMBER_MATCH_FAST, 
+					SDK_HAS_MULTI_USER ? new Object[]{String.class, Integer.TYPE} : new Object[]{String.class});
+		}
+		
+		List<ActivityManager.RunningTaskInfo> packages = ((ActivityManager) mActivityManager).getRunningTasks(5);
+		
+		for (int i=0; i < packages.size(); i++) {
+			String packageName = packages.get(0).baseActivity.getPackageName();
 			
-		} catch (Throwable e) {
-			if (Common.debug()) {
-				throw new Error(e.getMessage(), e);
+			if (!packageName.equals(getHomePackage()) && !packageName.equals("com.android.systemui")) {
+				if(Common.debug()) Log.d(TAG, "Invoking force stop on " + packageName);
+				
+				if (SDK_HAS_MULTI_USER) {
+					xForceStopPackage.invoke(mActivityManagerService, false, packageName, ReflectTools.getReflectClass("android.os.UserHandle").getField("USER_CURRENT").get());
+					
+				} else {
+					xForceStopPackage.invoke(mActivityManagerService, false, packageName);
+				}
 			}
 		}
 	}
