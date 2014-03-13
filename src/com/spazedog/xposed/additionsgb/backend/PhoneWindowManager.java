@@ -25,6 +25,7 @@ import java.util.List;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.ActivityManager;
+import android.app.ActivityManager.RecentTaskInfo;
 import android.app.ActivityManager.RunningAppProcessInfo;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -700,6 +701,15 @@ public class PhoneWindowManager {
 		return packages.size() > 0 ? packages.get(0).baseActivity.getPackageName() : null;
 	}
 	
+	protected String getHomePackage() {
+		Intent intent = new Intent(Intent.ACTION_MAIN);
+		intent.addCategory(Intent.CATEGORY_HOME);
+		ResolveInfo res = mContext.getPackageManager().resolveActivity(intent, 0);
+		
+		return res.activityInfo != null && !"android".equals(res.activityInfo.packageName) ? 
+				res.activityInfo.packageName : "com.android.launcher";
+	}
+	
 	protected void handleDefaultQueueing(int flag) {
 		if ((flag & ACTION_SLEEP_QUEUEING) != 0) {
 			changeDisplayState(false);
@@ -728,6 +738,23 @@ public class PhoneWindowManager {
 		}
 		
 		mContext.startActivity(intent);
+	}
+	
+	protected void toggleLastApplication() {
+		List<RecentTaskInfo> packages = ((ActivityManager) mActivityManager).getRecentTasks(5, ActivityManager.RECENT_WITH_EXCLUDED);
+		
+		for (int i=1; i < packages.size(); i++) {
+			String intentString = packages.get(i).baseIntent + "";
+			
+			int indexStart = intentString.indexOf("cmp=")+4;
+		    int indexStop = intentString.indexOf("/", indexStart);
+			
+			String packageName = intentString.substring(indexStart, indexStop);
+			
+			if (!packageName.equals(getHomePackage()) && !packageName.equals("com.android.systemui")) {
+				mContext.startActivity(packages.get(i).baseIntent);
+			}
+		}
 	}
 	
 	protected void sendCloseSystemWindows(String reason) {
@@ -956,6 +983,9 @@ public class PhoneWindowManager {
 							
 						} else if ("torch".equals(action)) {
 							toggleFlashLight();
+							
+						} else if ("lastapp".equals(action)) {
+							toggleLastApplication();
 						}
 					}
 					

@@ -133,6 +133,7 @@ public final class Common {
 			new RemapAction("disabled", R.string.remap_title_disabled, R.string.remap_summary_disabled, false);
 			new RemapAction("guarddismiss", R.string.remap_title_dismissguard, R.string.remap_summary_dismissguard, false, "off", "on");
 			new RemapAction("recentapps", R.string.remap_title_recentapps, R.string.remap_summary_recentapps, false, "off");
+			new RemapAction("lastapp", R.string.remap_title_last_app, R.string.remap_summary_last_app, false, "off", "guard");
 			new RemapAction("powermenu", R.string.remap_title_powermenu, R.string.remap_summary_powermenu, false, "off");
 			new RemapAction("killapp", R.string.remap_title_killapp, R.string.remap_summary_killapp, false, "off", "guard");
 			new RemapAction("fliptoggle", R.string.remap_title_fliptoggle, R.string.remap_summary_fliptoggle, false, "off");

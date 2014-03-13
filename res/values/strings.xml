@@ -145,5 +145,8 @@
     
     <string name='remap_title_torch'>Torch</string>
     <string name='remap_summary_torch'>Turn the torch on/off</string>
+    
+    <string name='remap_title_last_app'>Last Application</string>
+    <string name='remap_summary_last_app'>Toggle between the foreground and last applications</string>
 	
 </resources>
