@@ -44,4 +44,6 @@ interface IXService {
 	boolean isUnlocked();
 	
 	boolean isReady();
+	
+	int getVersion();
 }

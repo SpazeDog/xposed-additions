@@ -22,6 +22,7 @@ package com.spazedog.xposed.additionsgb;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
@@ -70,6 +71,22 @@ public class ActivityMain extends PreferenceActivity implements OnPreferenceClic
     		.show();
     		
     	} else {
+    		try {
+    			if (mPreferences.getVersion() != getPackageManager().getPackageInfo(Common.PACKAGE_NAME, 0).versionCode) {
+    	    		new AlertDialog.Builder(this)
+    	    		.setTitle(R.string.alert_title_module_update)
+    	    		.setMessage(R.string.alert_text_module_update)
+    	    		.setNegativeButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+    					@Override
+    	                public void onClick(DialogInterface dialog, int id) {
+    						dialog.cancel();
+    					}
+    	    		})
+    	    		.show();
+    			}
+    			
+    		} catch (NameNotFoundException e) {}
+
     		setup();
     	}
     }

@@ -473,4 +473,15 @@ public class XServiceManager {
 		
 		return isReady != null && isReady;
 	}
+	
+	public Integer getVersion() {
+		try {
+			return mService.getVersion();
+		
+		} catch (RemoteException e) {
+			handleRemoteException(e);
+		}
+		
+		return 0;
+	}
 }

@@ -70,6 +70,8 @@ public final class XService extends IXService.Stub {
 	
 	private Boolean mIsReady = false;
 	
+	private Integer mVersion = 0;
+	
 	private ExecutorService mThreadExecuter = Executors.newSingleThreadExecutor();
 	
 	private static class PREFERENCE {
@@ -190,6 +192,11 @@ public final class XService extends IXService.Stub {
 				PREFERENCE.UID = mContextModule.getApplicationInfo().uid;
 				
 			} catch (NameNotFoundException e1) { e1.printStackTrace(); }
+			
+			try {
+				mVersion = mContextSystem.getPackageManager().getPackageInfo(Common.PACKAGE_NAME, 0).versionCode;
+				
+			} catch (NameNotFoundException e) { e.printStackTrace(); }
 			
 			if (PREFERENCE.FILE.exists()) {
 				try {
@@ -510,6 +517,11 @@ public final class XService extends IXService.Stub {
 	@Override
 	public boolean isReady() {
 		return mIsReady;
+	}
+	
+	@Override
+	public int getVersion() {
+		return mVersion;
 	}
 	
 	@SuppressWarnings("unchecked")
