@@ -152,11 +152,11 @@ public final class XService extends IXService.Stub {
 					.getMethod("setPermissions", ReflectTools.MEMBER_MATCH_FAST, String.class, Integer.TYPE, Integer.TYPE, Integer.TYPE);
 			
 			if((Integer) setPermissions.invoke(false, PREFERENCE.DIR.getPath(), 0771, PREFERENCE.UID, PREFERENCE.GID) != 0) {
-				setPermissions.invoke(false, PREFERENCE.DIR.getPath(), 0771, -1, -1);
+				setPermissions.invoke(false, PREFERENCE.DIR.getPath(), 0777, -1, -1);
 			}
 			
 			if((Integer) setPermissions.invoke(false, PREFERENCE.FILE.getPath(), 0660, PREFERENCE.UID, PREFERENCE.GID) != 0) {
-				setPermissions.invoke(false, PREFERENCE.FILE.getPath(), 0660, -1, -1);
+				setPermissions.invoke(false, PREFERENCE.FILE.getPath(), 0666, -1, -1);
 			}
 		}
 	}
