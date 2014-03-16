@@ -616,7 +616,7 @@ public class PhoneWindowManager {
 					int repeatCount = repeat.length == 0 ? 0 : 
 						repeat[0] < 0 ? 1 : repeat[0];
 						
-					KeyEvent event = new KeyEvent(now, now, eventType, keyCode, repeatCount, 0, characterMap, 0, flags, InputDevice.SOURCE_KEYBOARD);
+					KeyEvent event = new KeyEvent(now, now, eventType, keyCode, repeatCount, 0, characterMap, 0, flags, InputDevice.SOURCE_UNKNOWN);
 					
 					if (SDK_HAS_HARDWARE_INPUT_MANAGER) {
 						xInjectInputEvent.invoke(mInputManager, false, event, INJECT_INPUT_EVENT_MODE_ASYNC);
