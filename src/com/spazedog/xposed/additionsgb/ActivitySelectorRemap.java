@@ -19,14 +19,11 @@
 
 package com.spazedog.xposed.additionsgb;
 
-import java.util.List;
-
 import android.annotation.TargetApi;
-import android.app.ProgressDialog;
-import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager.NameNotFoundException;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.Preference;
@@ -34,8 +31,10 @@ import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceScreen;
+import android.widget.ListView;
 
-import com.spazedog.xposed.additionsgb.Common.AppInfo;
+import com.spazedog.xposed.additionsgb.Common.AppBuilder;
+import com.spazedog.xposed.additionsgb.Common.AppBuilder.BuildAppView;
 import com.spazedog.xposed.additionsgb.Common.RemapAction;
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
 import com.spazedog.xposed.additionsgb.tools.views.IWidgetPreference;
@@ -49,6 +48,8 @@ public class ActivitySelectorRemap extends PreferenceActivity implements OnPrefe
 	
 	private String mAction;
 	
+	private AppBuilder mAppBuilder;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -56,6 +57,7 @@ public class ActivitySelectorRemap extends PreferenceActivity implements OnPrefe
 		addPreferencesFromResource(R.xml.activity_selector_remap);
 		
 		mAction = getIntent().getStringExtra("action");
+		mAppBuilder = new AppBuilder( getListView() );
 		
 		if ("add_condition".equals(mAction)) {
 			setTitle(R.string.preference_add_condition);
@@ -98,6 +100,13 @@ public class ActivitySelectorRemap extends PreferenceActivity implements OnPrefe
     	finish();
     }
     
+    @Override
+    protected void onDestroy() {
+    	super.onDestroy();
+    	
+    	mAppBuilder.destroy();
+    }
+    
     private void setup() {
     	if (mSetup != (mSetup = true)) {
     		PreferenceScreen preferenceScreen = getPreferenceScreen();
@@ -132,59 +141,36 @@ public class ActivitySelectorRemap extends PreferenceActivity implements OnPrefe
 			}
     	}
     }
-    
-	protected AsyncTask<Object, Void, List<AppInfo>> loadApplicationList = new AsyncTask<Object, Void, List<AppInfo>>() {
-		
-		ProgressDialog mProgress;
-		
-		@Override
-		protected void onPreExecute() {
-			mProgress = new ProgressDialog(ActivitySelectorRemap.this);
-			mProgress.setMessage(getResources().getString(R.string.task_applocation_list));
-			mProgress.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-			mProgress.setCancelable(false);
-			mProgress.setCanceledOnTouchOutside(false);
-			mProgress.show();
-		}
-
-		@Override
-		protected List<AppInfo> doInBackground(Object... args) {
-			return Common.AppInfo.loadApplicationList((Context) args[0], mProgress);
-		}
-		
-		@Override
-		protected void onPostExecute(List<AppInfo> packages) {
-			PreferenceCategory category = (PreferenceCategory) findPreference("application_group");
-			
-			for (int i=0; i < packages.size(); i++) {
-				AppInfo appInfo = packages.get(i);
-				category.addPreference(
-						getSelectPreference(
-								appInfo.getLabel(),
-								appInfo.getName(),
-								appInfo.getName(),
-								appInfo.getIcon() != null ? appInfo.getIcon() : null,
-								null
-						)
-				);
-			}
-			
-			if (mProgress != null && mProgress.isShowing()) {
-				try {
-					mProgress.dismiss();
-					
-				} catch(Throwable e) {}
-			}
-		}
-	};
 	
 	@Override
 	public boolean onPreferenceClick(Preference preference) {
 		if ("load_apps_preference".equals(preference.getKey())) {
-			PreferenceCategory category = (PreferenceCategory) findPreference("application_group");
+			final PreferenceCategory category = (PreferenceCategory) findPreference("application_group");
 			category.removePreference(preference);
 			
-			loadApplicationList.execute(this.getApplicationContext()); return true;
+			Drawable tmpIcon = new ColorDrawable(android.R.color.transparent);
+			
+			try {
+				tmpIcon = getPackageManager().getApplicationIcon("android");
+				
+			} catch (NameNotFoundException e) {}
+			
+			final Drawable defaultIcon = tmpIcon;
+			
+			mAppBuilder.build(new BuildAppView(){
+				@Override
+				public void onBuildAppView(ListView view, String name, String label) {
+					category.addPreference(
+						getSelectPreference(
+							label,
+							name,
+							name,
+							android.os.Build.VERSION.SDK_INT >= 11 ? defaultIcon : null,
+							null
+						)
+					);
+				}
+			});
 			
 		} else {
 			Intent intent = getIntent();

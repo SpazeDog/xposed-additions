@@ -19,8 +19,10 @@
 
 package com.spazedog.xposed.additionsgb;
 
+import java.lang.ref.WeakReference;
 import java.text.Collator;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
@@ -29,14 +31,23 @@ import android.annotation.TargetApi;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.Bitmap.Config;
+import android.graphics.Canvas;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.Drawable.ConstantState;
+import android.os.AsyncTask;
 import android.os.Build;
+import android.support.v4.util.LruCache;
 import android.text.TextUtils;
 import android.view.KeyEvent;
+import android.view.View;
+import android.widget.AbsListView;
+import android.widget.AbsListView.OnScrollListener;
+import android.widget.ImageView;
+import android.widget.ListView;
 
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
 
@@ -389,65 +400,205 @@ public final class Common {
 		
 		return id;
 	}
-	
-	public static class AppInfo implements Comparable<AppInfo> {
+
+	public static class AppBuilder implements OnScrollListener {
 		
-		private Drawable mIcon;
-		private String mName;
-		private String mLabel;
+		private WeakReference<ListView> mView;
 		
-		public static List<AppInfo> loadApplicationList(Context context, ProgressDialog progress) {
-			List<AppInfo> appList = new ArrayList<AppInfo>();
-			
-			PackageManager packageManager = context.getPackageManager();
-			List<ApplicationInfo> packages = packageManager.getInstalledApplications(PackageManager.GET_META_DATA);
-			
-			if (progress != null) {
-				progress.setMax(packages.size());
-			}
-			
-			for(int i=0; i < packages.size(); i++) {
-				if (progress != null) {
-					progress.setProgress( (i+1) );
-				}
-				
-				appList.add(new AppInfo(context, packages.get(i)));
-			}
-			
-			return appList;
+		private LruCache<String, Bitmap> mCache;
+		
+		private List<AppInfo> mApplications = new ArrayList<AppInfo>();
+		
+		private Integer mViewCount = 0;
+		
+		public static interface BuildAppView {
+			public void onBuildAppView(ListView view, String name, String label);
 		}
 		
-		private AppInfo(Context context, ApplicationInfo app) {
-			PackageManager packageManager = context.getPackageManager();
+		public AppBuilder(ListView listView) {
+			mView = new WeakReference<ListView>(listView);
+
+			mCache = new LruCache<String, Bitmap>( Math.round(0.25f * Runtime.getRuntime().maxMemory() / 1024) ) {
+				@Override
+				protected int sizeOf(String key, Bitmap value) {
+					return (value.getRowBytes() * value.getHeight()) / 1024;
+				}
+			};
+		}
+		
+		public void destroy() {
+			mCache.evictAll();
+			mApplications.clear();
+			mView.clear();
+		}
+		
+		private Bitmap drawableToBitmap (Drawable drawable) {
+			if (!(drawable instanceof BitmapDrawable)) {
+				int width = drawable.getIntrinsicWidth();
+				int height = drawable.getIntrinsicHeight();
+				
+				Bitmap bitmap = Bitmap.createBitmap(width > 0 ? width : 1, height > 0 ? height : 1, Config.ARGB_8888);
+				Canvas canvas = new Canvas(bitmap);
+				
+				drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+				drawable.draw(canvas);
+				
+				return bitmap;
+			}
+			
+			return ((BitmapDrawable) drawable).getBitmap();
+		}
+
+		@Override
+		public void onScrollStateChanged(AbsListView view, int scrollState) {}
+
+		@Override
+		public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+			/*
+			 * All pre-defiened preferences has nothing to do with the application list, so we will skip this.
+			 * Because Android removed any view not being displayed, we will always start at index 0. 
+			 * But since we might have pre-defined preferences at the top, we do not always want to start there. 
+			 * It depends on whether or not we currently are at the top.
+			 */
+			Integer startI = firstVisibleItem > mViewCount ? 0 : mViewCount-firstVisibleItem;
+			Integer startX = firstVisibleItem > mViewCount ? firstVisibleItem-mViewCount : 0;
 			
 			/*
-			 * Gingerbread can't display pictures in default preferences, 
-			 * so we have no reason for loading them.
+			 * This will load icons on scroll and keep as many as possible in a cache (amount depends on device RAM).
+			 * The adaptor used by Android's preferences automatically removes all views that is currently not being displayed. 
+			 * This means that we do not have to worry about removing non-used icons for the GC. 
 			 */
-			if (android.os.Build.VERSION.SDK_INT >= 11) {
-				mIcon = app.loadIcon(packageManager);
+			for (int i=startI, x=startX; i < visibleItemCount; i++, x++) {
+				if (view.getChildAt(i) != null) {
+					AppInfo appInfo = mApplications.get(x);
+					String name = appInfo.getName();
+					Bitmap bitmap = mCache.get(name);
+					ImageView imageView = (ImageView) view.getChildAt(i).findViewById(android.R.id.icon);
+					
+					/*
+					 * TODO: Should be add a background thread for loading icons?
+					 */
+					if (bitmap == null) {
+						bitmap = drawableToBitmap( appInfo.loadIcon( view.getContext() ) );
+					}
+					
+					mCache.put(name, bitmap);
+					
+					imageView.setImageBitmap(bitmap);
+				}
+			}
+		}
+		
+		public void build(final BuildAppView callback) {
+			View view = mView.get();
+			
+			if (view != null) {
+				(new AsyncTask<Context, Void, List<AppInfo>>() {
+					
+					ProgressDialog mProgress;
+					
+					@Override
+					protected void onPreExecute() {
+						View view = mView.get();
+						
+						if (view != null) {
+							mProgress = new ProgressDialog(view.getContext());
+							mProgress.setMessage(view.getContext().getResources().getString(R.string.task_applocation_list));
+							mProgress.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+							mProgress.setCancelable(false);
+							mProgress.setCanceledOnTouchOutside(false);
+							mProgress.show();
+						}
+					}
+					
+					@Override
+					protected List<AppInfo> doInBackground(Context... args) {
+						Context context = args[0];
+						PackageManager packageManager = context.getPackageManager();
+						List<ApplicationInfo> packages = packageManager.getInstalledApplications(PackageManager.GET_META_DATA);
+						
+						if (mProgress != null) {
+							mProgress.setMax(packages.size());
+						}
+						
+						for(int i=0; i < packages.size(); i++) {
+							if (mProgress != null) {
+								mProgress.setProgress( (i+1) );
+							}
+							
+							ApplicationInfo app = packages.get(i);
+							String label = (String) packageManager.getApplicationLabel(app);
+							
+							if (label != null && !label.equals(app.packageName)) {
+								mApplications.add(new AppInfo(label, app));
+							}
+						}
+						
+						Collections.sort(mApplications);
+						
+						return mApplications;
+					}
+					
+					@Override
+					protected void onPostExecute(List<AppInfo> packages) {
+						ListView view = mView.get();
+						
+						if (view != null && mProgress != null && mProgress.isShowing()) {
+							mViewCount = view.getCount();
+							
+							for(int i=0; i < packages.size(); i++) {
+								AppInfo appInfo = packages.get(i);
+								
+								callback.onBuildAppView(view, appInfo.getName(), appInfo.getLabel());
+							}
+
+							try {
+								mProgress.dismiss();
+								
+							} catch(Throwable e) {}
+							
+							/*
+							 * We don't display images in GB, so no need to track
+							 * scrolling. 
+							 */
+							if (android.os.Build.VERSION.SDK_INT >= 11) {
+								view.setOnScrollListener(AppBuilder.this);
+							}
+						}
+					}
+					
+				}).execute( view.getContext().getApplicationContext() );
+			}
+		}
+		
+		public static class AppInfo implements Comparable<AppInfo> {
+			
+			private ApplicationInfo mApplicationInfo;
+			
+			private String mLabel;
+			
+			private AppInfo(String label, ApplicationInfo app) {
+				mApplicationInfo = app;
+				mLabel = label;
 			}
 			
-			mName = app.packageName;
-			mLabel = (String) app.loadLabel(packageManager);
-		}
-		
-		@Override
-		public int compareTo(AppInfo comparible) {
-			return Collator.getInstance(Locale.getDefault()).
-					compare(mLabel, comparible.mLabel);
-		}
-		
-		public Drawable getIcon() {
-			return mIcon;
-		}
-		
-		public String getName() {
-			return mName;
-		}
-		
-		public String getLabel() {
-			return mLabel;
+			@Override
+			public int compareTo(AppInfo comparible) {
+				return Collator.getInstance(Locale.getDefault()).
+						compare(mLabel, comparible.mLabel);
+			}
+			
+			public Drawable loadIcon(Context context) {
+				return context.getPackageManager().getApplicationIcon(mApplicationInfo);
+			}
+			
+			public String getName() {
+				return mApplicationInfo.packageName;
+			}
+			
+			public String getLabel() {
+				return mLabel;
+			}
 		}
 	}
 	

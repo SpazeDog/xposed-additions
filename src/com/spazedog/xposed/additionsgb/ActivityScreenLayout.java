@@ -20,12 +20,11 @@
 package com.spazedog.xposed.additionsgb;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import android.annotation.TargetApi;
-import android.app.ProgressDialog;
-import android.content.Context;
-import android.os.AsyncTask;
+import android.content.pm.PackageManager.NameNotFoundException;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
@@ -34,8 +33,10 @@ import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceScreen;
+import android.widget.ListView;
 
-import com.spazedog.xposed.additionsgb.Common.AppInfo;
+import com.spazedog.xposed.additionsgb.Common.AppBuilder;
+import com.spazedog.xposed.additionsgb.Common.AppBuilder.BuildAppView;
 import com.spazedog.xposed.additionsgb.Common.Index;
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
 
@@ -52,11 +53,15 @@ public class ActivityScreenLayout extends PreferenceActivity implements OnPrefer
 	
 	private Boolean mUpdateBlacklist = false;
 	
+	private AppBuilder mAppBuilder;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		
 		addPreferencesFromResource(R.xml.activity_screen_layout);
+		
+		mAppBuilder = new AppBuilder( getListView() );
 	}
 	
     @Override
@@ -95,6 +100,13 @@ public class ActivityScreenLayout extends PreferenceActivity implements OnPrefer
     		mPreferences.commit();
     	
     	mPreferences = null;
+    }
+    
+    @Override
+    protected void onDestroy() {
+    	super.onDestroy();
+    	
+    	mAppBuilder.destroy();
     }
     
     private void setup() {
@@ -146,64 +158,43 @@ public class ActivityScreenLayout extends PreferenceActivity implements OnPrefer
 	@Override
 	public boolean onPreferenceClick(Preference preference) {
 		if (preference.getKey().equals("load_apps_preference")) {
-			PreferenceCategory category = (PreferenceCategory) findPreference("app_blacklist_group");
-			category.removePreference(preference);
+			mBlacklistCategory.removePreference(preference);
+
+			Drawable tmpIcon = new ColorDrawable(android.R.color.transparent);
 			
-			loadApplicationList.execute(this.getApplicationContext());
+			try {
+				tmpIcon = getPackageManager().getApplicationIcon("android");
+				
+			} catch (NameNotFoundException e) {}
+			
+			final Drawable defaultIcon = tmpIcon;
+			
+			mAppBuilder.build(new BuildAppView(){
+				@TargetApi(Build.VERSION_CODES.HONEYCOMB)
+				@Override
+				public void onBuildAppView(ListView view, String name, String label) {
+					CheckBoxPreference preference = new CheckBoxPreference(ActivityScreenLayout.this);
+					preference.setTitle(label);
+					preference.setSummary(name);
+					preference.setKey("application");
+					preference.setPersistent(false);
+					preference.setChecked( mBlacklist.contains(name) );
+					
+					/*
+					 * Add a template icon to create the correct
+					 * default configurations for the image view
+					 */
+					if (android.os.Build.VERSION.SDK_INT >= 11) {
+						preference.setIcon(defaultIcon);
+					}
+					
+					mBlacklistCategory.addPreference(preference);
+				}
+			});
 			
 			return true;
 		}
 		
 		return false;
 	}
-	
-	protected AsyncTask<Object, Void, List<AppInfo>> loadApplicationList = new AsyncTask<Object, Void, List<AppInfo>>() {
-		
-		ProgressDialog mProgress;
-		
-		@Override
-		protected void onPreExecute() {
-			mProgress = new ProgressDialog(ActivityScreenLayout.this);
-			mProgress.setMessage(getResources().getString(R.string.task_applocation_list));
-			mProgress.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-			mProgress.setCancelable(false);
-			mProgress.setCanceledOnTouchOutside(false);
-			mProgress.show();
-		}
-
-		@Override
-		protected List<AppInfo> doInBackground(Object... args) {
-			return Common.AppInfo.loadApplicationList((Context) args[0], mProgress);
-		}
-		
-		@TargetApi(Build.VERSION_CODES.HONEYCOMB)
-		@Override
-		protected void onPostExecute(List<AppInfo> packages) {
-			if (mBlacklistCategory != null) {
-				for(int i=0; i < packages.size(); i++) {
-					AppInfo appInfo = packages.get(i);
-					
-					CheckBoxPreference preference = new CheckBoxPreference(ActivityScreenLayout.this);
-					preference.setTitle(appInfo.getLabel());
-					preference.setSummary(appInfo.getName());
-					preference.setKey("application");
-					preference.setPersistent(false);
-					preference.setChecked( mBlacklist.contains(appInfo.getName()) );
-					
-					if (appInfo.getIcon() != null) {
-						preference.setIcon(appInfo.getIcon());
-					}
-					
-					mBlacklistCategory.addPreference(preference);
-				}
-			}
-			
-			if (mProgress != null && mProgress.isShowing()) {
-				try {
-					mProgress.dismiss();
-					
-				} catch(Throwable e) {}
-			}
-		}
-	};
 }
