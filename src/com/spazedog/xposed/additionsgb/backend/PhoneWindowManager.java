@@ -900,6 +900,18 @@ public class PhoneWindowManager {
 	}
 	
 	protected void handleKeyAction(final String action, final Integer keyCode) {
+		final Integer code = action != null && action.matches("^[0-9]+$") ? Integer.parseInt(action) : 
+			action == null ? keyCode : 0;
+		
+		/*
+		 * We handle display on here, because some devices has issues
+		 * when executing handlers while in deep sleep. 
+		 * Some times they will need a few key presses before reacting. 
+		 */
+		if (code == KeyEvent.KEYCODE_POWER && !mWasScreenOn) {
+			changeDisplayState(true); return;
+		}
+		
 		/*
 		 * This should always be wrapped and sent to a handler. 
 		 * If this is executed directly, some of the actions will crash with the error 
@@ -954,17 +966,7 @@ public class PhoneWindowManager {
 					}
 					
 				} else {
-					Integer code = action != null ? Integer.parseInt(action) : keyCode;
-					
-					if (code == KeyEvent.KEYCODE_POWER && !mWasScreenOn) {
-						/*
-						 * Not all Android versions will change display state on injected power events
-						 */
-						changeDisplayState( !mWasScreenOn );
-						
-					} else {
-						injectInputEvent(code);
-					}
+					injectInputEvent(code);
 				}
 			}
 		});
