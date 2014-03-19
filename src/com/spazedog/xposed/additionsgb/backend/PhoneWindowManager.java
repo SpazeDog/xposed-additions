@@ -608,7 +608,7 @@ public class PhoneWindowManager {
 					}
 					
 					long now = SystemClock.uptimeMillis();
-					int characterMap = SDK_NEW_CHARACTERMAP ? KeyCharacterMap.VIRTUAL_KEYBOARD : 0;
+					int characterMap = SDK_NEW_CHARACTERMAP ? KeyCharacterMap.SPECIAL_FUNCTION : 0;
 					int eventType = repeat.length == 0 || repeat[0] >= 0 ? KeyEvent.ACTION_DOWN : KeyEvent.ACTION_UP;
 					
 					int flags = repeat.length > 0 && repeat[0] == 1 ? KeyEvent.FLAG_LONG_PRESS|KeyEvent.FLAG_FROM_SYSTEM|FLAG_INJECTED : KeyEvent.FLAG_FROM_SYSTEM|FLAG_INJECTED;
@@ -663,16 +663,29 @@ public class PhoneWindowManager {
 	}
 	
 	ReflectMethod xIsShowingAndNotHidden;
-	ReflectMethod xIsInputRestricted;
 	protected Boolean isKeyguardShowing() {
 		Object keyguardMediator = getKeyguardMediator();
 		
-		if (xIsShowingAndNotHidden == null || xIsInputRestricted == null) {
+		if (xIsShowingAndNotHidden == null) {
 			xIsShowingAndNotHidden = ReflectTools.getReflectClass(keyguardMediator).locateMethod("isShowingAndNotHidden");
-			xIsInputRestricted = ReflectTools.getReflectClass(keyguardMediator).locateMethod("isInputRestricted");
 		}
 		
-		return (Boolean) xIsShowingAndNotHidden.invoke(keyguardMediator) || (Boolean) xIsInputRestricted.invoke(keyguardMediator);
+		return (Boolean) xIsShowingAndNotHidden.invoke(keyguardMediator);
+	}
+	
+	ReflectMethod xIsInputRestricted;
+	protected Boolean isKeyguardLockedAndInsecure() {
+		if (isKeyguardLocked()) {
+			Object keyguardMediator = getKeyguardMediator();
+			
+			if (xIsInputRestricted == null) {
+				xIsInputRestricted = ReflectTools.getReflectClass(keyguardMediator).locateMethod("isInputRestricted");
+			}
+			
+			return !((Boolean) xIsInputRestricted.invoke(keyguardMediator));
+		}
+		
+		return false;
 	}
 	
 	ReflectMethod xIsShowing;
@@ -687,10 +700,9 @@ public class PhoneWindowManager {
 	}
 	
 	protected void keyGuardDismiss() {
-		final Object keyguardMediator = getKeyguardMediator();
-		final Boolean isShowing = (Boolean) ReflectTools.getReflectClass(keyguardMediator).locateMethod("isShowing").invoke(keyguardMediator);
-		
-		if (isShowing) {
+		if (isKeyguardLocked()) {
+			Object keyguardMediator = getKeyguardMediator();
+			
 			ReflectTools.getReflectClass(keyguardMediator).locateMethod("keyguardDone", ReflectTools.MEMBER_MATCH_FAST, Boolean.TYPE, Boolean.TYPE).invoke(keyguardMediator, false, false, true);
 		}
 	}
@@ -719,10 +731,14 @@ public class PhoneWindowManager {
 		}
 	}
 	
+	ReflectClass xUserHandler;
+	ReflectMethod xStartActivityAsUser;
 	protected void launchApplication(String packageName) {
 		Intent intent = mContext.getPackageManager().getLaunchIntentForPackage(packageName);
 		
-		keyGuardDismiss();
+		if (isKeyguardLockedAndInsecure()) {
+			keyGuardDismiss();
+		}
 		
 		if (intent != null) {
 			intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -737,7 +753,20 @@ public class PhoneWindowManager {
 			intent.setData(Uri.parse("market://details?id="+packageName));
 		}
 		
-		mContext.startActivity(intent);
+		if (SDK_HAS_MULTI_USER) {
+			if (xUserHandler == null || xStartActivityAsUser == null) {
+				xUserHandler = ReflectTools.getReflectClass("android.os.UserHandle");
+				xStartActivityAsUser = ReflectTools.getReflectClass(mContext).locateMethod("startActivityAsUser", ReflectTools.MEMBER_MATCH_FAST, Intent.class, "android.os.UserHandle");
+			}
+			
+			Object currentUser = xUserHandler.locateField("USER_CURRENT").get();
+			Object user = xUserHandler.invoke(false, currentUser);
+			
+			xStartActivityAsUser.invoke(mContext, false, intent, user);
+			
+		} else {
+			mContext.startActivity(intent);
+		}
 	}
 	
 	protected void toggleLastApplication() {
@@ -752,7 +781,10 @@ public class PhoneWindowManager {
 			String packageName = intentString.substring(indexStart, indexStop);
 			
 			if (!packageName.equals(getHomePackage()) && !packageName.equals("com.android.systemui")) {
-				mContext.startActivity(packages.get(i).baseIntent);
+				Intent intent = packages.get(i).baseIntent;
+				intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+				
+				mContext.startActivity(intent);
 			}
 		}
 	}
