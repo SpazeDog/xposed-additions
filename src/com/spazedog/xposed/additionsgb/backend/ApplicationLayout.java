@@ -29,7 +29,7 @@ import android.content.pm.ActivityInfo;
 import android.util.Log;
 import android.view.Window;
 
-import com.spazedog.lib.reflecttools.ReflectTools;
+import com.spazedog.lib.reflecttools.ReflectClass;
 import com.spazedog.xposed.additionsgb.Common;
 import com.spazedog.xposed.additionsgb.Common.Index;
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
@@ -44,8 +44,8 @@ public final class ApplicationLayout {
 		
 		XC_MethodHook hook = new LayoutHook();
 		
-		ReflectTools.getReflectClass("com.android.internal.policy.impl.PhoneWindow").inject("generateLayout", hook);
-		ReflectTools.getReflectClass("android.app.Activity").inject("setRequestedOrientation", hook);
+		ReflectClass.forName("com.android.internal.policy.impl.PhoneWindow").inject("generateLayout", hook);
+		ReflectClass.forName("android.app.Activity").inject("setRequestedOrientation", hook);
 		
 		if (android.os.Build.VERSION.SDK_INT > 15) {
 			try {
@@ -53,7 +53,7 @@ public final class ApplicationLayout {
 				 * TODO: Find a way for pre-jellybean.
 				 * TODO: Also make a better way for Jellybean+ as this does not always work as it should
 				 */
-				ReflectTools.getReflectClass("com.android.internal.policy.impl.keyguard").inject("shouldEnableScreenRotation", hook);
+				ReflectClass.forName("com.android.internal.policy.impl.keyguard").inject("shouldEnableScreenRotation", hook);
 				
 			} catch (Throwable e) {}
 		}

@@ -33,7 +33,7 @@ import android.os.IBinder;
 import android.os.RemoteException;
 import android.util.Log;
 
-import com.spazedog.lib.reflecttools.ReflectTools;
+import com.spazedog.lib.reflecttools.ReflectClass;
 import com.spazedog.xposed.additionsgb.Common;
 
 /*
@@ -96,16 +96,18 @@ public class XServiceManager {
 	public static synchronized XServiceManager getInstance() {
 		XServiceManager instance = oInstance.get();
 		
-		if (instance == null) {
-			IBinder binder = (IBinder) ReflectTools.getReflectClass("android.os.ServiceManager")
-					.getMethod("getService", ReflectTools.MEMBER_MATCH_FAST, String.class)
-						.invoke(false, Common.XSERVICE_NAME);
-			
-			if (binder != null) {
+		if (instance == null || instance.mService == null) {
+			if (instance == null) {
 				instance = new XServiceManager();
-				instance.mService = IXService.Stub.asInterface(binder);
-				
+			}
+			
+			instance.mService = (IXService) new ReflectClass(IXService.class).bindInterface(Common.XSERVICE_NAME).getReceiver();
+			
+			if (instance.mService != null) {
 				oInstance = new WeakReference<XServiceManager>(instance);
+				
+			} else {
+				instance = null;
 			}
 		}
 		
@@ -113,13 +115,7 @@ public class XServiceManager {
 	}
 	
 	private synchronized void handleRemoteException(RemoteException e) {
-		e.printStackTrace();
-		
-		mService = IXService.Stub.asInterface(
-				(IBinder) ReflectTools.getReflectClass("android.os.ServiceManager")
-					.getMethod("getService", ReflectTools.MEMBER_MATCH_FAST, String.class)
-						.invoke(false, Common.XSERVICE_NAME)
-		);
+		mService = (IXService) new ReflectClass(IXService.class).bindInterface(Common.XSERVICE_NAME).getReceiver();
 	}
 	
 	private XServiceManager(){}

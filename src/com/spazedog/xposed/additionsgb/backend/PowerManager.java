@@ -23,8 +23,8 @@ import android.content.Context;
 import android.os.BatteryManager;
 import android.util.Log;
 
-import com.spazedog.lib.reflecttools.ReflectTools;
-import com.spazedog.lib.reflecttools.ReflectTools.ReflectException;
+import com.spazedog.lib.reflecttools.ReflectClass;
+import com.spazedog.lib.reflecttools.utils.ReflectException;
 import com.spazedog.xposed.additionsgb.Common;
 import com.spazedog.xposed.additionsgb.Common.Index;
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
@@ -40,7 +40,8 @@ public final class PowerManager {
 	
 	protected Context mContext;
 	
-	protected Object mBatteryService;
+	protected ReflectClass mPowerManager;
+	protected ReflectClass mBatteryService;
 	
 	protected XServiceManager mPreferences;
 
@@ -52,12 +53,14 @@ public final class PowerManager {
 		PowerManager hooks = new PowerManager();
 		
 		try {
-			ReflectTools.getReflectClass("com.android.server.power.PowerManagerService").inject("shouldWakeUpWhenPluggedOrUnpluggedLocked", hooks.hook_shouldWakeUpWhenPluggedOrUnpluggedLocked);
-			ReflectTools.getReflectClass("com.android.server.power.PowerManagerService").inject("init", hooks.hook_init);
+			ReflectClass pms = ReflectClass.forName("com.android.server.power.PowerManagerService");
+			
+			pms.inject("init", hooks.hook_init);
+			pms.inject("shouldWakeUpWhenPluggedOrUnpluggedLocked", hooks.hook_shouldWakeUpWhenPluggedOrUnpluggedLocked);
 			
 		} catch (ReflectException e) {
-			ReflectTools.getReflectClass("com.android.server.PowerManagerService$BatteryReceiver").inject("onReceive", hooks.hook_shouldWakeUpWhenPluggedOrUnpluggedLocked);
-			ReflectTools.getReflectClass("com.android.server.PowerManagerService").inject("init", hooks.hook_init);
+			ReflectClass.forName("com.android.server.PowerManagerService").inject("init", hooks.hook_init);
+			ReflectClass.forName("com.android.server.PowerManagerService$BatteryReceiver").inject("onReceive", hooks.hook_shouldWakeUpWhenPluggedOrUnpluggedLocked);
 			
 			OLD_SDK = true;
 		}
@@ -67,8 +70,11 @@ public final class PowerManager {
 		@Override
 		protected final void afterHookedMethod(final MethodHookParam param) {
 			if(Common.debug()) Log.d(TAG, "Initiating Power Manager Hook");
-			mContext = (Context) ReflectTools.getReflectClass(param.thisObject).getField("mContext").get(param.thisObject);
-			mBatteryService = ReflectTools.getReflectClass(param.thisObject).getField("mBatteryService").get(param.thisObject);
+			
+			mPowerManager = new ReflectClass(param.thisObject);
+			mBatteryService = mPowerManager.findField("mBatteryService").getValueToInstance();
+			
+			mContext = (Context) mPowerManager.findField("mContext").getValue();
 			
 			mPreferences = XServiceManager.getInstance();
 			mPreferences.registerContext(mContext);
@@ -81,10 +87,10 @@ public final class PowerManager {
 			synchronized (mLock) {
 				if(Common.debug()) Log.d(TAG, "Received USB Plug/UnPlug state change");
 				
-				Boolean wasPowered = (Boolean) (OLD_SDK ? ReflectTools.getReflectClass(param.thisObject).locateField("mIsPowered").get(param.thisObject) : param.args[0]);
+				Boolean wasPowered = (Boolean) (OLD_SDK ? mPowerManager.findFieldDeep("mIsPowered").getValue() : param.args[0]);
+				Integer plugType = (Integer) (OLD_SDK ? mBatteryService.findMethod("getPlugType").invoke() : mPowerManager.findFieldDeep("mPlugType").getValue());
+				Boolean powered = (Boolean) (OLD_SDK ? mBatteryService.findMethod("isPowered").invoke() : mPowerManager.findFieldDeep("mIsPowered").getValue());
 				Integer oldPlugType = OLD_SDK ? mPlugType : (Integer) param.args[1];
-				Integer plugType = (Integer) (OLD_SDK ? ReflectTools.getReflectClass(mBatteryService).locateMethod("getPlugType").invoke(mBatteryService) : ReflectTools.getReflectClass(param.thisObject).getField("mPlugType").get(param.thisObject));
-				Boolean powered = (Boolean) (OLD_SDK ? ReflectTools.getReflectClass(mBatteryService).locateMethod("isPowered").invoke(mBatteryService) : ReflectTools.getReflectClass(param.thisObject).getField("mIsPowered").get(param.thisObject));
 				
 				if (!OLD_SDK || mPlugType != null) {
 					Boolean pluggedAC = BatteryManager.BATTERY_PLUGGED_AC == plugType || BatteryManager.BATTERY_PLUGGED_AC == oldPlugType;
@@ -103,7 +109,7 @@ public final class PowerManager {
 							if(Common.debug()) Log.d(TAG, "Handling USB Plug/UnPlug display state");
 							
 							if (OLD_SDK) {
-								ReflectTools.getReflectClass(param.thisObject).locateField("mIsPowered").set(param.thisObject, powered);
+								mPowerManager.findFieldDeep("mIsPowered").setValue(powered);
 							}
 							
 							if (configAction.equals("on") 
@@ -113,7 +119,7 @@ public final class PowerManager {
 								if(Common.debug()) Log.d(TAG, "Turning display on");
 								
 								if (OLD_SDK) {
-									ReflectTools.getReflectClass(param.thisObject).locateMethod("forceUserActivityLocked").invoke(param.thisObject);
+									mPowerManager.findMethodDeep("forceUserActivityLocked").invoke();
 									param.setResult(false);
 									
 								} else {

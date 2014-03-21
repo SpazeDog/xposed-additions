@@ -2,8 +2,7 @@ package com.spazedog.xposed.additionsgb.backend;
 
 import android.util.Log;
 
-import com.spazedog.lib.reflecttools.ReflectTools;
-import com.spazedog.lib.reflecttools.ReflectTools.ReflectClass;
+import com.spazedog.lib.reflecttools.ReflectClass;
 import com.spazedog.xposed.additionsgb.Common;
 
 import de.robv.android.xposed.XC_MethodHook;
@@ -15,7 +14,7 @@ public class ViewConfiguration {
 		if(Common.DEBUG) Log.d(TAG, "Adding View Configuration Hook");
 		
 		ViewConfiguration hooks = new ViewConfiguration();
-		ReflectClass wc = ReflectTools.getReflectClass("android.view.ViewConfiguration");
+		ReflectClass wc = ReflectClass.forName("android.view.ViewConfiguration");
 
 		wc.inject("getLongPressTimeout", hooks.hook_getLongPressTimeout);
 		wc.inject("getGlobalActionKeyTimeout", hooks.hook_getGlobalActionKeyTimeout);

@@ -20,13 +20,14 @@
 package com.spazedog.xposed.additionsgb.backend;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.ActivityManager;
 import android.app.ActivityManager.RecentTaskInfo;
-import android.app.ActivityManager.RunningAppProcessInfo;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -38,7 +39,6 @@ import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
-import android.os.IBinder;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.os.SystemClock;
@@ -51,11 +51,15 @@ import android.view.KeyEvent;
 import android.view.Surface;
 import android.widget.Toast;
 
-import com.spazedog.lib.reflecttools.ReflectTools;
-import com.spazedog.lib.reflecttools.ReflectTools.ReflectClass;
-import com.spazedog.lib.reflecttools.ReflectTools.ReflectException;
-import com.spazedog.lib.reflecttools.ReflectTools.ReflectField;
-import com.spazedog.lib.reflecttools.ReflectTools.ReflectMethod;
+import com.spazedog.lib.reflecttools.ReflectClass;
+import com.spazedog.lib.reflecttools.ReflectClass.OnErrorListener;
+import com.spazedog.lib.reflecttools.ReflectClass.OnReceiverListener;
+import com.spazedog.lib.reflecttools.ReflectConstructor;
+import com.spazedog.lib.reflecttools.ReflectField;
+import com.spazedog.lib.reflecttools.ReflectMethod;
+import com.spazedog.lib.reflecttools.utils.ReflectException;
+import com.spazedog.lib.reflecttools.utils.ReflectMember;
+import com.spazedog.lib.reflecttools.utils.ReflectMember.Match;
 import com.spazedog.xposed.additionsgb.Common;
 import com.spazedog.xposed.additionsgb.Common.Index;
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
@@ -69,7 +73,7 @@ public class PhoneWindowManager {
 		if(Common.DEBUG) Log.d(TAG, "Adding Window Manager Hook");
 		
 		PhoneWindowManager hooks = new PhoneWindowManager();
-		ReflectClass pwm = ReflectTools.getReflectClass("com.android.internal.policy.impl.PhoneWindowManager");
+		ReflectClass pwm = ReflectClass.forName("com.android.internal.policy.impl.PhoneWindowManager");
 		
 		pwm.inject(hooks.hook_constructor);
 		pwm.inject("init", hooks.hook_init);
@@ -85,9 +89,7 @@ public class PhoneWindowManager {
 	protected static Boolean SDK_HAS_MULTI_USER = android.os.Build.VERSION.SDK_INT >= 17;
 	protected static Boolean SDK_HAS_KEYGUARD_DELEGATE = android.os.Build.VERSION.SDK_INT >= 19;
 	protected static Boolean SDK_HAS_ROTATION_TOOLS = android.os.Build.VERSION.SDK_INT >= 11;
-	
-	protected static int ACTION_SLEEP_QUEUEING;
-	protected static int ACTION_WAKEUP_QUEUEING;
+
 	protected static int ACTION_PASS_QUEUEING;
 	protected static int ACTION_DISABLE_QUEUEING;
 	
@@ -99,22 +101,21 @@ public class PhoneWindowManager {
 	
 	protected static int INJECT_INPUT_EVENT_MODE_ASYNC;
 	
-	protected static int FIRST_APPLICATION_UID;
-	protected static int LAST_APPLICATION_UID;
-	
 	protected Context mContext;
 	protected XServiceManager mPreferences;
 	
 	protected Handler mHandler;
 	
-	protected Object mPowerManager;				// android.os.PowerManager
-	protected Object mPowerManagerService;		// android.os.IPowerManager (com.android.server.power.PowerManagerService)
-	protected Object mWindowManager;			// android.view.WindowManager
-	protected Object mPhoneWindowManager;		// com.android.internal.policy.impl.PhoneWindowManager
-	protected Object mInputManager;				// android.hardware.input.InputManager
-	protected Object mActivityManager;			// android.app.ActivityManager
-	protected Object mActivityManagerService;	// android.app.ISDK_NEW_KEYEVENTActivityManager (android.app.ActivityManagerNative)
-	protected Object mAudioManager;
+	protected ReflectClass mPowerManager;				// android.os.PowerManager
+	protected ReflectClass mPowerManagerService;		// android.os.IPowerManager (com.android.server.power.PowerManagerService)
+	protected ReflectClass mWindowManagerService;		// android.view.IWindowManager (com.android.server.wm.WindowManagerService)
+	protected ReflectClass mPhoneWindowManager;			// com.android.internal.policy.impl.PhoneWindowManager
+	protected ReflectClass mInputManager;				// android.hardware.input.InputManager
+	protected ReflectClass mActivityManager;			// android.app.ActivityManager
+	protected ReflectClass mActivityManagerService;		// android.app.IActivityManager (android.app.ActivityManagerNative)
+	protected ReflectClass mAudioManager;
+	protected ReflectClass mKeyguardMediator;			// com.android.internal.policy.impl.keyguard.KeyguardServiceDelegate or com.android.internal.policy.impl.KeyguardViewMediator
+	protected ReflectClass mRecentApplicationsDialog;	// com.android.internal.policy.impl.RecentApplicationsDialog or com.android.internal.statusbar.IStatusBarService
 	
 	protected boolean mReady = false;
 	
@@ -125,36 +126,74 @@ public class PhoneWindowManager {
 	
 	protected Boolean mWasScreenOn = true;
 	
-	protected Boolean mSupportsVirtualDetection = false;
-	
 	protected Intent mTorchIntent;
 	
 	protected WakeLock mWakelock;
+	
+	protected Map<String, ReflectConstructor> mConstructors = new HashMap<String, ReflectConstructor>();
+	protected Map<String, ReflectMethod> mMethods = new HashMap<String, ReflectMethod>();
+	protected Map<String, ReflectField> mFields = new HashMap<String, ReflectField>();
+	
+	protected void registerMembers() {
+		mMethods.put("showGlobalActionsDialog", mPhoneWindowManager.findMethodDeep("showGlobalActionsDialog")); 
+		mMethods.put("takeScreenshot", mPhoneWindowManager.findMethodDeep("takeScreenshot"));
+		mMethods.put("performHapticFeedback", mPhoneWindowManager.findMethodDeep("performHapticFeedbackLw", Match.BEST, "android.view.WindowManagerPolicy$WindowState", Integer.TYPE, Boolean.TYPE));
+		mMethods.put("forceStopPackage", mActivityManagerService.findMethodDeep("forceStopPackage", Match.BEST, SDK_HAS_MULTI_USER ? new Object[]{String.class, Integer.TYPE} : new Object[]{String.class})); 
+		mMethods.put("closeSystemDialogs", mActivityManagerService.findMethodDeep("closeSystemDialogs", Match.BEST, String.class)); 
+			
+		/*
+		 * I really don't get Google's naming schema. 'isShowingAndNotHidden' ??? 
+		 * Either it is showing or it is hidden, it cannot be both.
+		 */
+		mMethods.put("KeyguardMediator.isShowing", mKeyguardMediator.findMethodDeep("isShowingAndNotHidden"));
+		mMethods.put("KeyguardMediator.isLocked", mKeyguardMediator.findMethodDeep("isShowing"));
+		mMethods.put("KeyguardMediator.isRestricted", mKeyguardMediator.findMethodDeep("isInputRestricted"));
+		mMethods.put("KeyguardMediator.dismiss", mKeyguardMediator.findMethodDeep("keyguardDone", Match.BEST, Boolean.TYPE, Boolean.TYPE));
+					
+		mMethods.put("toggleRecentApps", mRecentApplicationsDialog.findMethodDeep( SDK_NEW_RECENT_APPS_DIALOG ? "toggleRecentApps" : "show" ));
+
+		if (SDK_HAS_HARDWARE_INPUT_MANAGER) {
+			mMethods.put("injectInputEvent", mInputManager.findMethodDeep("injectInputEvent", Match.BEST, KeyEvent.class, Integer.TYPE));
+		
+		} else {
+			mMethods.put("injectInputEvent", mWindowManagerService.findMethodDeep("injectInputEventNoWait", Match.BEST, KeyEvent.class));
+		}
+
+		mMethods.put("getRotation", mWindowManagerService.findMethodDeep("getRotation"));
+		if (SDK_HAS_ROTATION_TOOLS) {
+			mMethods.put("freezeRotation", mWindowManagerService.findMethodDeep("freezeRotation", Match.BEST, Integer.TYPE));
+			mMethods.put("thawRotation", mWindowManagerService.findMethodDeep("thawRotation"));
+		}
+
+		if (SDK_HAS_MULTI_USER) {
+			mConstructors.put("UserHandle", ReflectClass.forName("android.os.UserHandle").findConstructor(Match.BEST, Integer.TYPE));
+			mFields.put("UserHandle.current", ReflectClass.forName("android.os.UserHandle").findField("USER_CURRENT"));
+			mMethods.put("startActivityAsUser", new ReflectClass(mContext).findMethodDeep("startActivityAsUser", Match.BEST, Intent.class, "android.os.UserHandle"));
+		}
+
+		if (!SDK_NEW_POWER_MANAGER) {
+			mMethods.put("forceUserActivityLocked", mPowerManagerService.findMethodDeep("forceUserActivityLocked"));
+		}
+	}
 	
 	protected XC_MethodHook hook_constructor = new XC_MethodHook() {
 		@Override
 		protected final void afterHookedMethod(final MethodHookParam param) {
 			if(Common.debug()) Log.d(TAG, "Handling construct of the Window Manager instance");
+
+			ReflectClass wmp = ReflectClass.forName("android.view.WindowManagerPolicy");
 			
-			ReflectClass wmp = ReflectTools.getReflectClass("android.view.WindowManagerPolicy");
-			ReflectClass process = ReflectTools.getReflectClass("android.os.Process");
+			FLAG_INJECTED = (Integer) wmp.findField("FLAG_INJECTED").getValue();
+			FLAG_VIRTUAL = (Integer) wmp.findField("FLAG_VIRTUAL").getValue();
 			
-			FLAG_INJECTED = (Integer) wmp.getField("FLAG_INJECTED").get();
-			FLAG_VIRTUAL = (Integer) wmp.getField("FLAG_VIRTUAL").get();
-			
-			ACTION_SLEEP_QUEUEING = (Integer) wmp.getField("ACTION_GO_TO_SLEEP").get();
-			ACTION_WAKEUP_QUEUEING = (Integer) wmp.getField( SDK_NEW_POWER_MANAGER ? "ACTION_WAKE_UP" : "ACTION_POKE_USER_ACTIVITY" ).get();
-			ACTION_PASS_QUEUEING = (Integer) wmp.getField("ACTION_PASS_TO_USER").get();
+			ACTION_PASS_QUEUEING = (Integer) wmp.findField("ACTION_PASS_TO_USER").getValue();
 			ACTION_DISABLE_QUEUEING = 0;
 			
 			ACTION_PASS_DISPATCHING = SDK_NEW_PHONE_WINDOW_MANAGER ? 0 : false;
 			ACTION_DISABLE_DISPATCHING = SDK_NEW_PHONE_WINDOW_MANAGER ? -1 : true;
-			
-			FIRST_APPLICATION_UID = (Integer) process.getField("FIRST_APPLICATION_UID").get();
-			LAST_APPLICATION_UID = (Integer) process.getField("LAST_APPLICATION_UID").get();
 					
 			if (SDK_HAS_HARDWARE_INPUT_MANAGER) {
-				INJECT_INPUT_EVENT_MODE_ASYNC = (Integer) ReflectTools.getReflectClass("android.hardware.input.InputManager").getField("INJECT_INPUT_EVENT_MODE_ASYNC").get();
+				INJECT_INPUT_EVENT_MODE_ASYNC = (Integer) ReflectClass.forName("android.hardware.input.InputManager").findField("INJECT_INPUT_EVENT_MODE_ASYNC").getValue();
 			}
 		}
 	};
@@ -170,8 +209,8 @@ public class PhoneWindowManager {
 				 * their name. In these cases we don't care about consistency. If you are going to borrow from others, 
 				 * then make sure to keep compatibility.
 				 */
-				ReflectClass torchConstants = ReflectTools.getReflectClass("com.android.internal.util.cm.TorchConstants");
-				mTorchIntent = new Intent((String) torchConstants.locateField("ACTION_TOGGLE_STATE").get());
+				ReflectClass torchConstants = ReflectClass.forName("com.android.internal.util.cm.TorchConstants");
+				mTorchIntent = new Intent((String) torchConstants.findField("ACTION_TOGGLE_STATE").getValue());
 				
 			} catch (ReflectException re) {
 				/*
@@ -202,31 +241,28 @@ public class PhoneWindowManager {
 		@Override
 		protected final void afterHookedMethod(final MethodHookParam param) {
 			mContext = (Context) param.args[0];
-			mPowerManager = mContext.getSystemService(Context.POWER_SERVICE);
-			mPowerManagerService = ReflectTools.getReflectClass(mPowerManager).getField("mService").get(mPowerManager);
-			mWindowManager = param.args[1];
-			mPhoneWindowManager = param.thisObject;
-			mActivityManager = mContext.getSystemService(Context.ACTIVITY_SERVICE);
-			mAudioManager = mContext.getSystemService(Context.AUDIO_SERVICE);
+			mPowerManager = new ReflectClass(mContext.getSystemService(Context.POWER_SERVICE));
+			mPowerManagerService = mPowerManager.findField("mService").getValueToInstance();
+			mWindowManagerService = new ReflectClass(param.args[1]);
+			mPhoneWindowManager = new ReflectClass(param.thisObject);
+			mActivityManager = new ReflectClass(mContext.getSystemService(Context.ACTIVITY_SERVICE));
+			mAudioManager = new ReflectClass(mContext.getSystemService(Context.AUDIO_SERVICE));
 			
 			mHandler = new Handler();
 			
 			mPreferences = XServiceManager.getInstance();
 			mPreferences.registerContext(mContext);
 			
-			mWakelock = ((PowerManager) mPowerManager).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "HookedPhoneWindowManager");
+			mWakelock = ((PowerManager) mPowerManager.getReceiver()).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "HookedPhoneWindowManager");
 			
 			mContext.registerReceiver(
 				new BroadcastReceiver() {
 					@Override
 					public void onReceive(Context context, Intent intent) {
-						mReady = true;
-						mContext.unregisterReceiver(this);
-						
 						/*
 						 * It is also best to wait with this one
 						 */
-						mActivityManagerService = ReflectTools.getReflectClass("android.app.ActivityManagerNative").getMethod("getDefault").invoke();
+						mActivityManagerService = ReflectClass.forName("android.app.ActivityManagerNative").findMethod("getDefault").invokeToInstance();
 						
 						if (SDK_HAS_HARDWARE_INPUT_MANAGER) {
 							/*
@@ -234,7 +270,7 @@ public class PhoneWindowManager {
 							 * If we do, we will get a broken IBinder which will crash both this module along
 							 * with anything else trying to access the InputManager methods.
 							 */
-							mInputManager = ReflectTools.getReflectClass("android.hardware.input.InputManager").getMethod("getInstance").invoke();
+							mInputManager = ReflectClass.forName("android.hardware.input.InputManager").findMethod("getInstance").invokeForReceiver();
 						}
 						
 						if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH)) {
@@ -244,6 +280,46 @@ public class PhoneWindowManager {
 							 */
 							locateTorchApps.start();
 						}
+						
+						mKeyguardMediator = mPhoneWindowManager.findField( SDK_HAS_KEYGUARD_DELEGATE ? "mKeyguardDelegate" : "mKeyguardMediator" ).getValueToInstance();
+						mKeyguardMediator.setOnErrorListener(new OnErrorListener(){
+							@Override
+							public void onError(ReflectMember<?> member) {
+								member.getReflectClass().setReceiver(
+										mPhoneWindowManager.findField( SDK_HAS_KEYGUARD_DELEGATE ? "mKeyguardDelegate" : "mKeyguardMediator" ).getValue()
+								);
+							}
+						});
+						
+						mRecentApplicationsDialog = ReflectClass.forName( SDK_NEW_RECENT_APPS_DIALOG ? "com.android.internal.statusbar.IStatusBarService" : "com.android.internal.policy.impl.RecentApplicationsDialog" );
+						mRecentApplicationsDialog.setOnReceiverListener(new OnReceiverListener(){
+							@Override
+							public Object onReceiver(ReflectMember<?> member) {
+								Object recentAppsService;
+								
+								if (SDK_NEW_RECENT_APPS_DIALOG) {
+									recentAppsService = member.getReflectClass().bindInterface("statusbar").getReceiver();
+									
+								} else {
+									recentAppsService = member.getReflectClass().newInstance(mContext);
+								}
+								
+								member.getReflectClass().setReceiver(recentAppsService);
+								
+								return recentAppsService;
+							}
+						});
+						mRecentApplicationsDialog.setOnErrorListener(new OnErrorListener(){
+							@Override
+							public void onError(ReflectMember<?> member) {
+								member.getReflectClass().setReceiver(null);
+							}
+						});
+						
+						registerMembers();
+						
+						mReady = true;
+						mContext.unregisterReceiver(this);
 					}
 				}, new IntentFilter("android.intent.action.BOOT_COMPLETED")
 			);
@@ -531,7 +607,7 @@ public class PhoneWindowManager {
 							int callCode = 0;
 							
 							if (mKeyFlags.isCallButton()) {
-								int mode = ((AudioManager) mAudioManager).getMode();
+								int mode = ((AudioManager) mAudioManager.getReceiver()).getMode();
 								
 								if (mode == AudioManager.MODE_IN_CALL || mode == AudioManager.MODE_IN_COMMUNICATION) {
 									callCode = KeyEvent.KEYCODE_ENDCALL;
@@ -566,7 +642,7 @@ public class PhoneWindowManager {
 	public void pokeUserActivity(Boolean forced) {
 		if (forced) {
 			if (SDK_NEW_POWER_MANAGER) {
-				((PowerManager) mPowerManager).wakeUp(SystemClock.uptimeMillis());
+				((PowerManager) mPowerManager.getReceiver()).wakeUp(SystemClock.uptimeMillis());
 				
 			} else {
 				/*
@@ -575,7 +651,7 @@ public class PhoneWindowManager {
 				 * is not accessible trough the regular PowerManager class. It the same method that 
 				 * turns on the screen when you plug in your USB cable.
 				 */
-				ReflectTools.getReflectClass(mPowerManagerService).locateMethod("forceUserActivityLocked").invoke(mPowerManagerService);
+				mMethods.get("forceUserActivityLocked").invoke();
 			}
 			
 		} else {
@@ -591,22 +667,15 @@ public class PhoneWindowManager {
 			pokeUserActivity(true);
 			
 		} else {
-			((PowerManager) mPowerManager).goToSleep(SystemClock.uptimeMillis());
+			((PowerManager) mPowerManager.getReceiver()).goToSleep(SystemClock.uptimeMillis());
 		}
 	}
 	
-	ReflectMethod xInjectInputEvent;
 	@SuppressLint("NewApi")
 	protected void injectInputEvent(final int keyCode, final int... repeat) {
 		mHandler.post(new Runnable() {
 			public void run() {
 				synchronized(PhoneWindowManager.class) {
-					if (xInjectInputEvent == null) {
-						xInjectInputEvent = SDK_HAS_HARDWARE_INPUT_MANAGER ? 
-								ReflectTools.getReflectClass(mInputManager).locateMethod("injectInputEvent", ReflectTools.MEMBER_MATCH_FAST, KeyEvent.class, Integer.TYPE) : 
-									ReflectTools.getReflectClass(mWindowManager).locateMethod("injectInputEventNoWait", ReflectTools.MEMBER_MATCH_FAST, KeyEvent.class);
-					}
-					
 					long now = SystemClock.uptimeMillis();
 					int characterMap = SDK_NEW_CHARACTERMAP ? KeyCharacterMap.SPECIAL_FUNCTION : 0;
 					int eventType = repeat.length == 0 || repeat[0] >= 0 ? KeyEvent.ACTION_DOWN : KeyEvent.ACTION_UP;
@@ -616,21 +685,21 @@ public class PhoneWindowManager {
 					int repeatCount = repeat.length == 0 ? 0 : 
 						repeat[0] < 0 ? 1 : repeat[0];
 						
-					KeyEvent event = new KeyEvent(now, now, eventType, keyCode, repeatCount, 0, characterMap, 0, flags, InputDevice.SOURCE_UNKNOWN);
+					KeyEvent event = new KeyEvent(now, now, eventType, keyCode, repeatCount, 0, characterMap, 0, flags, InputDevice.SOURCE_KEYBOARD);
 					
 					if (SDK_HAS_HARDWARE_INPUT_MANAGER) {
-						xInjectInputEvent.invoke(mInputManager, false, event, INJECT_INPUT_EVENT_MODE_ASYNC);
+						mMethods.get("injectInputEvent").invoke(event, INJECT_INPUT_EVENT_MODE_ASYNC);
 						
 					} else {
-						xInjectInputEvent.invoke(mWindowManager, false, event);
+						mMethods.get("injectInputEvent").invoke(event);
 					}
 					
 					if (repeat.length == 0) {
 						if (SDK_HAS_HARDWARE_INPUT_MANAGER) {
-							xInjectInputEvent.invoke(mInputManager, false, KeyEvent.changeAction(event, KeyEvent.ACTION_UP), INJECT_INPUT_EVENT_MODE_ASYNC);
+							mMethods.get("injectInputEvent").invoke(KeyEvent.changeAction(event, KeyEvent.ACTION_UP), INJECT_INPUT_EVENT_MODE_ASYNC);
 							
 						} else {
-							xInjectInputEvent.invoke(mWindowManager, false, KeyEvent.changeAction(event, KeyEvent.ACTION_UP));
+							mMethods.get("injectInputEvent").invoke(KeyEvent.changeAction(event, KeyEvent.ACTION_UP));
 						}
 					}
 				}
@@ -638,77 +707,34 @@ public class PhoneWindowManager {
 		});
 	}
 
-	ReflectMethod xPerformHapticFeedbackLw;
 	protected void performHapticFeedback(Integer effectId) {
-		if (xPerformHapticFeedbackLw == null) {
-			xPerformHapticFeedbackLw = ReflectTools.getReflectClass(mPhoneWindowManager)
-					.locateMethod("performHapticFeedbackLw", ReflectTools.MEMBER_MATCH_FAST, "android.view.WindowManagerPolicy$WindowState", Integer.TYPE, Boolean.TYPE);
-		}
-		
-		xPerformHapticFeedbackLw.invoke(mPhoneWindowManager, false, null, effectId, false);
+		mMethods.get("performHapticFeedback").invoke(null, effectId, false);
 	}
 	
-	ReflectField xKeyguardMediator;
-	protected Object getKeyguardMediator() {
-		if (xKeyguardMediator == null) {
-			if (SDK_HAS_KEYGUARD_DELEGATE) {
-				xKeyguardMediator = ReflectTools.getReflectClass(mPhoneWindowManager).locateField("mKeyguardDelegate");
-				
-			} else {
-				xKeyguardMediator = ReflectTools.getReflectClass(mPhoneWindowManager).locateField("mKeyguardMediator");
-			}
-		}
-		
-		return xKeyguardMediator.get(mPhoneWindowManager);
-	}
-	
-	ReflectMethod xIsShowingAndNotHidden;
 	protected Boolean isKeyguardShowing() {
-		Object keyguardMediator = getKeyguardMediator();
-		
-		if (xIsShowingAndNotHidden == null) {
-			xIsShowingAndNotHidden = ReflectTools.getReflectClass(keyguardMediator).locateMethod("isShowingAndNotHidden");
-		}
-		
-		return (Boolean) xIsShowingAndNotHidden.invoke(keyguardMediator);
+		return (Boolean) mMethods.get("KeyguardMediator.isShowing").invoke();
 	}
 	
-	ReflectMethod xIsInputRestricted;
 	protected Boolean isKeyguardLockedAndInsecure() {
 		if (isKeyguardLocked()) {
-			Object keyguardMediator = getKeyguardMediator();
-			
-			if (xIsInputRestricted == null) {
-				xIsInputRestricted = ReflectTools.getReflectClass(keyguardMediator).locateMethod("isInputRestricted");
-			}
-			
-			return !((Boolean) xIsInputRestricted.invoke(keyguardMediator));
+			return !((Boolean) mMethods.get("KeyguardMediator.isRestricted").invoke());
 		}
 		
 		return false;
 	}
 	
-	ReflectMethod xIsShowing;
 	protected Boolean isKeyguardLocked() {
-		Object keyguardMediator = getKeyguardMediator();
-		
-		if (xIsShowing == null) {
-			xIsShowing = ReflectTools.getReflectClass(keyguardMediator).locateMethod("isShowing");
-		}
-		
-		return (Boolean) xIsShowing.invoke(keyguardMediator);
+		return (Boolean) mMethods.get("KeyguardMediator.isLocked").invoke();
 	}
 	
 	protected void keyGuardDismiss() {
 		if (isKeyguardLocked()) {
-			Object keyguardMediator = getKeyguardMediator();
-			
-			ReflectTools.getReflectClass(keyguardMediator).locateMethod("keyguardDone", ReflectTools.MEMBER_MATCH_FAST, Boolean.TYPE, Boolean.TYPE).invoke(keyguardMediator, false, false, true);
+			mMethods.get("KeyguardMediator.dismiss").invoke(false, true);
 		}
 	}
 	
 	protected String getRunningPackage() {
-		List<ActivityManager.RunningTaskInfo> packages = ((ActivityManager) mActivityManager).getRunningTasks(1);
+		List<ActivityManager.RunningTaskInfo> packages = ((ActivityManager) mActivityManager.getReceiver()).getRunningTasks(1);
 		
 		return packages.size() > 0 ? packages.get(0).baseActivity.getPackageName() : null;
 	}
@@ -722,17 +748,6 @@ public class PhoneWindowManager {
 				res.activityInfo.packageName : "com.android.launcher";
 	}
 	
-	protected void handleDefaultQueueing(int flag) {
-		if ((flag & ACTION_SLEEP_QUEUEING) != 0) {
-			changeDisplayState(false);
-			
-		} else if ((flag & ACTION_WAKEUP_QUEUEING) != 0) {
-			changeDisplayState(true);
-		}
-	}
-	
-	ReflectClass xUserHandler;
-	ReflectMethod xStartActivityAsUser;
 	protected void launchApplication(String packageName) {
 		Intent intent = mContext.getPackageManager().getLaunchIntentForPackage(packageName);
 		
@@ -754,15 +769,10 @@ public class PhoneWindowManager {
 		}
 		
 		if (SDK_HAS_MULTI_USER) {
-			if (xUserHandler == null || xStartActivityAsUser == null) {
-				xUserHandler = ReflectTools.getReflectClass("android.os.UserHandle");
-				xStartActivityAsUser = ReflectTools.getReflectClass(mContext).locateMethod("startActivityAsUser", ReflectTools.MEMBER_MATCH_FAST, Intent.class, "android.os.UserHandle");
-			}
+			Object userCurrent = mFields.get("UserHandle.current").getValue();
+			Object user = mConstructors.get("UserHandle").invoke(userCurrent);
 			
-			Object currentUser = xUserHandler.locateField("USER_CURRENT").get();
-			Object user = xUserHandler.invoke(false, currentUser);
-			
-			xStartActivityAsUser.invoke(mContext, false, intent, user);
+			mMethods.get("startActivityAsUser").invoke(user);
 			
 		} else {
 			mContext.startActivity(intent);
@@ -770,7 +780,7 @@ public class PhoneWindowManager {
 	}
 	
 	protected void toggleLastApplication() {
-		List<RecentTaskInfo> packages = ((ActivityManager) mActivityManager).getRecentTasks(5, ActivityManager.RECENT_WITH_EXCLUDED);
+		List<RecentTaskInfo> packages = ((ActivityManager) mActivityManager.getReceiver()).getRecentTasks(5, ActivityManager.RECENT_WITH_EXCLUDED);
 		
 		for (int i=1; i < packages.size(); i++) {
 			String intentString = packages.get(i).baseIntent + "";
@@ -793,7 +803,7 @@ public class PhoneWindowManager {
 		if(Common.debug()) Log.d(TAG, "Closing all system windows");
 		
 		try {
-			ReflectTools.getReflectClass(mActivityManagerService).locateMethod("closeSystemDialogs", ReflectTools.MEMBER_MATCH_FAST, String.class).invoke(mActivityManagerService, false, reason);
+			mMethods.get("closeSystemDialogs").invoke(reason);
 			
 		} catch (Throwable e) {
 			if (Common.debug()) {
@@ -801,33 +811,16 @@ public class PhoneWindowManager {
 			}
 		}
 	}
-	
-	Object xRecentAppsService;
+
 	protected void openRecentAppsDialog() {
 		if(Common.debug()) Log.d(TAG, "Invoking Recent Application Dialog");
 		
 		sendCloseSystemWindows("recentapps");
 		
 		try {
-			if (SDK_NEW_RECENT_APPS_DIALOG) {
-				if (xRecentAppsService == null) {
-					Object binder = ReflectTools.getReflectClass("android.os.ServiceManager").getMethod("getService", ReflectTools.MEMBER_MATCH_FAST, String.class).invoke(false, "statusbar");
-					xRecentAppsService = ReflectTools.getReflectClass("com.android.internal.statusbar.IStatusBarService$Stub").getMethod("asInterface", ReflectTools.MEMBER_MATCH_FAST, IBinder.class).invoke(false, binder);
-				}
-
-				ReflectTools.getReflectClass(xRecentAppsService).getMethod("toggleRecentApps").invoke(xRecentAppsService);
-				
-			} else {
-				if (xRecentAppsService == null) {
-					xRecentAppsService = ReflectTools.getReflectClass("com.android.internal.policy.impl.RecentApplicationsDialog").invoke(false, mContext);
-				}
-				
-				ReflectTools.getReflectClass(xRecentAppsService).getMethod("show").invoke(xRecentAppsService);
-			}
+			mMethods.get("toggleRecentApps").invoke();
 			
 		} catch (Throwable e) {
-			xRecentAppsService = null;
-			
 			if (Common.debug()) {
 				throw new Error(e.getMessage(), e);
 			}
@@ -840,7 +833,7 @@ public class PhoneWindowManager {
 		sendCloseSystemWindows("globalactions");
 		
 		try {
-			ReflectTools.getReflectClass(mPhoneWindowManager).locateMethod("showGlobalActionsDialog").invoke(mPhoneWindowManager);
+			mMethods.get("showGlobalActionsDialog").invoke();
 			
 		} catch (Throwable e) {
 			if (Common.debug()) {
@@ -858,10 +851,10 @@ public class PhoneWindowManager {
 					case 270: orientation = Surface.ROTATION_270;
 				}
 				
-				ReflectTools.getReflectClass(mWindowManager).locateMethod("freezeRotation", ReflectTools.MEMBER_MATCH_FAST, Integer.TYPE).invoke(mWindowManager, false, orientation);
+				mMethods.get("freezeRotation").invoke(orientation);
 				
 			} else {
-				ReflectTools.getReflectClass(mWindowManager).locateMethod("thawRotation").invoke(mWindowManager);
+				mMethods.get("thawRotation").invoke();
 			}
 			
 		} else {
@@ -877,7 +870,7 @@ public class PhoneWindowManager {
 	}
 	
 	protected Integer getCurrentRotation() {
-		return (Integer) ReflectTools.getReflectClass(mWindowManager).locateMethod("getRotation").invoke(mWindowManager);
+		return (Integer) mMethods.get("getRotation").invoke();
 	}
 	
 	protected Integer getNextRotation(Boolean backwards) {
@@ -887,16 +880,10 @@ public class PhoneWindowManager {
 			(position == Surface.ROTATION_270 || position == Surface.ROTATION_0) && !backwards ? 90 : 0;
 	}
 	
-	ReflectMethod xForceStopPackage;
 	protected void killForegroundApplication() {
 		if(Common.debug()) Log.d(TAG, "Start searching for foreground application to kill");
 		
-		if (xForceStopPackage == null) {
-			xForceStopPackage = ReflectTools.getReflectClass(mActivityManagerService).locateMethod("forceStopPackage", ReflectTools.MEMBER_MATCH_FAST, 
-					SDK_HAS_MULTI_USER ? new Object[]{String.class, Integer.TYPE} : new Object[]{String.class});
-		}
-		
-		List<ActivityManager.RunningTaskInfo> packages = ((ActivityManager) mActivityManager).getRunningTasks(5);
+		List<ActivityManager.RunningTaskInfo> packages = ((ActivityManager) mActivityManager.getReceiver()).getRunningTasks(5);
 		
 		for (int i=0; i < packages.size(); i++) {
 			String packageName = packages.get(0).baseActivity.getPackageName();
@@ -905,10 +892,10 @@ public class PhoneWindowManager {
 				if(Common.debug()) Log.d(TAG, "Invoking force stop on " + packageName);
 				
 				if (SDK_HAS_MULTI_USER) {
-					xForceStopPackage.invoke(mActivityManagerService, false, packageName, ReflectTools.getReflectClass("android.os.UserHandle").getField("USER_CURRENT").get());
-					
+					mMethods.get("forceStopPackage").invoke(packageName, mFields.get("UserHandle.current").getValue());
+
 				} else {
-					xForceStopPackage.invoke(mActivityManagerService, false, packageName);
+					mMethods.get("forceStopPackage").invoke(packageName);
 				}
 			}
 		}
@@ -916,7 +903,7 @@ public class PhoneWindowManager {
 	
 	protected void takeScreenshot() {
 		try {
-			ReflectTools.getReflectClass(mPhoneWindowManager).locateMethod("takeScreenshot").invoke(mPhoneWindowManager);
+			mMethods.get("takeScreenshot").invoke();
 			
 		} catch (Throwable e) {
 			if (Common.debug()) {

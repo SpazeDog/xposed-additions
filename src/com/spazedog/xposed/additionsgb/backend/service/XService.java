@@ -45,9 +45,9 @@ import android.os.Environment;
 import android.os.RemoteException;
 import android.util.Log;
 
-import com.spazedog.lib.reflecttools.ReflectTools;
-import com.spazedog.lib.reflecttools.ReflectTools.ReflectClass;
-import com.spazedog.lib.reflecttools.ReflectTools.ReflectMethod;
+import com.spazedog.lib.reflecttools.ReflectClass;
+import com.spazedog.lib.reflecttools.ReflectMethod;
+import com.spazedog.lib.reflecttools.utils.ReflectMember.Match;
 import com.spazedog.xposed.additionsgb.Common;
 
 import de.robv.android.xposed.XC_MethodHook;
@@ -93,7 +93,7 @@ public final class XService extends IXService.Stub {
 		 * Plug in the service into Android's service manager
 		 */
 		XService hooks = new XService();
-		ReflectClass ams = ReflectTools.getReflectClass("com.android.server.am.ActivityManagerService");
+		ReflectClass ams = ReflectClass.forName("com.android.server.am.ActivityManagerService");
 		
 		ams.inject("main", hooks.hook_main);
 		ams.inject("systemReady", hooks.hook_systemReady);
@@ -129,11 +129,11 @@ public final class XService extends IXService.Stub {
 			if (!PREFERENCE.FILE.exists()) {
 				try {
 					FileOutputStream stream = new FileOutputStream(PREFERENCE.FILE);
-					ReflectClass xmlUtils = ReflectTools.getReflectClass("com.android.internal.util.XmlUtils");
-					ReflectClass fileUtils = ReflectTools.getReflectClass("android.os.FileUtils");
+					ReflectClass xmlUtils = ReflectClass.forName("com.android.internal.util.XmlUtils");
+					ReflectClass fileUtils = ReflectClass.forName("android.os.FileUtils");
 					
-					xmlUtils.getMethod("writeMapXml", ReflectTools.MEMBER_MATCH_FAST, HashMap.class, stream.getClass()).invoke(false, new HashMap<String, Object>(), stream);
-					fileUtils.getMethod("sync", ReflectTools.MEMBER_MATCH_FAST, stream.getClass()).invoke(false, stream);
+					xmlUtils.findMethod("writeMapXml", Match.BEST, HashMap.class, stream.getClass()).invoke(new HashMap<String, Object>(), stream);
+					fileUtils.findMethod("sync", Match.BEST, stream.getClass()).invoke(stream);
 				
 					try {
 						stream.close();
@@ -148,15 +148,15 @@ public final class XService extends IXService.Stub {
 			 * sure that the file is globally readable and writable.
 			 */
 			
-			ReflectMethod setPermissions = ReflectTools.getReflectClass("android.os.FileUtils")
-					.getMethod("setPermissions", ReflectTools.MEMBER_MATCH_FAST, String.class, Integer.TYPE, Integer.TYPE, Integer.TYPE);
+			ReflectMethod setPermissions = ReflectClass.forName("android.os.FileUtils")
+					.findMethod("setPermissions", Match.BEST, String.class, Integer.TYPE, Integer.TYPE, Integer.TYPE);
 			
-			if((Integer) setPermissions.invoke(false, PREFERENCE.DIR.getPath(), 0771, PREFERENCE.UID, PREFERENCE.GID) != 0) {
-				setPermissions.invoke(false, PREFERENCE.DIR.getPath(), 0777, -1, -1);
+			if((Integer) setPermissions.invoke(PREFERENCE.DIR.getPath(), 0771, PREFERENCE.UID, PREFERENCE.GID) != 0) {
+				setPermissions.invoke(PREFERENCE.DIR.getPath(), 0777, -1, -1);
 			}
 			
-			if((Integer) setPermissions.invoke(false, PREFERENCE.FILE.getPath(), 0660, PREFERENCE.UID, PREFERENCE.GID) != 0) {
-				setPermissions.invoke(false, PREFERENCE.FILE.getPath(), 0666, -1, -1);
+			if((Integer) setPermissions.invoke(PREFERENCE.FILE.getPath(), 0660, PREFERENCE.UID, PREFERENCE.GID) != 0) {
+				setPermissions.invoke(PREFERENCE.FILE.getPath(), 0666, -1, -1);
 			}
 		}
 	}
@@ -171,9 +171,9 @@ public final class XService extends IXService.Stub {
 			 * will return the system context, which XposedBridge will have stored in param.getResult().
 			 * This is why we inject this as an After Hook.
 			 */
-			ReflectTools.getReflectClass("android.os.ServiceManager")
-				.getMethod("addService", ReflectTools.MEMBER_MATCH_FAST, String.class, XService.class)
-				.invoke(false, Common.XSERVICE_NAME, XService.this);
+			ReflectClass.forName("android.os.ServiceManager")
+				.findMethod("addService", Match.BEST, String.class, XService.class)
+				.invoke(Common.XSERVICE_NAME, XService.this);
 		}
 	};
 	
@@ -202,9 +202,9 @@ public final class XService extends IXService.Stub {
 				try {
 					BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(PREFERENCE.FILE), 16*1024);
 					
-					Map<String, Object> data = (Map<String, Object>) ReflectTools.getReflectClass("com.android.internal.util.XmlUtils")
-							.getMethod("readMapXml", ReflectTools.MEMBER_MATCH_FAST, inputStream.getClass())
-							.invoke(false, inputStream);
+					Map<String, Object> data = (Map<String, Object>) ReflectClass.forName("com.android.internal.util.XmlUtils")
+							.findMethod("readMapXml", Match.BEST, inputStream.getClass())
+							.invoke(inputStream);
 					
 					try {
 						inputStream.close();
@@ -454,11 +454,11 @@ public final class XService extends IXService.Stub {
 								if(Common.DEBUG) Log.d(TAG, "Writing " + data.size() + " settings to the preference file");
 								
 								FileOutputStream stream = new FileOutputStream(PREFERENCE.FILE);
-								ReflectClass xmlUtils = ReflectTools.getReflectClass("com.android.internal.util.XmlUtils");
-								ReflectClass fileUtils = ReflectTools.getReflectClass("android.os.FileUtils");
+								ReflectClass xmlUtils = ReflectClass.forName("com.android.internal.util.XmlUtils");
+								ReflectClass fileUtils = ReflectClass.forName("android.os.FileUtils");
 								
-								xmlUtils.getMethod("writeMapXml", ReflectTools.MEMBER_MATCH_FAST, HashMap.class, stream.getClass()).invoke(false, data, stream);
-								fileUtils.getMethod("sync", ReflectTools.MEMBER_MATCH_FAST, stream.getClass()).invoke(false, stream);
+								xmlUtils.findMethod("writeMapXml", Match.BEST, HashMap.class, stream.getClass()).invoke(data, stream);
+								fileUtils.findMethod("sync", Match.BEST, stream.getClass()).invoke(stream);
 								
 								try {
 									stream.close();
