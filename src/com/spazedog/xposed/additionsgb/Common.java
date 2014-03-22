@@ -19,6 +19,7 @@
 
 package com.spazedog.xposed.additionsgb;
 
+import java.io.File;
 import java.lang.ref.WeakReference;
 import java.text.Collator;
 import java.util.ArrayList;
@@ -40,6 +41,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Environment;
 import android.support.v4.util.LruCache;
 import android.text.TextUtils;
 import android.view.KeyEvent;
@@ -64,6 +66,9 @@ public final class Common {
 	public static final String XSERVICE_BROADCAST = PACKAGE_NAME + ".filters.XSERVICE";
 	
 	public static final String PREFERENCE_FILE = "config";
+	
+	public static final File LOG_FILE = new File(Environment.getDataDirectory(), "data/" + PACKAGE_NAME + "/cache/error.log");
+	public static final Long LOG_SIZE = 1024L*512;
 	
 	public static final class Index {
 		public static final class integer {

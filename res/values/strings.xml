@@ -33,6 +33,8 @@
 	    <string name='alert_title_module_update'>Reboot Required</string>
 	<string name='alert_text_module_update'>This application has been updated. Please reboot the device in order for the new module features to take affect.</string>
 	
+	<string name='category_title_logviewer'>Error Log</string>
+	
     <string name='category_title_pro'>Get Pro Extension</string>
 	<string name='category_summary_pro'>Add more features with the Pro Extension</string>
 	
@@ -47,6 +49,12 @@
     
     <string name='preference_title_debug'>Enable Debug</string>
     <string name='preference_summary_debug'>Generate log entries of module events (Requires Reboot).</string>
+    
+    <!-- ================================================
+         Strings for ActivityViewerLog
+    ================================================ -->
+    <string name='menu_title_edit'>Open text editor</string>
+    <string name='menu_title_send'>Send log</string>
     
     <!-- ================================================
          Strings for ActivityScreenUSB

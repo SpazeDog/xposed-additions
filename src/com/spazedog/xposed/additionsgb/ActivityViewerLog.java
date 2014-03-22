@@ -1,0 +1,94 @@
+package com.spazedog.xposed.additionsgb;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.widget.TextView;
+
+public class ActivityViewerLog extends Activity {
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		
+		setContentView(R.layout.error_log_view);
+		
+		if (Common.LOG_FILE.exists()) {
+			BufferedReader reader = null;
+			
+			try {
+				TextView view = (TextView) findViewById(R.id.content);
+				reader = new BufferedReader(new FileReader(Common.LOG_FILE));
+				StringBuilder builder = new StringBuilder();
+				String line;
+				
+				while ((line = reader.readLine()) != null) {
+					builder.append(line);
+					builder.append("\n");
+				}
+				
+				view.setText( builder.toString() );
+				
+			}  catch (IOException e) {} finally {
+				try {
+					reader.close();
+					
+				} catch (IOException e) {}
+			}
+		}
+	}
+	
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.menu, menu);
+		
+		return true;
+	}
+	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+			case R.id.menu_edit: 
+
+				if (Common.LOG_FILE.exists()) {
+					try {
+						Intent intent = new Intent(Intent.ACTION_VIEW);
+						intent.setDataAndType(Uri.parse("file://" + Common.LOG_FILE.getCanonicalPath()), "text/plain");
+						
+						startActivity(Intent.createChooser(intent, getResources().getString(R.string.menu_title_edit)));
+						
+					} catch (IOException e) {}
+				}
+				
+				return true;
+				
+			case R.id.menu_send: 
+				if (Common.LOG_FILE.exists()) {
+					try {
+						Intent intent = new Intent(Intent.ACTION_SEND);
+						intent.putExtra(Intent.EXTRA_EMAIL, new String[] {"d.bergloev@gmail.com"});
+						intent.putExtra(Intent.EXTRA_SUBJECT, "XposedAdditions: Error Log");
+						intent.putExtra(Intent.EXTRA_TEXT, "");
+						intent.setType("text/plain");
+						intent.putExtra(Intent.EXTRA_STREAM, Uri.parse("file://" + Common.LOG_FILE.getCanonicalPath()));
+						
+						startActivity(Intent.createChooser(intent, getResources().getString(R.string.menu_title_send)));
+					
+					} catch (IOException e) {}
+				}
+				
+				return true;
+		}
+		
+		return super.onOptionsItemSelected(item);
+	}
+}

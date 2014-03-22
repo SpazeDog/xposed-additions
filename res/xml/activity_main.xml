@@ -7,6 +7,11 @@
         android:summary="@string/category_summary_pro"
         android:persistent="false" />
     
+    <Preference
+        android:key="logview_link"
+        android:title="@string/category_title_logviewer"
+        android:persistent="false" />
+    
     <PreferenceCategory
         android:key="settings_group"
         android:title="@string/category_settings">

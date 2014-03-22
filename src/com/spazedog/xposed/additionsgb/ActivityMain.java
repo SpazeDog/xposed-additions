@@ -55,40 +55,8 @@ public class ActivityMain extends PreferenceActivity implements OnPreferenceClic
     @Override
     protected void onResume() {
     	super.onResume();
-    	
-    	if (mPreferences == null) {
-    		new AlertDialog.Builder(this)
-    		.setTitle(R.string.alert_title_module_disabled)
-    		.setMessage(R.string.alert_text_module_disabled)
-    		.setCancelable(false)
-    		.setNegativeButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-				@Override
-                public void onClick(DialogInterface dialog, int id) {
-					dialog.cancel();
-					ActivityMain.this.finish();
-				}
-    		})
-    		.show();
-    		
-    	} else {
-    		try {
-    			if (mPreferences.getVersion() != getPackageManager().getPackageInfo(Common.PACKAGE_NAME, 0).versionCode) {
-    	    		new AlertDialog.Builder(this)
-    	    		.setTitle(R.string.alert_title_module_update)
-    	    		.setMessage(R.string.alert_text_module_update)
-    	    		.setNegativeButton(android.R.string.ok, new DialogInterface.OnClickListener() {
-    					@Override
-    	                public void onClick(DialogInterface dialog, int id) {
-    						dialog.cancel();
-    					}
-    	    		})
-    	    		.show();
-    			}
-    			
-    		} catch (NameNotFoundException e) {}
 
-    		setup();
-    	}
+    	setup();
     }
     
 	@Override
@@ -108,6 +76,37 @@ public class ActivityMain extends PreferenceActivity implements OnPreferenceClic
     
     private void setup() {
     	if (mSetup != (mSetup = true)) {
+    		if (mPreferences == null) {
+	    		new AlertDialog.Builder(this)
+	    		.setTitle(R.string.alert_title_module_disabled)
+	    		.setMessage(R.string.alert_text_module_disabled)
+	    		.setCancelable(false)
+	    		.setNegativeButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+					@Override
+	                public void onClick(DialogInterface dialog, int id) {
+						dialog.cancel();
+					}
+	    		})
+	    		.show();
+	    		
+    		} else {
+	    		try {
+	    			if (mPreferences.getVersion() != getPackageManager().getPackageInfo(Common.PACKAGE_NAME, 0).versionCode) {
+	    	    		new AlertDialog.Builder(this)
+	    	    		.setTitle(R.string.alert_title_module_update)
+	    	    		.setMessage(R.string.alert_text_module_update)
+	    	    		.setNegativeButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+	    					@Override
+	    	                public void onClick(DialogInterface dialog, int id) {
+	    						dialog.cancel();
+	    					}
+	    	    		})
+	    	    		.show();
+	    			}
+	    			
+	    		} catch (NameNotFoundException e) {}
+    		}
+    		
     		if (mPreferences.isPackageUnlocked()) {
     			getPreferenceScreen().removePreference( findPreference("pro_link") );
     			
@@ -115,13 +114,21 @@ public class ActivityMain extends PreferenceActivity implements OnPreferenceClic
     			findPreference("pro_link").setOnPreferenceClickListener(this);
     		}
     		
-    		findPreference("usbplug_link").setIntent(new Intent(Intent.ACTION_VIEW).setClass(this, ActivityScreenUSB.class));
-    		findPreference("layout_link").setIntent(new Intent(Intent.ACTION_VIEW).setClass(this, ActivityScreenLayout.class));
-    		findPreference("buttons_link").setIntent(new Intent(Intent.ACTION_VIEW).setClass(this, ActivityScreenRemapMain.class));
+    		if (mPreferences != null) {
+	    		findPreference("usbplug_link").setIntent(new Intent(Intent.ACTION_VIEW).setClass(this, ActivityScreenUSB.class));
+	    		findPreference("layout_link").setIntent(new Intent(Intent.ACTION_VIEW).setClass(this, ActivityScreenLayout.class));
+	    		findPreference("buttons_link").setIntent(new Intent(Intent.ACTION_VIEW).setClass(this, ActivityScreenRemapMain.class));
+	    		
+	    		CheckBoxPreference debugPreference = (CheckBoxPreference) findPreference("debug_preference");
+	    		debugPreference.setOnPreferenceClickListener(this);
+	    		debugPreference.setChecked(mPreferences.getBoolean(Common.Index.bool.key.enableDebug, Common.Index.bool.value.enableDebug));
+	    		
+    		} else {
+    			findPreference("options_group").setEnabled(false);
+    			findPreference("settings_group").setEnabled(false);
+    		}
     		
-    		CheckBoxPreference debugPreference = (CheckBoxPreference) findPreference("debug_preference");
-    		debugPreference.setOnPreferenceClickListener(this);
-    		debugPreference.setChecked(mPreferences.getBoolean(Common.Index.bool.key.enableDebug, Common.Index.bool.value.enableDebug));
+    		findPreference("logview_link").setIntent(new Intent(Intent.ACTION_VIEW).setClass(this, ActivityViewerLog.class));
     	}
     }
     

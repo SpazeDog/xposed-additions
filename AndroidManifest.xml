@@ -37,6 +37,8 @@
         
         <activity android:label="@string/category_title_layout" android:name=".ActivityScreenLayout" android:configChanges="orientation|screenSize" />
         
+        <activity android:label="@string/category_title_logviewer" android:name=".ActivityViewerLog" android:configChanges="orientation|screenSize" />
+        
     </application>
 
 </manifest>
