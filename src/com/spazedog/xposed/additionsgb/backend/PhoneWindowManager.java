@@ -86,7 +86,7 @@ public class PhoneWindowManager {
 				
 				pwm.removeInjections();
 			}
-			
+
 		} catch (ReflectException e) {
 			Log.e(TAG, e.getMessage(), e);
 		}
@@ -184,6 +184,15 @@ public class PhoneWindowManager {
 			mMethods.put("forceUserActivityLocked", mPowerManagerService.findMethodDeep("forceUserActivityLocked"));
 		}
 	}
+	
+	protected XC_MethodHook hook_viewConfigTimeouts = new XC_MethodHook() {
+		@Override
+		protected final void afterHookedMethod(final MethodHookParam param) {
+			if (mKeyFlags.isKeyDown()) {
+				param.setResult(100);
+			}
+		}
+	};
 	
 	protected XC_MethodHook hook_constructor = new XC_MethodHook() {
 		@Override
@@ -340,6 +349,20 @@ public class PhoneWindowManager {
 								
 								mReady = true;
 								mContext.unregisterReceiver(this);
+								
+								try {
+									/*
+									 * We hook this class here because we don't want it to affect the whole system.
+									 * Also we need to control when and when not to change the return value.
+									 */
+									ReflectClass wc = ReflectClass.forName("android.view.ViewConfiguration");
+
+									wc.inject("getLongPressTimeout", hook_viewConfigTimeouts);
+									wc.inject("getGlobalActionKeyTimeout", hook_viewConfigTimeouts);
+									
+								} catch (ReflectException e) {
+									Log.e(TAG, e.getMessage(), e);
+								}
 								
 							} catch (ReflectException e) {
 								Log.e(TAG, e.getMessage(), e);
