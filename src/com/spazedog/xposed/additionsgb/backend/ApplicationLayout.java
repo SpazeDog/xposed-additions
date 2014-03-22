@@ -30,6 +30,7 @@ import android.util.Log;
 import android.view.Window;
 
 import com.spazedog.lib.reflecttools.ReflectClass;
+import com.spazedog.lib.reflecttools.utils.ReflectException;
 import com.spazedog.xposed.additionsgb.Common;
 import com.spazedog.xposed.additionsgb.Common.Index;
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
@@ -43,19 +44,21 @@ public final class ApplicationLayout {
 		if(Common.DEBUG) Log.d(TAG, "Adding Application Layout Hook");
 		
 		XC_MethodHook hook = new LayoutHook();
-		
-		ReflectClass.forName("com.android.internal.policy.impl.PhoneWindow").inject("generateLayout", hook);
-		ReflectClass.forName("android.app.Activity").inject("setRequestedOrientation", hook);
-		
-		if (android.os.Build.VERSION.SDK_INT > 15) {
-			try {
+
+		try {
+			ReflectClass.forName("com.android.internal.policy.impl.PhoneWindow").inject("generateLayout", hook);
+			ReflectClass.forName("android.app.Activity").inject("setRequestedOrientation", hook);
+			
+			if (android.os.Build.VERSION.SDK_INT > 15) {
 				/*
 				 * TODO: Find a way for pre-jellybean.
 				 * TODO: Also make a better way for Jellybean+ as this does not always work as it should
 				 */
 				ReflectClass.forName("com.android.internal.policy.impl.keyguard").inject("shouldEnableScreenRotation", hook);
-				
-			} catch (Throwable e) {}
+			}
+			
+		} catch (ReflectException e) {
+			Log.e(TAG, e.getMessage(), e);
 		}
 	}
 	
@@ -77,11 +80,16 @@ public final class ApplicationLayout {
 			if (mGetSettings) {
 				XServiceManager preferences = XServiceManager.getInstance();
 				
-				mGetSettings = false;
-				mEnableRotation = preferences.getBoolean(Index.bool.key.layoutRotationSwitch, Index.bool.value.layoutRotationSwitch);
-				
-				if (mEnableRotation && preferences.isPackageUnlocked()) {
-					mBlackList = preferences.getStringArray(Index.array.key.layoutRotationBlacklist, Index.array.value.layoutRotationBlacklist);
+				if (preferences != null) {
+					mGetSettings = false;
+					mEnableRotation = preferences.getBoolean(Index.bool.key.layoutRotationSwitch, Index.bool.value.layoutRotationSwitch);
+					
+					if (mEnableRotation && preferences.isPackageUnlocked()) {
+						mBlackList = preferences.getStringArray(Index.array.key.layoutRotationBlacklist, Index.array.value.layoutRotationBlacklist);
+					}
+					
+				} else {
+					return;
 				}
 			}
 			

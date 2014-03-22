@@ -23,6 +23,7 @@ import android.util.Log;
 import android.view.KeyEvent;
 
 import com.spazedog.lib.reflecttools.ReflectClass;
+import com.spazedog.lib.reflecttools.utils.ReflectException;
 import com.spazedog.xposed.additionsgb.Common;
 
 import de.robv.android.xposed.XC_MethodHook;
@@ -39,11 +40,16 @@ public class InputManager {
 		 * This class does not exist in older Android Versions.
 		 */
 		if (android.os.Build.VERSION.SDK_INT >= 16) {
-			InputManager hook = new InputManager();
-			
-			FLAG_INJECTED = (Integer) ReflectClass.forName("android.view.WindowManagerPolicy").findField("FLAG_INJECTED").getValue();
-			
-			ReflectClass.forName("com.android.server.input.InputManagerService").inject("injectInputEvent", hook.hook_injectInputEvent);
+			try {
+				InputManager hook = new InputManager();
+				
+				FLAG_INJECTED = (Integer) ReflectClass.forName("android.view.WindowManagerPolicy").findField("FLAG_INJECTED").getValue();
+				
+				ReflectClass.forName("com.android.server.input.InputManagerService").inject("injectInputEvent", hook.hook_injectInputEvent);
+				
+			} catch (ReflectException e) {
+				Log.e(TAG, e.getMessage(), e);
+			}
 		}
 	}
 
@@ -60,7 +66,12 @@ public class InputManager {
 					 * and actual injected keys, we have added this small hook that will add the FLAG_INJECTED flag directly to the
 					 * KeyEvent itself whenever it get's parsed though this service method.
 					 */
-					new ReflectClass(param.args[0]).findField("mFlags").setValue(((KeyEvent) param.args[0]).getFlags() | FLAG_INJECTED);
+					try {
+						new ReflectClass(param.args[0]).findField("mFlags").setValue(((KeyEvent) param.args[0]).getFlags() | FLAG_INJECTED);
+
+					} catch (ReflectException e) {
+						Log.e(TAG, e.getMessage(), e);
+					}
 					
 				} else {
 					if(Common.debug()) Log.d(TAG, "The KeyEvent " + ((KeyEvent) param.args[0]).getKeyCode() + " already contains the FLAG_INJECTED flag");

@@ -69,15 +69,27 @@ public class PhoneWindowManager {
 	public static final String TAG = PhoneWindowManager.class.getName();
 	
 	public static void init() {
-		if(Common.DEBUG) Log.d(TAG, "Adding Window Manager Hook");
-		
-		PhoneWindowManager hooks = new PhoneWindowManager();
-		ReflectClass pwm = ReflectClass.forName("com.android.internal.policy.impl.PhoneWindowManager");
-		
-		pwm.inject(hooks.hook_constructor);
-		pwm.inject("init", hooks.hook_init);
-		pwm.inject("interceptKeyBeforeQueueing", hooks.hook_interceptKeyBeforeQueueing);
-		pwm.inject("interceptKeyBeforeDispatching", hooks.hook_interceptKeyBeforeDispatching);
+		try {
+			if(Common.DEBUG) Log.d(TAG, "Adding Window Manager Hook");
+			
+			PhoneWindowManager hooks = new PhoneWindowManager();
+			ReflectClass pwm = ReflectClass.forName("com.android.internal.policy.impl.PhoneWindowManager");
+			
+			try {
+				pwm.inject(hooks.hook_constructor);
+				pwm.inject("init", hooks.hook_init);
+				pwm.inject("interceptKeyBeforeQueueing", hooks.hook_interceptKeyBeforeQueueing);
+				pwm.inject("interceptKeyBeforeDispatching", hooks.hook_interceptKeyBeforeDispatching);
+				
+			} catch (ReflectException ei) {
+				Log.e(TAG, ei.getMessage(), ei);
+				
+				pwm.removeInjections();
+			}
+			
+		} catch (ReflectException e) {
+			Log.e(TAG, e.getMessage(), e);
+		}
 	}
 	
 	protected static Boolean SDK_NEW_POWER_MANAGER = android.os.Build.VERSION.SDK_INT >= 17;
@@ -176,21 +188,28 @@ public class PhoneWindowManager {
 	protected XC_MethodHook hook_constructor = new XC_MethodHook() {
 		@Override
 		protected final void afterHookedMethod(final MethodHookParam param) {
-			if(Common.debug()) Log.d(TAG, "Handling construct of the Window Manager instance");
-
-			ReflectClass wmp = ReflectClass.forName("android.view.WindowManagerPolicy");
-			
-			FLAG_INJECTED = (Integer) wmp.findField("FLAG_INJECTED").getValue();
-			FLAG_VIRTUAL = (Integer) wmp.findField("FLAG_VIRTUAL").getValue();
-			
-			ACTION_PASS_QUEUEING = (Integer) wmp.findField("ACTION_PASS_TO_USER").getValue();
-			ACTION_DISABLE_QUEUEING = 0;
-			
-			ACTION_PASS_DISPATCHING = SDK_NEW_PHONE_WINDOW_MANAGER ? 0 : false;
-			ACTION_DISABLE_DISPATCHING = SDK_NEW_PHONE_WINDOW_MANAGER ? -1 : true;
-					
-			if (SDK_HAS_HARDWARE_INPUT_MANAGER) {
-				INJECT_INPUT_EVENT_MODE_ASYNC = (Integer) ReflectClass.forName("android.hardware.input.InputManager").findField("INJECT_INPUT_EVENT_MODE_ASYNC").getValue();
+			try {
+				if(Common.debug()) Log.d(TAG, "Handling construct of the Window Manager instance");
+	
+				ReflectClass wmp = ReflectClass.forName("android.view.WindowManagerPolicy");
+				
+				FLAG_INJECTED = (Integer) wmp.findField("FLAG_INJECTED").getValue();
+				FLAG_VIRTUAL = (Integer) wmp.findField("FLAG_VIRTUAL").getValue();
+				
+				ACTION_PASS_QUEUEING = (Integer) wmp.findField("ACTION_PASS_TO_USER").getValue();
+				ACTION_DISABLE_QUEUEING = 0;
+				
+				ACTION_PASS_DISPATCHING = SDK_NEW_PHONE_WINDOW_MANAGER ? 0 : false;
+				ACTION_DISABLE_DISPATCHING = SDK_NEW_PHONE_WINDOW_MANAGER ? -1 : true;
+						
+				if (SDK_HAS_HARDWARE_INPUT_MANAGER) {
+					INJECT_INPUT_EVENT_MODE_ASYNC = (Integer) ReflectClass.forName("android.hardware.input.InputManager").findField("INJECT_INPUT_EVENT_MODE_ASYNC").getValue();
+				}
+				
+			} catch (ReflectException e) {
+				Log.e(TAG, e.getMessage(), e);
+				
+				ReflectClass.forName("com.android.internal.policy.impl.PhoneWindowManager").removeInjections();
 			}
 		}
 	};
@@ -209,7 +228,7 @@ public class PhoneWindowManager {
 				ReflectClass torchConstants = ReflectClass.forName("com.android.internal.util.cm.TorchConstants");
 				mTorchIntent = new Intent((String) torchConstants.findField("ACTION_TOGGLE_STATE").getValue());
 				
-			} catch (ReflectException re) {
+			} catch (ReflectException er) {
 				/*
 				 * Search for Torch Apps that supports <package name>.TOGGLE_FLASHLIGHT intents
 				 */
@@ -237,87 +256,105 @@ public class PhoneWindowManager {
 	protected XC_MethodHook hook_init = new XC_MethodHook() {
 		@Override
 		protected final void afterHookedMethod(final MethodHookParam param) {
-			mContext = (Context) param.args[0];
-			mPowerManager = new ReflectClass(mContext.getSystemService(Context.POWER_SERVICE));
-			mPowerManagerService = mPowerManager.findField("mService").getValueToInstance();
-			mWindowManagerService = new ReflectClass(param.args[1]);
-			mPhoneWindowManager = new ReflectClass(param.thisObject);
-			mActivityManager = new ReflectClass(mContext.getSystemService(Context.ACTIVITY_SERVICE));
-			mAudioManager = new ReflectClass(mContext.getSystemService(Context.AUDIO_SERVICE));
-			
-			mHandler = new Handler();
-			
-			mPreferences = XServiceManager.getInstance();
-			mPreferences.registerContext(mContext);
-			
-			mContext.registerReceiver(
-				new BroadcastReceiver() {
-					@Override
-					public void onReceive(Context context, Intent intent) {
-						/*
-						 * It is also best to wait with this one
-						 */
-						mActivityManagerService = ReflectClass.forName("android.app.ActivityManagerNative").findMethod("getDefault").invokeToInstance();
-						
-						if (SDK_HAS_HARDWARE_INPUT_MANAGER) {
-							/*
-							 * This cannot be placed in hook_init because it is to soon to call InputManager#getInstance.
-							 * If we do, we will get a broken IBinder which will crash both this module along
-							 * with anything else trying to access the InputManager methods.
-							 */
-							mInputManager = ReflectClass.forName("android.hardware.input.InputManager").findMethod("getInstance").invokeForReceiver();
-						}
-						
-						if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH)) {
-							/*
-							 * This could take awhile depending on the amount of apps installed. 
-							 * We use a separate thread instead of the handler to avoid blocking any key events. 
-							 */
-							locateTorchApps.start();
-						}
-						
-						mKeyguardMediator = mPhoneWindowManager.findField( SDK_HAS_KEYGUARD_DELEGATE ? "mKeyguardDelegate" : "mKeyguardMediator" ).getValueToInstance();
-						mKeyguardMediator.setOnErrorListener(new OnErrorListener(){
-							@Override
-							public void onError(ReflectMember<?> member) {
-								member.getReflectClass().setReceiver(
-										mPhoneWindowManager.findField( SDK_HAS_KEYGUARD_DELEGATE ? "mKeyguardDelegate" : "mKeyguardMediator" ).getValue()
-								);
-							}
-						});
-						
-						mRecentApplicationsDialog = ReflectClass.forName( SDK_NEW_RECENT_APPS_DIALOG ? "com.android.internal.statusbar.IStatusBarService" : "com.android.internal.policy.impl.RecentApplicationsDialog" );
-						mRecentApplicationsDialog.setOnReceiverListener(new OnReceiverListener(){
-							@Override
-							public Object onReceiver(ReflectMember<?> member) {
-								Object recentAppsService;
+			try {
+				mContext = (Context) param.args[0];
+				mPowerManager = new ReflectClass(mContext.getSystemService(Context.POWER_SERVICE));
+				mPowerManagerService = mPowerManager.findField("mService").getValueToInstance();
+				mWindowManagerService = new ReflectClass(param.args[1]);
+				mPhoneWindowManager = new ReflectClass(param.thisObject);
+				mActivityManager = new ReflectClass(mContext.getSystemService(Context.ACTIVITY_SERVICE));
+				mAudioManager = new ReflectClass(mContext.getSystemService(Context.AUDIO_SERVICE));
+				
+				mHandler = new Handler();
+				
+				mPreferences = XServiceManager.getInstance();
+				mPreferences.registerContext(mContext);
+				
+				if (mPreferences == null) {
+					throw new ReflectException("XService has not been started", null);
+				}
+				
+				mContext.registerReceiver(
+					new BroadcastReceiver() {
+						@Override
+						public void onReceive(Context context, Intent intent) {
+							try {
+								/*
+								 * It is also best to wait with this one
+								 */
+								mActivityManagerService = ReflectClass.forName("android.app.ActivityManagerNative").findMethod("getDefault").invokeToInstance();
 								
-								if (SDK_NEW_RECENT_APPS_DIALOG) {
-									recentAppsService = member.getReflectClass().bindInterface("statusbar").getReceiver();
-									
-								} else {
-									recentAppsService = member.getReflectClass().newInstance(mContext);
+								if (SDK_HAS_HARDWARE_INPUT_MANAGER) {
+									/*
+									 * This cannot be placed in hook_init because it is to soon to call InputManager#getInstance.
+									 * If we do, we will get a broken IBinder which will crash both this module along
+									 * with anything else trying to access the InputManager methods.
+									 */
+									mInputManager = ReflectClass.forName("android.hardware.input.InputManager").findMethod("getInstance").invokeForReceiver();
 								}
 								
-								member.getReflectClass().setReceiver(recentAppsService);
+								if (mContext.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH)) {
+									/*
+									 * This could take awhile depending on the amount of apps installed. 
+									 * We use a separate thread instead of the handler to avoid blocking any key events. 
+									 */
+									locateTorchApps.start();
+								}
 								
-								return recentAppsService;
+								mKeyguardMediator = mPhoneWindowManager.findField( SDK_HAS_KEYGUARD_DELEGATE ? "mKeyguardDelegate" : "mKeyguardMediator" ).getValueToInstance();
+								mKeyguardMediator.setOnErrorListener(new OnErrorListener(){
+									@Override
+									public void onError(ReflectMember<?> member) {
+										member.getReflectClass().setReceiver(
+												mPhoneWindowManager.findField( SDK_HAS_KEYGUARD_DELEGATE ? "mKeyguardDelegate" : "mKeyguardMediator" ).getValue()
+										);
+									}
+								});
+								
+								mRecentApplicationsDialog = ReflectClass.forName( SDK_NEW_RECENT_APPS_DIALOG ? "com.android.internal.statusbar.IStatusBarService" : "com.android.internal.policy.impl.RecentApplicationsDialog" );
+								mRecentApplicationsDialog.setOnReceiverListener(new OnReceiverListener(){
+									@Override
+									public Object onReceiver(ReflectMember<?> member) {
+										Object recentAppsService;
+										
+										if (SDK_NEW_RECENT_APPS_DIALOG) {
+											recentAppsService = member.getReflectClass().bindInterface("statusbar").getReceiver();
+											
+										} else {
+											recentAppsService = member.getReflectClass().newInstance(mContext);
+										}
+										
+										member.getReflectClass().setReceiver(recentAppsService);
+										
+										return recentAppsService;
+									}
+								});
+								mRecentApplicationsDialog.setOnErrorListener(new OnErrorListener(){
+									@Override
+									public void onError(ReflectMember<?> member) {
+										member.getReflectClass().setReceiver(null);
+									}
+								});
+								
+								registerMembers();
+								
+								mReady = true;
+								mContext.unregisterReceiver(this);
+								
+							} catch (ReflectException e) {
+								Log.e(TAG, e.getMessage(), e);
+								
+								mPhoneWindowManager.removeInjections();
 							}
-						});
-						mRecentApplicationsDialog.setOnErrorListener(new OnErrorListener(){
-							@Override
-							public void onError(ReflectMember<?> member) {
-								member.getReflectClass().setReceiver(null);
-							}
-						});
-						
-						registerMembers();
-						
-						mReady = true;
-						mContext.unregisterReceiver(this);
-					}
-				}, new IntentFilter("android.intent.action.BOOT_COMPLETED")
-			);
+						}
+					}, new IntentFilter("android.intent.action.BOOT_COMPLETED")
+				);
+				
+			} catch (ReflectException e) {
+				Log.e(TAG, e.getMessage(), e);
+				
+				ReflectClass.forName("com.android.internal.policy.impl.PhoneWindowManager").removeInjections();
+			}
 		}
 	};
 	
@@ -646,7 +683,12 @@ public class PhoneWindowManager {
 				 * is not accessible trough the regular PowerManager class. It the same method that 
 				 * turns on the screen when you plug in your USB cable.
 				 */
-				mMethods.get("forceUserActivityLocked").invoke();
+				try {
+					mMethods.get("forceUserActivityLocked").invoke();
+					
+				} catch (ReflectException e) {
+					Log.e(TAG, e.getMessage(), e);
+				}
 			}
 			
 		} else {
@@ -680,20 +722,25 @@ public class PhoneWindowManager {
 						
 					KeyEvent event = new KeyEvent(now, now, eventType, keyCode, repeatCount, 0, characterMap, 0, flags, InputDevice.SOURCE_KEYBOARD);
 					
-					if (SDK_HAS_HARDWARE_INPUT_MANAGER) {
-						mMethods.get("injectInputEvent").invoke(event, INJECT_INPUT_EVENT_MODE_ASYNC);
-						
-					} else {
-						mMethods.get("injectInputEvent").invoke(event);
-					}
-					
-					if (repeat.length == 0) {
+					try {
 						if (SDK_HAS_HARDWARE_INPUT_MANAGER) {
-							mMethods.get("injectInputEvent").invoke(KeyEvent.changeAction(event, KeyEvent.ACTION_UP), INJECT_INPUT_EVENT_MODE_ASYNC);
+							mMethods.get("injectInputEvent").invoke(event, INJECT_INPUT_EVENT_MODE_ASYNC);
 							
 						} else {
-							mMethods.get("injectInputEvent").invoke(KeyEvent.changeAction(event, KeyEvent.ACTION_UP));
+							mMethods.get("injectInputEvent").invoke(event);
 						}
+						
+						if (repeat.length == 0) {
+							if (SDK_HAS_HARDWARE_INPUT_MANAGER) {
+								mMethods.get("injectInputEvent").invoke(KeyEvent.changeAction(event, KeyEvent.ACTION_UP), INJECT_INPUT_EVENT_MODE_ASYNC);
+								
+							} else {
+								mMethods.get("injectInputEvent").invoke(KeyEvent.changeAction(event, KeyEvent.ACTION_UP));
+							}
+						}
+						
+					} catch (ReflectException e) {
+						Log.e(TAG, e.getMessage(), e);
 					}
 				}
 			}
@@ -701,28 +748,57 @@ public class PhoneWindowManager {
 	}
 
 	protected void performHapticFeedback(Integer effectId) {
-		mMethods.get("performHapticFeedback").invoke(null, effectId, false);
+		try {
+			mMethods.get("performHapticFeedback").invoke(null, effectId, false);
+			
+		} catch (ReflectException e) {
+			Log.e(TAG, e.getMessage(), e);
+		}
 	}
 	
 	protected Boolean isKeyguardShowing() {
-		return (Boolean) mMethods.get("KeyguardMediator.isShowing").invoke();
+		try {
+			return (Boolean) mMethods.get("KeyguardMediator.isShowing").invoke();
+			
+		} catch (ReflectException e) {
+			Log.e(TAG, e.getMessage(), e);
+		}
+		
+		return false;
 	}
 	
 	protected Boolean isKeyguardLockedAndInsecure() {
 		if (isKeyguardLocked()) {
-			return !((Boolean) mMethods.get("KeyguardMediator.isRestricted").invoke());
+			try {
+				return !((Boolean) mMethods.get("KeyguardMediator.isRestricted").invoke());
+				
+			} catch (ReflectException e) {
+				Log.e(TAG, e.getMessage(), e);
+			}
 		}
 		
 		return false;
 	}
 	
 	protected Boolean isKeyguardLocked() {
-		return (Boolean) mMethods.get("KeyguardMediator.isLocked").invoke();
+		try {
+			return (Boolean) mMethods.get("KeyguardMediator.isLocked").invoke();
+			
+		} catch (ReflectException e) {
+			Log.e(TAG, e.getMessage(), e);
+		}
+		
+		return false;
 	}
 	
 	protected void keyGuardDismiss() {
 		if (isKeyguardLocked()) {
-			mMethods.get("KeyguardMediator.dismiss").invoke(false, true);
+			try {
+				mMethods.get("KeyguardMediator.dismiss").invoke(false, true);
+				
+			} catch (ReflectException e) {
+				Log.e(TAG, e.getMessage(), e);
+			}
 		}
 	}
 	
@@ -762,10 +838,15 @@ public class PhoneWindowManager {
 		}
 		
 		if (SDK_HAS_MULTI_USER) {
-			Object userCurrent = mFields.get("UserHandle.current").getValue();
-			Object user = mConstructors.get("UserHandle").invoke(userCurrent);
-			
-			mMethods.get("startActivityAsUser").invoke(user);
+			try {
+				Object userCurrent = mFields.get("UserHandle.current").getValue();
+				Object user = mConstructors.get("UserHandle").invoke(userCurrent);
+				
+				mMethods.get("startActivityAsUser").invoke(user);
+				
+			} catch (ReflectException e) {
+				Log.e(TAG, e.getMessage(), e);
+			}
 			
 		} else {
 			mContext.startActivity(intent);
@@ -798,10 +879,8 @@ public class PhoneWindowManager {
 		try {
 			mMethods.get("closeSystemDialogs").invoke(reason);
 			
-		} catch (Throwable e) {
-			if (Common.debug()) {
-				throw new Error(e.getMessage(), e);
-			}
+		} catch (ReflectException e) {
+			Log.e(TAG, e.getMessage(), e);
 		}
 	}
 
@@ -813,10 +892,8 @@ public class PhoneWindowManager {
 		try {
 			mMethods.get("toggleRecentApps").invoke();
 			
-		} catch (Throwable e) {
-			if (Common.debug()) {
-				throw new Error(e.getMessage(), e);
-			}
+		} catch (ReflectException e) {
+			Log.e(TAG, e.getMessage(), e);
 		}
 	}
 	
@@ -828,10 +905,8 @@ public class PhoneWindowManager {
 		try {
 			mMethods.get("showGlobalActionsDialog").invoke();
 			
-		} catch (Throwable e) {
-			if (Common.debug()) {
-				throw new Error(e.getMessage(), e);
-			}
+		} catch (ReflectException e) {
+			Log.e(TAG, e.getMessage(), e);
 		}
 	}
 	
@@ -844,10 +919,20 @@ public class PhoneWindowManager {
 					case 270: orientation = Surface.ROTATION_270;
 				}
 				
-				mMethods.get("freezeRotation").invoke(orientation);
+				try {
+					mMethods.get("freezeRotation").invoke(orientation);
+					
+				} catch (ReflectException e) {
+					Log.e(TAG, e.getMessage(), e);
+				}
 				
 			} else {
-				mMethods.get("thawRotation").invoke();
+				try {
+					mMethods.get("thawRotation").invoke();
+					
+				} catch (ReflectException e) {
+					Log.e(TAG, e.getMessage(), e);
+				}
 			}
 			
 		} else {
@@ -863,7 +948,14 @@ public class PhoneWindowManager {
 	}
 	
 	protected Integer getCurrentRotation() {
-		return (Integer) mMethods.get("getRotation").invoke();
+		try {
+			return (Integer) mMethods.get("getRotation").invoke();
+
+		} catch (ReflectException e) {
+			Log.e(TAG, e.getMessage(), e);
+		}
+		
+		return 0;
 	}
 	
 	protected Integer getNextRotation(Boolean backwards) {
@@ -884,11 +976,16 @@ public class PhoneWindowManager {
 			if (!packageName.equals(getHomePackage()) && !packageName.equals("com.android.systemui")) {
 				if(Common.debug()) Log.d(TAG, "Invoking force stop on " + packageName);
 				
-				if (SDK_HAS_MULTI_USER) {
-					mMethods.get("forceStopPackage").invoke(packageName, mFields.get("UserHandle.current").getValue());
-
-				} else {
-					mMethods.get("forceStopPackage").invoke(packageName);
+				try {
+					if (SDK_HAS_MULTI_USER) {
+						mMethods.get("forceStopPackage").invoke(packageName, mFields.get("UserHandle.current").getValue());
+	
+					} else {
+						mMethods.get("forceStopPackage").invoke(packageName);
+					}
+					
+				} catch (ReflectException e) {
+					Log.e(TAG, e.getMessage(), e);
 				}
 			}
 		}
@@ -898,10 +995,8 @@ public class PhoneWindowManager {
 		try {
 			mMethods.get("takeScreenshot").invoke();
 			
-		} catch (Throwable e) {
-			if (Common.debug()) {
-				throw new Error(e.getMessage(), e);
-			}
+		} catch (ReflectException e) {
+			Log.e(TAG, e.getMessage(), e);
 		}
 	}
 	
