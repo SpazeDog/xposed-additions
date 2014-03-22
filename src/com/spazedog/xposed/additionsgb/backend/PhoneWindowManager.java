@@ -40,7 +40,6 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.PowerManager;
-import android.os.PowerManager.WakeLock;
 import android.os.SystemClock;
 import android.provider.Settings;
 import android.util.Log;
@@ -127,8 +126,6 @@ public class PhoneWindowManager {
 	protected Boolean mWasScreenOn = true;
 	
 	protected Intent mTorchIntent;
-	
-	protected WakeLock mWakelock;
 	
 	protected Map<String, ReflectConstructor> mConstructors = new HashMap<String, ReflectConstructor>();
 	protected Map<String, ReflectMethod> mMethods = new HashMap<String, ReflectMethod>();
@@ -252,8 +249,6 @@ public class PhoneWindowManager {
 			
 			mPreferences = XServiceManager.getInstance();
 			mPreferences.registerContext(mContext);
-			
-			mWakelock = ((PowerManager) mPowerManager.getReceiver()).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "HookedPhoneWindowManager");
 			
 			mContext.registerReceiver(
 				new BroadcastReceiver() {
@@ -655,9 +650,7 @@ public class PhoneWindowManager {
 			}
 			
 		} else {
-			if (!mWakelock.isHeld()) {
-				mWakelock.acquire(3000);
-			}
+			((PowerManager) mPowerManager.getReceiver()).userActivity(SystemClock.uptimeMillis(), true);
 		}
 	}
 
