@@ -6,7 +6,10 @@ import java.io.IOException;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -77,7 +80,7 @@ public class ActivityViewerLog extends Activity {
 						Intent intent = new Intent(Intent.ACTION_SEND);
 						intent.putExtra(Intent.EXTRA_EMAIL, new String[] {"d.bergloev@gmail.com"});
 						intent.putExtra(Intent.EXTRA_SUBJECT, "XposedAdditions: Error Log");
-						intent.putExtra(Intent.EXTRA_TEXT, "");
+						intent.putExtra(Intent.EXTRA_TEXT, getDeviceInfo());
 						intent.setType("text/plain");
 						intent.putExtra(Intent.EXTRA_STREAM, Uri.parse("file://" + Common.LOG_FILE.getCanonicalPath()));
 						
@@ -90,5 +93,32 @@ public class ActivityViewerLog extends Activity {
 		}
 		
 		return super.onOptionsItemSelected(item);
+	}
+	
+	protected String getDeviceInfo() {
+		StringBuilder builder = new StringBuilder();
+		
+		Integer versionCode = 0;
+		String versionName = "";
+		
+		try {
+			PackageInfo info = getPackageManager().getPackageInfo(Common.PACKAGE_NAME, 0);
+			
+			versionCode = info.versionCode;
+			versionName = info.versionName;
+			
+		} catch (NameNotFoundException e) {}
+		
+		builder.append("Module Version: (" + versionCode + ") " + versionName + "\r\n");
+		builder.append("-----------------\r\n");
+		builder.append("Manufacturer: " + Build.MANUFACTURER + "\r\n");
+		builder.append("Brand: " + Build.BRAND + "\r\n");
+		builder.append("Device: " + Build.DEVICE + "\r\n");
+		builder.append("Module: " + Build.MODEL + "\r\n");
+		builder.append("Product: " + Build.PRODUCT + "\r\n");
+		builder.append("Software: (" + Build.VERSION.SDK_INT + ") " + Build.VERSION.RELEASE + "\r\n");
+		builder.append("-----------------\r\n");
+		
+		return builder.toString();
 	}
 }
