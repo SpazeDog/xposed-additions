@@ -64,9 +64,6 @@ public final class XposedInjector implements IXposedHookZygoteInit {
 	
 	public static class LogcatMonitor {
 		
-		private ReflectMethod mGetStackTraceStringMethod;
-		private ReflectMethod mPrintlnNativeMethod;
-		
 		private static ReflectClass mLogUtil;
 		
 		private final static int WARNING = 5;
@@ -86,15 +83,10 @@ public final class XposedInjector implements IXposedHookZygoteInit {
 				}
 				
 				if (Common.LOG_FILE.exists()) {
-					mLogUtil = ReflectClass.forName("android.util.Log");
-					
 					LogcatMonitor monitor = new LogcatMonitor();
 					
-					monitor.mGetStackTraceStringMethod = mLogUtil.findMethod("getStackTraceString", Match.BEST, Throwable.class);
-					monitor.mPrintlnNativeMethod = mLogUtil.findMethod("println_native", Match.BEST, Integer.TYPE, Integer.TYPE, String.class, String.class);
-					
-					mLogUtil.inject("e", monitor.hook_errorAndWarning);
-					mLogUtil.inject("w", monitor.hook_errorAndWarning);
+					mLogUtil = ReflectClass.forName("android.util.Log");
+					mLogUtil.inject("println_native", monitor.hook_errorAndWarning);
 				}
 				
 			} catch (Throwable e) {
@@ -105,31 +97,22 @@ public final class XposedInjector implements IXposedHookZygoteInit {
 		protected XC_MethodHook hook_errorAndWarning = new XC_MethodHook() {
 			@Override
 			protected final void beforeHookedMethod(final MethodHookParam param) {
-				String tag = (String) param.args[0];
+				Integer priority = (Integer) param.args[1];
 				
-				if (!tag.equals(Common.PACKAGE_NAME + "#NoLoop")) {
-					try {
-						Integer priority = param.method.getName().equals("w") ? WARNING : ERROR;
-						String message = param.args[1] instanceof Throwable ? ((Throwable) param.args[1]).getMessage() : (String) param.args[1];
-						Throwable exception = param.args.length > 2 ? (Throwable) param.args[2] : 
-							param.args[1] instanceof Throwable ? (Throwable) param.args[1] : null;
-						
-						if (exception != null) {
-							message = message + "\n" + mGetStackTraceStringMethod.invoke(exception);
+				if (priority == WARNING || priority == ERROR) {
+					String tag = (String) param.args[2];
+					
+					if (!tag.equals(Common.PACKAGE_NAME + "#NoLoop")) {
+						try {
+							String message = (String) param.args[3];
+							
+							if (tag.contains(Common.PACKAGE_NAME) || message.contains(Common.PACKAGE_NAME)) {
+								writeLog(priority, tag, message, 0);
+							}
+							
+						} catch (Throwable e) {
+							Log.e(Common.PACKAGE_NAME + "#NoLoop", e.getMessage(), e);
 						}
-						
-						if (tag.contains(Common.PACKAGE_NAME) || message.contains(Common.PACKAGE_NAME)) {
-							writeLog(priority, tag, message, 0);
-						}
-						
-						/*
-						 * We call the native method manually because if we just let the original method handle
-						 * this, it will re-run the getStackTraceString() method which is a waste of resources. 
-						 */
-						param.setResult( mPrintlnNativeMethod.invoke(0, priority, tag, message) );
-						
-					} catch (Throwable e) {
-						Log.e(Common.PACKAGE_NAME + "#NoLoop", e.getMessage(), e);
 					}
 				}
 			}
