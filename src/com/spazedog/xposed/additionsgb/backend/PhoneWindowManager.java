@@ -144,8 +144,15 @@ public class PhoneWindowManager {
 	protected Map<String, ReflectField> mFields = new HashMap<String, ReflectField>();
 	
 	protected void registerMembers() {
+		try {
+			/*
+			 * This does not exists in all Gingerbread versions
+			 */
+			mMethods.put("takeScreenshot", mPhoneWindowManager.findMethodDeep("takeScreenshot"));
+			
+		} catch (ReflectException e) {}
+		
 		mMethods.put("showGlobalActionsDialog", mPhoneWindowManager.findMethodDeep("showGlobalActionsDialog")); 
-		mMethods.put("takeScreenshot", mPhoneWindowManager.findMethodDeep("takeScreenshot"));
 		mMethods.put("performHapticFeedback", mPhoneWindowManager.findMethodDeep("performHapticFeedbackLw", Match.BEST, "android.view.WindowManagerPolicy$WindowState", Integer.TYPE, Boolean.TYPE));
 		mMethods.put("forceStopPackage", mActivityManagerService.findMethodDeep("forceStopPackage", Match.BEST, SDK_HAS_MULTI_USER ? new Object[]{String.class, Integer.TYPE} : new Object[]{String.class})); 
 		mMethods.put("closeSystemDialogs", mActivityManagerService.findMethodDeep("closeSystemDialogs", Match.BEST, String.class)); 
