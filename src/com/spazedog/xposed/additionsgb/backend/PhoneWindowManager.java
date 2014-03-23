@@ -38,6 +38,7 @@ import android.content.pm.ResolveInfo;
 import android.media.AudioManager;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.PowerManager;
 import android.os.SystemClock;
@@ -62,6 +63,7 @@ import com.spazedog.lib.reflecttools.utils.ReflectMember.Match;
 import com.spazedog.xposed.additionsgb.Common;
 import com.spazedog.xposed.additionsgb.Common.Index;
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
+import com.spazedog.xposed.additionsgb.backend.service.XServiceManager.XServiceBroadcastListener;
 
 import de.robv.android.xposed.XC_MethodHook;
 
@@ -129,6 +131,8 @@ public class PhoneWindowManager {
 	protected ReflectClass mRecentApplicationsDialog;	// com.android.internal.policy.impl.RecentApplicationsDialog or com.android.internal.statusbar.IStatusBarService
 	
 	protected boolean mReady = false;
+	
+	protected boolean mInterceptKeyCode = false;
 	
 	protected KeyFlags mKeyFlags = new KeyFlags();
 	protected KeyConfig mKeyConfig = new KeyConfig();
@@ -284,11 +288,22 @@ public class PhoneWindowManager {
 				mHandler = new Handler();
 				
 				mPreferences = XServiceManager.getInstance();
-				mPreferences.registerContext(mContext);
 				
 				if (mPreferences == null) {
-					throw new ReflectException("XService has not been started", null);
+					throw new ReflectException("XService has not been started", null);	
 				}
+				
+				mPreferences.addBroadcastListener(new XServiceBroadcastListener(){
+					@Override
+					public void onBroadcastReceive(String action, Bundle data) {
+						if (action.equals("keyIntercepter:enable")) {
+							mInterceptKeyCode = true;
+							
+						} else if (action.equals("keyIntercepter:disable")) {
+							mInterceptKeyCode = false;
+						}
+					}
+				});
 				
 				mContext.registerReceiver(
 					new BroadcastReceiver() {
@@ -468,11 +483,14 @@ public class PhoneWindowManager {
 					performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
 				}
 				
-				if (isScreenOn && mKeyFlags.isDone() && mPreferences.getBoolean("intercept_keycode", false)) {
+				if (isScreenOn && mKeyFlags.isDone() && mInterceptKeyCode) {
 					if (down) {
 						if(Common.debug()) Log.d(tag, "Intercepting key code");
 						
-						mPreferences.putInt("last_intercepted_keycode", keyCode, false);
+						Bundle bundle = new Bundle();
+						bundle.putInt("keyCode", keyCode);
+						
+						mPreferences.sendBroadcast("keyIntercepter:keyCode", bundle);
 						
 						mKeyFlags.reset();
 					}

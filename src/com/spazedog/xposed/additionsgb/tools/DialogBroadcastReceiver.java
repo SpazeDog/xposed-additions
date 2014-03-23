@@ -21,29 +21,36 @@ package com.spazedog.xposed.additionsgb.tools;
 
 import android.app.Activity;
 import android.app.Dialog;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnDismissListener;
 import android.content.DialogInterface.OnShowListener;
-import android.content.Intent;
-import android.content.IntentFilter;
+import android.os.Bundle;
+import android.os.Handler;
 import android.view.View;
 import android.view.View.OnClickListener;
 
 import com.spazedog.xposed.additionsgb.R;
+import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
+import com.spazedog.xposed.additionsgb.backend.service.XServiceManager.XServiceBroadcastListener;
 
 public abstract class DialogBroadcastReceiver {
 	
 	private Dialog mDialog;
 	private Boolean mPositive = false;
 	private Boolean mBound = false;
-	private IntentFilter mIntentFilter;
+	private Handler mHandler = new Handler();
 	
-	private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
+	private XServiceManager mManager;
+	
+	private XServiceBroadcastListener mBroadcastReceiver = new XServiceBroadcastListener() {
 		@Override
-		public void onReceive(Context context, Intent intent) {
-			DialogBroadcastReceiver.this.onReceive(intent);
+		public void onBroadcastReceive(final String action, final Bundle data) {
+			mHandler.post(new Runnable(){
+				@Override
+				public void run() {
+					DialogBroadcastReceiver.this.onReceive(action, data);
+				}
+			});
 		}
 	};
 	
@@ -73,13 +80,13 @@ public abstract class DialogBroadcastReceiver {
 		}
 	};
 	
-	public void open(Activity activity, Integer layoutRes, IntentFilter intentFilter) {
+	public void open(Activity activity, Integer layoutRes) {
 		if (mDialog == null || !mDialog.isShowing()) {
 			if (mDialog != null) {
 				close();
 			}
 			
-			mIntentFilter = intentFilter;
+			mManager = XServiceManager.getInstance();
 			
 			mDialog = new Dialog(activity);
 			mDialog.setOwnerActivity(activity);
@@ -106,8 +113,8 @@ public abstract class DialogBroadcastReceiver {
 	}
 	
 	public void bind() {
-		if (!mBound && mDialog != null && mDialog.isShowing() && mDialog.getContext() != null) {
-			mDialog.getContext().registerReceiver(mBroadcastReceiver, mIntentFilter);
+		if (!mBound && mDialog != null && mDialog.isShowing()) {
+			mManager.addBroadcastListener(mBroadcastReceiver);
 			mBound = true;
 			
 			onBind();
@@ -115,9 +122,9 @@ public abstract class DialogBroadcastReceiver {
 	}
 	
 	public void unbind() {
-		if (mBound && mDialog != null && mDialog.getContext() != null) {
+		if (mBound && mDialog != null) {
 			try {
-				mDialog.getContext().unregisterReceiver(mBroadcastReceiver);
+				mManager.removeBroadcastListener(mBroadcastReceiver);
 				mBound = false;
 			
 			} catch (IllegalArgumentException e) {}
@@ -138,5 +145,5 @@ public abstract class DialogBroadcastReceiver {
 	protected void onUnbind() {}
 	protected void onClose(Boolean positive) {}
 	protected void onOpen() {}
-	protected abstract void onReceive(Intent intent);
+	protected abstract void onReceive(String action, Bundle data);
 }

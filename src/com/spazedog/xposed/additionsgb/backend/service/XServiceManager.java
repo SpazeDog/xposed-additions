@@ -22,13 +22,12 @@ package com.spazedog.xposed.additionsgb.backend.service;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
+import android.os.Bundle;
 import android.os.RemoteException;
 import android.util.Log;
 
@@ -47,11 +46,9 @@ public class XServiceManager {
 	
 	private static WeakReference<XServiceManager> oInstance = new WeakReference<XServiceManager>(null);
 	
+	private Set<XServiceBroadcastListener> mListeners = new HashSet<XServiceBroadcastListener>();
+	
 	private IXService mService;
-	
-	private Context mContext;
-	
-	private Boolean mUseCache = false;
 	
 	private Boolean mIsUnlocked;
 	
@@ -59,34 +56,39 @@ public class XServiceManager {
 	
 	private Map<String, Object> mData = new HashMap<String, Object>();
 	
-	private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
+	public static interface XServiceBroadcastListener {
+		public void onBroadcastReceive(String action, Bundle data);
+	}
+	
+	private IXServiceChangeListener mInternalListener = new IXServiceChangeListener.Stub(){
 		@Override
-		public void onReceive(Context context, Intent intent) {
-			synchronized (mData) {
-				if (oInstance.get() != null) {
-					try {
-						if ("preference_change".equals(intent.getStringExtra("action"))) {
-							String key = intent.getStringExtra("key");
-							final Integer type = mService.getType(key);
-							
-							switch(type) {
-								case XService.TYPE_STRING: mData.put(key, mService.getString(key, "")); break;
-								case XService.TYPE_INTEGER: mData.put(key, mService.getInt(key, -1)); break;
-								case XService.TYPE_BOOLEAN: mData.put(key, mService.getBoolean(key, false)); break;
-								case XService.TYPE_LIST: mData.put(key, mService.getStringArray(key, new ArrayList<String>())); break;
-								case XService.TYPE_EMPTY: mData.remove(key);
-							}
-							
-						} else {
-							mIsUnlocked = mService.isUnlocked();
-						}
-					
-					} catch (RemoteException e) { handleRemoteException(e); }
-					
-				} else {
-					if(Common.debug()) Log.d(TAG, "Removing unused BroadcastReceiver for '" + context.getPackageName() + "'");
-					
-					context.unregisterReceiver(this);
+		public void onPreferenceChanged(String key, int type) {
+			try {
+				switch(type) {
+					case XService.TYPE_STRING: mData.put(key, mService.getString(key, "")); break;
+					case XService.TYPE_INTEGER: mData.put(key, mService.getInt(key, -1)); break;
+					case XService.TYPE_BOOLEAN: mData.put(key, mService.getBoolean(key, false)); break;
+					case XService.TYPE_LIST: mData.put(key, mService.getStringArray(key, new ArrayList<String>())); 
+				}
+				
+			} catch (RemoteException e) { handleRemoteException(e); }
+		}
+
+		@Override
+		public void onPreferenceRemoved(String key) {
+			mData.remove(key);
+		}
+
+		@Override
+		public void onPackageChanged() throws RemoteException {
+			mIsUnlocked = mService.isUnlocked();
+		}
+
+		@Override
+		public void onBroadcastReceive(String action, Bundle data) throws RemoteException {
+			for (XServiceBroadcastListener listener : XServiceManager.this.mListeners) {
+				if (listener != null) {
+					listener.onBroadcastReceive(action, data);
 				}
 			}
 		}
@@ -103,6 +105,13 @@ public class XServiceManager {
 			instance.mService = (IXService) new ReflectClass(IXService.class).bindInterface(Common.XSERVICE_NAME).getReceiver();
 			
 			if (instance.mService != null) {
+				try {
+					instance.mService.setOnChangeListener(instance.mInternalListener);
+					
+				} catch (RemoteException e) {
+					Log.e(TAG, e.getMessage(), e);
+				}
+				
 				oInstance = new WeakReference<XServiceManager>(instance);
 				
 			} else {
@@ -115,36 +124,26 @@ public class XServiceManager {
 	
 	private synchronized void handleRemoteException(RemoteException e) {
 		mService = (IXService) new ReflectClass(IXService.class).bindInterface(Common.XSERVICE_NAME).getReceiver();
+		
+		try {
+			mService.setOnChangeListener(mInternalListener);
+			
+		} catch (RemoteException ei) {
+			Log.e(TAG, ei.getMessage(), ei);
+		}
 	}
 	
 	private XServiceManager(){}
 	
-	public void registerContext(Context context) {
-		if(Common.debug()) Log.d(TAG, "Adding Context and BroadcastReceiver to '" + context.getPackageName() + "' instance");
-		
-		/*
-		 * The outer most System Context returns NULL on getApplicationContext()
-		 */
-		mContext = context.getApplicationContext() == null ? context : context.getApplicationContext();
-		mContext.registerReceiver(
-				mBroadcastReceiver, 
-				new IntentFilter(Common.XSERVICE_BROADCAST));
-		
-		mUseCache = true;
+	public void addBroadcastListener(XServiceBroadcastListener listener) {
+		if (!mListeners.contains(listener)) {
+			mListeners.add(listener);
+		}
 	}
 	
-	public void unregisterContext() {
-		if (mContext != null) {
-			mContext.unregisterReceiver(mBroadcastReceiver);
-			mContext = null;
-			
-			mUseCache = false;
-			
-			/*
-			 * The cache will no longer be updated when there is no context registered. 
-			 * In case it get's re-registered, we don't want an outdated cache laying around. 
-			 */
-			mData = new HashMap<String, Object>();
+	public void removeBroadcastListener(XServiceBroadcastListener listener) {
+		if (mListeners.contains(listener)) {
+			mListeners.remove(listener);
 		}
 	}
 	
@@ -239,7 +238,7 @@ public class XServiceManager {
 			return status;
 			
 		} catch (RemoteException e) { 
-			if(Common.debug()) Log.d(TAG, "It was not possible to get all group keys in order to remove " + (group == null ? "" : group) + "#" + (key == null ? "" : key));
+			Log.e(TAG, "It was not possible to get all group keys in order to remove " + (group == null ? "" : group) + "#" + (key == null ? "" : key));
 			
 			handleRemoteException(e); 
 		}
@@ -253,16 +252,11 @@ public class XServiceManager {
 	
 	public Integer getInt(String key, Integer defaultValue) {
 		try {
-			if (!mUseCache) {
+			if (!mData.containsKey(key)) {
 				if(Common.debug()) Log.d(TAG, "Retrieving preference Integer '" + key + "' via IPC");
 				
-				return mService.getInt(key, defaultValue);
-				
-			} else if (!mData.containsKey(key)) {
 				mData.put(key, mService.getInt(key, defaultValue));
 			}
-			
-			if(Common.debug()) Log.d(TAG, "Retrieving preference Integer '" + key + "' from Cache");
 			
 			return (Integer) mData.get(key);
 			
@@ -275,17 +269,12 @@ public class XServiceManager {
 	
 	public Boolean getBoolean(String key, Boolean defaultValue) {
 		try {
-			if (!mUseCache) {
+			if (!mData.containsKey(key)) {
 				if(Common.debug()) Log.d(TAG, "Retrieving preference Boolean '" + key + "' via IPC");
 				
-				return mService.getBoolean(key, defaultValue);
-				
-			} else if (!mData.containsKey(key)) {
 				mData.put(key, mService.getBoolean(key, defaultValue));
 			}
-			
-			if(Common.debug()) Log.d(TAG, "Retrieving preference Boolean '" + key + "' from Cache");
-			
+
 			return (Boolean) mData.get(key);
 			
 		} catch (RemoteException e) { handleRemoteException(e); return defaultValue; }
@@ -298,17 +287,12 @@ public class XServiceManager {
 	@SuppressWarnings("unchecked")
 	public List<String> getStringArray(String key, ArrayList<String> defaultValue) {
 		try {
-			if (!mUseCache) {
+			if (!mData.containsKey(key)) {
 				if(Common.debug()) Log.d(TAG, "Retrieving preference StringArray '" + key + "' via IPC");
 				
-				return mService.getStringArray(key, defaultValue);
-				
-			} else if (!mData.containsKey(key)) {
 				mData.put(key, mService.getStringArray(key, defaultValue));
 			}
-			
-			if(Common.debug()) Log.d(TAG, "Retrieving preference StringArray '" + key + "' from Cache");
-			
+
 			return (List<String>) mData.get(key);
 			
 		} catch (RemoteException e) { handleRemoteException(e); return defaultValue; }
@@ -316,17 +300,12 @@ public class XServiceManager {
 	
 	public String getString(String key, String defaultValue) {
 		try {
-			if (!mUseCache) {
+			if (!mData.containsKey(key)) {
 				if(Common.debug()) Log.d(TAG, "Retrieving preference String '" + key + "' via IPC");
 				
-				return mService.getString(key, defaultValue);
-				
-			} else if (!mData.containsKey(key)) {
 				mData.put(key, mService.getString(key, defaultValue));
 			}
-			
-			if(Common.debug()) Log.d(TAG, "Retrieving preference String '" + key + "' from Cache");
-			
+
 			return (String) mData.get(key);
 			
 		} catch (RemoteException e) { handleRemoteException(e); return defaultValue; }
@@ -441,17 +420,16 @@ public class XServiceManager {
 	}
 	
 	public Boolean isPackageUnlocked() {
-		if (!mUseCache || mIsUnlocked == null) {
+		if (mIsUnlocked == null) {
 			try {
 				mIsUnlocked = mService.isUnlocked();
 			
 			} catch (RemoteException e) {
-				mIsUnlocked = false;
 				handleRemoteException(e);
 			}
 		}
 		
-		return mIsUnlocked;
+		return mIsUnlocked != null && mIsUnlocked;
 	}
 	
 	public Boolean isServiceReady() {
@@ -478,5 +456,14 @@ public class XServiceManager {
 		}
 		
 		return 0;
+	}
+	
+	public void sendBroadcast(String action, Bundle data) {
+		try {
+			mService.sendBroadcast(action, data != null ? data : new Bundle());
+		
+		} catch (RemoteException e) {
+			handleRemoteException(e);
+		}
 	}
 }

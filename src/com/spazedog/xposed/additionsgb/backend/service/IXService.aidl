@@ -19,6 +19,8 @@
 
 package com.spazedog.xposed.additionsgb.backend.service;
 
+import com.spazedog.xposed.additionsgb.backend.service.IXServiceChangeListener;
+
 /** {@hide} */
 interface IXService {
 	void putStringArray(String key, in List<String> value, int preserve);
@@ -46,4 +48,8 @@ interface IXService {
 	boolean isReady();
 	
 	int getVersion();
+	
+	void setOnChangeListener(IXServiceChangeListener listener);
+	
+	void sendBroadcast(String action, in Bundle data);
 }

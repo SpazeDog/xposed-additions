@@ -12,6 +12,7 @@ import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceCategory;
+import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -142,7 +143,7 @@ public class ActivityScreenRemapMain extends PreferenceActivity implements OnPre
 	@Override
 	public boolean onPreferenceClick(Preference preference) {
 		if (preference.getKey().equals("add_key_preference")) {
-			mDialog.open(this, R.layout.dialog_intercept_key, new IntentFilter(Common.XSERVICE_BROADCAST)); return true;
+			mDialog.open(this, R.layout.dialog_intercept_key); return true;
 		}
 		
 		return false;
@@ -211,12 +212,10 @@ public class ActivityScreenRemapMain extends PreferenceActivity implements OnPre
 		}
 		
 		@Override
-		protected void onReceive(Intent intent) {
-			String key = intent.getStringExtra("key");
-			
-			if (key != null && key.equals("last_intercepted_keycode")) {
-				String intercepted = "" + mPreferences.getInt(key, 0);
-				
+		protected void onReceive(String action, Bundle data) {
+			if (action.equals("keyIntercepter:keyCode")) {
+				String intercepted = "" + data.get("keyCode");
+
 				if (mNewKey != null && !mNewKey.contains(":") && mPreferences.isPackageUnlocked() && !intercepted.equals(mNewKey)) {
 					mNewKey = mNewKey + ":" + intercepted;
 					textView.setText(R.string.alert_dialog_summary_intercept_key);
@@ -255,12 +254,12 @@ public class ActivityScreenRemapMain extends PreferenceActivity implements OnPre
 		
 		@Override
 		protected void onBind() {
-			mPreferences.putBoolean("intercept_keycode", true, false);
+			mPreferences.sendBroadcast("keyIntercepter:enable", null);
 		}
 		
 		@Override
 		protected void onUnbind() {
-			mPreferences.putBoolean("intercept_keycode", false, false);
+			mPreferences.sendBroadcast("keyIntercepter:disable", null);
 		}
 	};
 }

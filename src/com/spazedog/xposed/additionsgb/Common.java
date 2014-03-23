@@ -63,7 +63,6 @@ public final class Common {
 	
 	public static final String XSERVICE_NAME = PACKAGE_NAME + ".service.XSERVICE";
 	public static final String XSERVICE_PERMISSIONS = PACKAGE_NAME + ".permissions.XSERVICE";
-	public static final String XSERVICE_BROADCAST = PACKAGE_NAME + ".filters.XSERVICE";
 	
 	public static final String PREFERENCE_FILE = "config";
 	

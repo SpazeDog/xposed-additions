@@ -48,6 +48,7 @@ public final class PowerManager {
 
 	protected Integer mPlugType;
 	protected Boolean mIsPowered;
+	protected Boolean mInitiated = false;
 	
 	public static void init() {
 		if(Common.DEBUG) Log.d(TAG, "Adding Power Manager Hook");
@@ -85,7 +86,6 @@ public final class PowerManager {
 				mContext = (Context) mPowerManager.findField("mContext").getValue();
 				
 				mPreferences = XServiceManager.getInstance();
-				mPreferences.registerContext(mContext);
 				
 				if (mPreferences == null) {
 					throw new ReflectException("XService has not been started", null);
@@ -111,7 +111,7 @@ public final class PowerManager {
 					Integer oldPlugType = mPlugType;
 					Boolean wasPowered = mIsPowered;
 					
-					if (mIsPowered != null && mPlugType != null) {
+					if (mInitiated) {
 						Boolean pluggedAC = BatteryManager.BATTERY_PLUGGED_AC == plugType || BatteryManager.BATTERY_PLUGGED_AC == oldPlugType;
 						Boolean pluggedUSB = BatteryManager.BATTERY_PLUGGED_USB == plugType || BatteryManager.BATTERY_PLUGGED_USB == oldPlugType;
 						
@@ -155,6 +155,9 @@ public final class PowerManager {
 						} else if (powered == wasPowered) {
 							param.setResult(false);
 						}
+						
+					} else {
+						mInitiated = true;
 					}
 	
 					mIsPowered = powered;

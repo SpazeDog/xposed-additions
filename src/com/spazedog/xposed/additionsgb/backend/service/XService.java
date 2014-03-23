@@ -29,8 +29,10 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -41,7 +43,9 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.Binder;
+import android.os.Bundle;
 import android.os.Environment;
+import android.os.IBinder;
 import android.os.RemoteException;
 import android.util.Log;
 
@@ -73,6 +77,9 @@ public final class XService extends IXService.Stub {
 	private Integer mVersion = 0;
 	
 	private ExecutorService mThreadExecuter = Executors.newSingleThreadExecutor();
+	
+	private Set<IBinder> mListeners = new HashSet<IBinder>();
+	private Set<IBinder> mDeadListeners = new HashSet<IBinder>();
 	
 	private static class PREFERENCE {
 		private static File ROOT = new File(Environment.getDataDirectory(), "data/" + Common.PACKAGE_NAME);
@@ -271,16 +278,6 @@ public final class XService extends IXService.Stub {
 			mContextSystem.registerReceiver(applicationNotifier, intentFilter);
 			
 			mIsReady = true;
-		}
-	};
-	
-	protected BroadcastReceiver applicationNotifier = new BroadcastReceiver() {
-		@Override
-		public void onReceive(Context context, Intent intent) {
-			Intent newIntent = new Intent(Common.XSERVICE_BROADCAST);
-			newIntent.putExtra("action", "package_change");
-			
-			mContextSystem.sendBroadcast(newIntent);
 		}
 	};
 	
@@ -524,12 +521,97 @@ public final class XService extends IXService.Stub {
 		return mVersion;
 	}
 	
-	@SuppressWarnings("unchecked")
-	private void broadcastChange(String key) {
-		Intent intent = new Intent(Common.XSERVICE_BROADCAST);
-		intent.putExtra("action", "preference_change");
-		intent.putExtra("key", key);
+	@Override
+	public void setOnChangeListener(IXServiceChangeListener listener) throws RemoteException {
+		IBinder binder = listener.asBinder();
 		
-		mContextSystem.sendBroadcast(intent);
+		synchronized(mListeners) {
+			if (!mListeners.contains(binder)) {
+				mListeners.add(binder);
+			}
+		}
+	}
+	
+	@Override
+	public void sendBroadcast(String action, Bundle data) {
+		synchronized(mListeners) {
+			for (IBinder listener : mListeners) {
+				if (listener != null && listener.isBinderAlive()) {
+					try {
+						IXServiceChangeListener.Stub.asInterface(listener).onBroadcastReceive(action, data);
+						
+					} catch (RemoteException e) {
+						Log.e(TAG, e.getMessage(), e);
+					}
+					
+				} else {
+					mDeadListeners.add(listener);
+				}
+			}
+			
+			cleanupListeners();
+		}
+	}
+	
+	protected BroadcastReceiver applicationNotifier = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			synchronized(mListeners) {
+				for (IBinder listener : mListeners) {
+					if (listener != null && listener.isBinderAlive()) {
+						try {
+							IXServiceChangeListener.Stub.asInterface(listener).onPackageChanged();
+							
+						} catch (RemoteException e) {
+							Log.e(TAG, e.getMessage(), e);
+						}
+						
+					} else {
+						mDeadListeners.add(listener);
+					}
+				}
+				
+				cleanupListeners();
+			}
+		}
+	};
+	
+	private void broadcastChange(String key) {
+		Integer type = getType(key);
+		
+		synchronized(mListeners) {
+			for (IBinder listener : mListeners) {
+				if (listener != null && listener.isBinderAlive()) {
+					try {
+						if (type == TYPE_EMPTY) {
+							IXServiceChangeListener.Stub.asInterface(listener).onPreferenceRemoved(key);
+							
+						} else {
+							IXServiceChangeListener.Stub.asInterface(listener).onPreferenceChanged(key, type);
+						}
+						
+					} catch (RemoteException e) {
+						Log.e(TAG, e.getMessage(), e);
+					}
+					
+				} else {
+					mDeadListeners.add(listener);
+				}
+			}
+			
+			cleanupListeners();
+		}
+	}
+	
+	private void cleanupListeners() {
+		synchronized(mListeners) {
+			if (mDeadListeners.size() > 0) {
+				for (IBinder listener : mDeadListeners) {
+					mListeners.remove(listener);
+				}
+				
+				mDeadListeners.clear();
+			}
+		}
 	}
 }
