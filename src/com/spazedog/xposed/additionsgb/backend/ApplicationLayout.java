@@ -40,36 +40,57 @@ import de.robv.android.xposed.XC_MethodHook;
 public final class ApplicationLayout {
 	public static final String TAG = ApplicationLayout.class.getName();
 	
+	protected Boolean mConfigureKeyguard = true;
+	protected Boolean mKeyguardOverwriteRotation = false;
+	
+	protected Boolean mGetSettings = true;
+	protected Boolean mEnableRotation = false;
+	protected Boolean mBlackListed = false;
+	
+	protected List<String> mBlackList = new ArrayList<String>();
+	
 	public static void init() {
 		if(Common.DEBUG) Log.d(TAG, "Adding Application Layout Hook");
 		
-		XC_MethodHook hook = new LayoutHook();
+		ApplicationLayout appLayout = new ApplicationLayout();
 
 		try {
-			ReflectClass.forName("com.android.internal.policy.impl.PhoneWindow").inject("generateLayout", hook);
-			ReflectClass.forName("android.app.Activity").inject("setRequestedOrientation", hook);
+			ReflectClass.forName("com.android.internal.policy.impl.PhoneWindow").inject("generateLayout", appLayout.hook_orientationAndLayout);
+			ReflectClass.forName("android.app.Activity").inject("setRequestedOrientation", appLayout.hook_orientationAndLayout);
 			
-			if (android.os.Build.VERSION.SDK_INT > 15) {
-				/*
-				 * TODO: Find a way for pre-jellybean.
-				 * TODO: Also make a better way for Jellybean+ as this does not always work as it should
-				 */
-				ReflectClass.forName("com.android.internal.policy.impl.keyguard").inject("shouldEnableScreenRotation", hook);
-			}
+			/*
+			 * The keyguard has it's own way of handling this. This is actually handled in KeyguardViewManager, but this class
+			 * get's moved around in almost every release, and each version introduces new ways of handling orientation settings. 
+			 * The System Property is the only persistent control. 
+			 */
+			ReflectClass.forName("android.os.SystemProperties").inject("getBoolean", appLayout.hook_keyguardLayout);
 			
 		} catch (ReflectException e) {
 			Log.e(TAG, e.getMessage(), e);
 		}
 	}
 	
-	private static class LayoutHook extends XC_MethodHook {
-		
-		public Boolean mGetSettings = true;
-		public Boolean mEnableRotation = false;
-		public Boolean mBlackListed = false;
-		
-		public List<String> mBlackList = new ArrayList<String>();
-		
+	protected XC_MethodHook hook_keyguardLayout = new XC_MethodHook() {
+		@Override
+		protected final void beforeHookedMethod(final MethodHookParam param) {
+			if (param.args.length > 0 && "lockscreen.rot_override".equals(param.args[0])) {
+				if (mConfigureKeyguard) {
+					XServiceManager preferences = XServiceManager.getInstance();
+					
+					if (preferences != null) {
+						mConfigureKeyguard = false;
+						mKeyguardOverwriteRotation = preferences.getBoolean(Index.bool.key.layoutRotationSwitch, Index.bool.value.layoutRotationSwitch);
+					}
+				}
+				
+				if (mKeyguardOverwriteRotation) {
+					param.setResult(true);
+				}
+			}
+		}
+	};
+	
+	protected XC_MethodHook hook_orientationAndLayout = new XC_MethodHook() {
 		@Override
 		protected final void beforeHookedMethod(final MethodHookParam param) {
 			/*
@@ -100,9 +121,6 @@ public final class ApplicationLayout {
 				
 				if ("setRequestedOrientation".equals(param.method.getName())) {
 					param.args[0] = ActivityInfo.SCREEN_ORIENTATION_USER;
-					
-				} else if ("shouldEnableScreenRotation".equals(param.method.getName())) {
-					param.setResult(true);
 				}
 				
 			} else if (mEnableRotation) {
