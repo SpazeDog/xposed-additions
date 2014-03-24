@@ -937,7 +937,7 @@ public class PhoneWindowManager {
 				Object userCurrent = mFields.get("UserHandle.current").getValue();
 				Object user = mConstructors.get("UserHandle").invoke(userCurrent);
 				
-				mMethods.get("startActivityAsUser").invoke(user);
+				mMethods.get("startActivityAsUser").invoke(intent, user);
 				
 			} catch (ReflectException e) {
 				Log.e(TAG, e.getMessage(), e);
