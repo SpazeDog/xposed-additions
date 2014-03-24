@@ -258,7 +258,9 @@ public class XServiceManager {
 				mData.put(key, mService.getInt(key, defaultValue));
 			}
 			
-			return (Integer) mData.get(key);
+			Integer value = (Integer) mData.get(key);
+
+			return value != null ? value : defaultValue;
 			
 		} catch (RemoteException e) { handleRemoteException(e); return defaultValue; }
 	}
@@ -274,8 +276,10 @@ public class XServiceManager {
 				
 				mData.put(key, mService.getBoolean(key, defaultValue));
 			}
+			
+			Boolean value = (Boolean) mData.get(key);
 
-			return (Boolean) mData.get(key);
+			return value != null ? value : defaultValue;
 			
 		} catch (RemoteException e) { handleRemoteException(e); return defaultValue; }
 	}
@@ -292,8 +296,10 @@ public class XServiceManager {
 				
 				mData.put(key, mService.getStringArray(key, defaultValue));
 			}
+			
+			List<String> list = (List<String>) mData.get(key);
 
-			return (List<String>) mData.get(key);
+			return list != null ? list : defaultValue;
 			
 		} catch (RemoteException e) { handleRemoteException(e); return defaultValue; }
 	}
