@@ -102,20 +102,22 @@ public class XServiceManager {
 				instance = new XServiceManager();
 			}
 			
-			instance.mService = (IXService) new ReflectClass(IXService.class).bindInterface(Common.XSERVICE_NAME).getReceiver();
+			try {
+				instance.mService = (IXService) new ReflectClass(IXService.class).bindInterface(Common.XSERVICE_NAME).getReceiver();
 			
-			if (instance.mService != null) {
-				try {
+				if (instance.mService != null) {
 					instance.mService.setOnChangeListener(instance.mInternalListener);
 					
-				} catch (RemoteException e) {
-					Log.e(TAG, e.getMessage(), e);
+					oInstance = new WeakReference<XServiceManager>(instance);
+					
+				} else {
+					instance = null;
 				}
 				
-				oInstance = new WeakReference<XServiceManager>(instance);
-				
-			} else {
+			} catch (Throwable e) {
 				instance = null;
+				
+				Log.e(TAG, e.getMessage(), e);
 			}
 		}
 		
@@ -123,12 +125,11 @@ public class XServiceManager {
 	}
 	
 	private synchronized void handleRemoteException(RemoteException e) {
-		mService = (IXService) new ReflectClass(IXService.class).bindInterface(Common.XSERVICE_NAME).getReceiver();
-		
 		try {
+			mService = (IXService) new ReflectClass(IXService.class).bindInterface(Common.XSERVICE_NAME).getReceiver();
 			mService.setOnChangeListener(mInternalListener);
 			
-		} catch (RemoteException ei) {
+		} catch (Throwable ei) {
 			Log.e(TAG, ei.getMessage(), ei);
 		}
 	}
