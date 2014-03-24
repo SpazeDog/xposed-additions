@@ -83,6 +83,7 @@ public class PhoneWindowManager {
 				pwm.inject("init", hooks.hook_init);
 				pwm.inject("interceptKeyBeforeQueueing", hooks.hook_interceptKeyBeforeQueueing);
 				pwm.inject("interceptKeyBeforeDispatching", hooks.hook_interceptKeyBeforeDispatching);
+				pwm.inject("performHapticFeedbackLw", hooks.hook_performHapticFeedbackLw);
 				
 			} catch (ReflectException ei) {
 				Log.e(TAG, ei.getMessage(), ei);
@@ -114,6 +115,12 @@ public class PhoneWindowManager {
 	protected static int FLAG_VIRTUAL;
 	
 	protected static int INJECT_INPUT_EVENT_MODE_ASYNC;
+	
+	/*
+	 * Android uses positive, we use negative
+	 */
+	protected static final int HAPTIC_VIRTUAL_KEY = (0 - (HapticFeedbackConstants.VIRTUAL_KEY + 1));
+	protected static final int HAPTIC_LONG_PRESS = (0 - (HapticFeedbackConstants.LONG_PRESS + 1));
 	
 	protected Context mContext;
 	protected XServiceManager mPreferences;
@@ -204,7 +211,7 @@ public class PhoneWindowManager {
 	protected XC_MethodHook hook_viewConfigTimeouts = new XC_MethodHook() {
 		@Override
 		protected final void afterHookedMethod(final MethodHookParam param) {
-			if (mKeyFlags.isKeyDown()) {
+			if (mKeyFlags.isKeyDown() && !mKeyFlags.wasCanceled()) {
 				param.setResult(100);
 			}
 		}
@@ -477,8 +484,17 @@ public class PhoneWindowManager {
 						param.setResult(ACTION_DISABLE_QUEUEING);
 					}
 					
+					mKeyFlags.cancel();
+					
 					return;
+					
+				} else if (down && isScreenOn != mWasScreenOn) {
+					mWasScreenOn = isScreenOn;
+					
+					mKeyFlags.reset();
 				}
+				
+				mKeyFlags.registerKey(keyCode, down);
 				
 				boolean isVirtual = (policyFlags & FLAG_VIRTUAL) != 0;
 				
@@ -496,10 +512,10 @@ public class PhoneWindowManager {
 				}
 				
 				if (down && isVirtual) {
-					performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
+					performHapticFeedback(HAPTIC_VIRTUAL_KEY);
 				}
 				
-				if (isScreenOn && mKeyFlags.isDone() && mInterceptKeyCode) {
+				if (isScreenOn && mInterceptKeyCode) {
 					if (down) {
 						if(Common.debug()) Log.d(tag, "Intercepting key code");
 						
@@ -508,20 +524,12 @@ public class PhoneWindowManager {
 						
 						mPreferences.sendBroadcast("keyIntercepter:keyCode", bundle);
 						
-						mKeyFlags.reset();
+						mKeyFlags.cancel();
 					}
 					
 					param.setResult(ACTION_DISABLE_QUEUEING);
 					
 				} else {
-					if (down && isScreenOn != mWasScreenOn) {
-						mWasScreenOn = isScreenOn;
-						
-						mKeyFlags.reset();
-					}
-					
-					mKeyFlags.registerKey(keyCode, down);
-					
 					if (down) {
 						if (!mKeyFlags.isRepeated()) {
 							if(Common.debug()) Log.d(tag, "Configuring event");
@@ -636,19 +644,19 @@ public class PhoneWindowManager {
 					
 					synchronized(mLockQueueing) {
 						if (mKeyFlags.isKeyDown() && keyCode == mKeyFlags.getCurrentKey() && wasMulti == mKeyFlags.isMulti()) {
+							performHapticFeedback(HAPTIC_LONG_PRESS);
+
+							mKeyFlags.finish();
+							
 							if (mKeyConfig.hasLongPressAction()) {
 								if(Common.debug()) Log.d(tag, "Invoking mapped long press action");
-								
-								performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+
 								handleKeyAction(mKeyConfig.getLongPressAction(), keyCode);
-								
-								mKeyFlags.finish();
 								
 							} else {
 								if(Common.debug()) Log.d(tag, "Invoking default long press action");
 								
 								mKeyFlags.setDefaultLongPress(true);
-								mKeyFlags.finish();
 								
 								if (mKeyFlags.isMulti()) {
 									int primary = mKeyFlags.getPrimaryKey() == keyCode ? mKeyFlags.getSecondaryKey() : mKeyFlags.getPrimaryKey();
@@ -727,6 +735,25 @@ public class PhoneWindowManager {
 			}
 			
 			param.setResult(ACTION_DISABLE_DISPATCHING);
+		}
+	};
+	
+	protected XC_MethodHook hook_performHapticFeedbackLw = new XC_MethodHook() {
+		@Override
+		protected final void beforeHookedMethod(final MethodHookParam param) {
+			/*
+			 * This is used to avoid having the original methods create feedback on our handled keys.
+			 * Some Stock ROM's like TouchWiz often does this, even on injected keys. 
+			 */
+			switch ( (Integer) param.args[1] ) {
+				case HAPTIC_VIRTUAL_KEY: param.args[1] = HapticFeedbackConstants.VIRTUAL_KEY; return; 
+				case HAPTIC_LONG_PRESS: param.args[1] = HapticFeedbackConstants.LONG_PRESS; return;
+				
+				default:
+					if (!mKeyFlags.wasCanceled() && mKeyFlags.isKeyDown()) {
+						param.setResult(true);
+					}
+			}
 		}
 	};
 	
@@ -1205,6 +1232,7 @@ public class PhoneWindowManager {
 		private Boolean mIsRepeated = false;
 		private Boolean mFinished = false;
 		private Boolean mReset = false;
+		private Boolean mCancel = false;
 		private Boolean mExtended = false;
 		private Boolean mDefaultLongPress = false;
 		private Boolean mIsCallButton = false;
@@ -1215,7 +1243,15 @@ public class PhoneWindowManager {
 		
 		public void finish() {
 			mFinished = true;
-			mReset = mSecondaryKey == 0;
+				
+			if (!isDone()) {
+				mReset = mSecondaryKey == 0;
+			}
+		}
+		
+		public void cancel() {
+			mCancel = true;
+			mReset = true;
 		}
 		
 		public void reset() {
@@ -1240,7 +1276,7 @@ public class PhoneWindowManager {
 						mIsPrimaryDown = true;
 					}
 					
-				} else if (!mIsRepeated && !mReset && mPrimaryKey > 0 && mIsPrimaryDown && keyCode != mPrimaryKey && (mSecondaryKey == 0 || mSecondaryKey == keyCode)) {
+				} else if (!mIsRepeated && !mReset && !mCancel && mPrimaryKey > 0 && mIsPrimaryDown && keyCode != mPrimaryKey && (mSecondaryKey == 0 || mSecondaryKey == keyCode)) {
 					if(Common.debug()) Log.d(tag, "Registring secondary key");
 					
 					mIsSecondaryDown = true;
@@ -1256,6 +1292,7 @@ public class PhoneWindowManager {
 					mIsRepeated = false;
 					mFinished = false;
 					mReset = false;
+					mCancel = false;
 					mDefaultLongPress = false;
 					
 					mPrimaryKey = keyCode;
@@ -1285,11 +1322,15 @@ public class PhoneWindowManager {
 		}
 		
 		public Boolean wasInvoked() {
-			return mFinished;
+			return mFinished || mCancel;
+		}
+		
+		public Boolean wasCanceled() {
+			return mCancel;
 		}
 		
 		public Boolean isDone() {
-			return mFinished || mReset || mPrimaryKey == 0;
+			return mFinished || mReset || mCancel || mPrimaryKey == 0;
 		}
 		
 		public Boolean isMulti() {
