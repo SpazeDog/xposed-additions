@@ -47,6 +47,7 @@ import android.util.Log;
 import android.view.HapticFeedbackConstants;
 import android.view.InputDevice;
 import android.view.KeyCharacterMap;
+import android.view.KeyCharacterMap.UnavailableException;
 import android.view.KeyEvent;
 import android.view.Surface;
 import android.widget.Toast;
@@ -143,9 +144,13 @@ public class PhoneWindowManager {
 	
 	protected Intent mTorchIntent;
 	
+	protected int mKeyCharacterMap;
+	
 	protected Map<String, ReflectConstructor> mConstructors = new HashMap<String, ReflectConstructor>();
 	protected Map<String, ReflectMethod> mMethods = new HashMap<String, ReflectMethod>();
 	protected Map<String, ReflectField> mFields = new HashMap<String, ReflectField>();
+	
+	protected Map<Integer, Boolean> mDeviceKeys = new HashMap<Integer, Boolean>();
 	
 	protected void registerMembers() {
 		try {
@@ -274,6 +279,7 @@ public class PhoneWindowManager {
 	 * JellyBean uses arguments init(Context, IWindowManager, WindowManagerFuncs)
 	 */
 	protected XC_MethodHook hook_init = new XC_MethodHook() {
+		@TargetApi(Build.VERSION_CODES.HONEYCOMB)
 		@Override
 		protected final void afterHookedMethod(final MethodHookParam param) {
 			try {
@@ -386,6 +392,17 @@ public class PhoneWindowManager {
 									Log.e(TAG, e.getMessage(), e);
 								}
 								
+								if (SDK_NEW_CHARACTERMAP) {
+									try {
+										mKeyCharacterMap = KeyCharacterMap.load(-1).getKeyboardType();
+										
+									} catch (Throwable ei) {
+										Log.e(TAG, ei.getMessage(), ei);
+										
+										mKeyCharacterMap = KeyCharacterMap.VIRTUAL_KEYBOARD;
+									}
+								}
+								
 							} catch (ReflectException e) {
 								Log.e(TAG, e.getMessage(), e);
 								
@@ -409,6 +426,7 @@ public class PhoneWindowManager {
 	 * ICS/JellyBean uses arguments interceptKeyBeforeQueueing(KeyEvent event, Integer policyFlags, Boolean isScreenOn)
 	 */
 	protected XC_MethodHook hook_interceptKeyBeforeQueueing = new XC_MethodHook() {
+		@TargetApi(Build.VERSION_CODES.HONEYCOMB)
 		@Override
 		protected final void beforeHookedMethod(final MethodHookParam param) {
 			/*
@@ -428,7 +446,7 @@ public class PhoneWindowManager {
 			final boolean down = action == KeyEvent.ACTION_DOWN;
 			
 			String tag = TAG + "#Queueing/" + (down ? "Down" : "Up") + ":" + keyCode;
-			
+
 			/*
 			 * Using KitKat work-around from the InputManager Hook
 			 */
@@ -436,17 +454,7 @@ public class PhoneWindowManager {
 					(((KeyEvent) param.args[0]).getFlags() & FLAG_INJECTED) != 0 : (policyFlags & FLAG_INJECTED) != 0;
 			
 			if (isInjected) {
-				if (!down || repeatCount <= 0) {
-					if(Common.debug()) Log.d(tag, "Skipping injected key");
-					
-					if (SDK_NEW_PHONE_WINDOW_MANAGER) {
-						param.args[1] = policyFlags & ~FLAG_INJECTED;
-						
-					} else {
-						param.args[5] = policyFlags & ~FLAG_INJECTED;
-					}
-					
-				} else {
+				if (down && repeatCount > 0) {
 					if(Common.debug()) Log.d(tag, "Ignoring injected repeated key");
 					
 					/*
@@ -463,6 +471,14 @@ public class PhoneWindowManager {
 			
 			synchronized(mLockQueueing) {
 				if(Common.debug()) Log.d(tag, (down ? "Starting" : "Stopping") + " event");
+				
+				if (!internalKey(keyCode)) {
+					if (mInterceptKeyCode) {
+						param.setResult(ACTION_DISABLE_QUEUEING);
+					}
+					
+					return;
+				}
 				
 				boolean isVirtual = (policyFlags & FLAG_VIRTUAL) != 0;
 				
@@ -582,19 +598,15 @@ public class PhoneWindowManager {
 					(((KeyEvent) param.args[1]).getFlags() & FLAG_INJECTED) != 0 : (policyFlags & FLAG_INJECTED) != 0;
 			
 			if (isInjected) {
-				if (SDK_NEW_PHONE_WINDOW_MANAGER) {
-					param.args[2] = policyFlags & ~FLAG_INJECTED;
-					
-				} else {
-					param.args[7] = policyFlags & ~FLAG_INJECTED;
-				}
-				
 				if (down && mKeyFlags.isDefaultLongPress() && mKeyFlags.isKeyDown() && keyCode == mKeyFlags.getCurrentKey()) {
 					if(Common.debug()) Log.d(tag, "Repeating default long press event count " + repeatCount);
 					
 					injectInputEvent(keyCode, repeatCount+1);
 				}
 			
+				return;
+				
+			} else if (!internalKey(keyCode)) {
 				return;
 				
 			} else if (!down && mKeyFlags.isDefaultLongPress()) {
@@ -718,6 +730,14 @@ public class PhoneWindowManager {
 		}
 	};
 	
+	protected Boolean internalKey(Integer keyCode) {
+		if (!mDeviceKeys.containsKey(keyCode)) {
+			mDeviceKeys.put(keyCode, KeyCharacterMap.deviceHasKey(keyCode));
+		}
+		
+		return mDeviceKeys.get(keyCode);
+	}
+	
 	@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
 	public void pokeUserActivity(Boolean forced) {
 		if (forced) {
@@ -760,7 +780,7 @@ public class PhoneWindowManager {
 			public void run() {
 				synchronized(PhoneWindowManager.class) {
 					long now = SystemClock.uptimeMillis();
-					int characterMap = SDK_NEW_CHARACTERMAP ? KeyCharacterMap.SPECIAL_FUNCTION : 0;
+					int characterMap = SDK_NEW_CHARACTERMAP ? mKeyCharacterMap : 0;
 					int eventType = repeat.length == 0 || repeat[0] >= 0 ? KeyEvent.ACTION_DOWN : KeyEvent.ACTION_UP;
 					
 					int flags = repeat.length > 0 && repeat[0] == 1 ? KeyEvent.FLAG_LONG_PRESS|KeyEvent.FLAG_FROM_SYSTEM|FLAG_INJECTED : KeyEvent.FLAG_FROM_SYSTEM|FLAG_INJECTED;
