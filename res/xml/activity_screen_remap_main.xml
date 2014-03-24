@@ -19,6 +19,12 @@
             android:entries="@array/delay_names"
             android:entryValues="@array/delay_press_values" />
         
+        <CheckBoxPreference
+            android:key="allow_externals_preference"
+            android:title="@string/preference_title_allow_externals"
+            android:summary="@string/preference_summary_allow_externals"
+            android:persistent="false" />
+        
     </PreferenceCategory>
     
     <PreferenceCategory

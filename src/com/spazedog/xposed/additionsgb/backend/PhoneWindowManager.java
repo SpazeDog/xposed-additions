@@ -762,7 +762,7 @@ public class PhoneWindowManager {
 			mDeviceKeys.put(keyCode, KeyCharacterMap.deviceHasKey(keyCode));
 		}
 		
-		return mDeviceKeys.get(keyCode);
+		return mDeviceKeys.get(keyCode) || mPreferences.getBoolean(Common.Index.bool.key.remapAllowExternals, Common.Index.bool.value.remapAllowExternals);
 	}
 	
 	@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)

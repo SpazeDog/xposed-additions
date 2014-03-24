@@ -103,6 +103,10 @@ public class ActivityScreenRemapMain extends PreferenceActivity implements OnPre
 			WidgetPreference addKeyPreference = (WidgetPreference) findPreference("add_key_preference");
 			addKeyPreference.setOnPreferenceClickListener(this);
 			
+			CheckBoxPreference allowExternalsPreference = (CheckBoxPreference) findPreference("allow_externals_preference");
+			allowExternalsPreference.setOnPreferenceClickListener(this);
+			allowExternalsPreference.setChecked(mPreferences.getBoolean(Common.Index.bool.key.remapAllowExternals, Common.Index.bool.value.remapAllowExternals));
+			
 			mKeyList = (ArrayList<String>) mPreferences.getStringArray(Index.array.key.remapKeys, Index.array.value.remapKeys);
 			for (String key : mKeyList) {
 				addKeyPreference(key);
@@ -144,6 +148,13 @@ public class ActivityScreenRemapMain extends PreferenceActivity implements OnPre
 	public boolean onPreferenceClick(Preference preference) {
 		if (preference.getKey().equals("add_key_preference")) {
 			mDialog.open(this, R.layout.dialog_intercept_key); return true;
+			
+		} else if (preference.getKey().equals("allow_externals_preference")) {
+			Boolean value = ((CheckBoxPreference) preference).isChecked();
+			
+			mPreferences.putBoolean(Common.Index.bool.key.remapAllowExternals, value);
+			
+			return true;
 		}
 		
 		return false;

@@ -101,6 +101,7 @@ public final class Common {
 				public static final String layoutRotationSwitch = "layout_rotation_switch";
 				public static final String enableDebug = "enable_debug";
 				public static final String remapCallButton = "remap_call_button";
+				public static final String remapAllowExternals = "remap_allow_externals";
 			}
 			
 			public static final class value {
@@ -109,6 +110,7 @@ public final class Common {
 				public static final Boolean layoutRotationSwitch = false;
 				public static final Boolean enableDebug = false;
 				public static final Boolean remapCallButton = false;
+				public static final Boolean remapAllowExternals = false;
 			}
 		}
 		

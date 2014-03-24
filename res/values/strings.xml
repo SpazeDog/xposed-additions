@@ -74,6 +74,10 @@
          Strings for ActivityScreenRemap
     ================================================ -->
     <string name='category_settings'>Settings</string>
+    
+    <string name='preference_title_allow_externals'>Allow External Devices</string>
+    <string name='preference_summary_allow_externals'>Note: Will not work with all types</string>
+    
     <string name='preference_title_delay_key_tap'>Double click delay</string>
     <string name='preference_title_delay_key_press'>Long press delay</string>
     
