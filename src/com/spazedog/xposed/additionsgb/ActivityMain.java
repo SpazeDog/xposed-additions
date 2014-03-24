@@ -107,7 +107,7 @@ public class ActivityMain extends PreferenceActivity implements OnPreferenceClic
 	    		} catch (NameNotFoundException e) {}
     		}
     		
-    		if (mPreferences.isPackageUnlocked()) {
+    		if (mPreferences != null && mPreferences.isPackageUnlocked()) {
     			getPreferenceScreen().removePreference( findPreference("pro_link") );
     			
     		} else {
