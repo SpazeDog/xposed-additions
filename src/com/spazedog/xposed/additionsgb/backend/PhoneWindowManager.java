@@ -876,43 +876,39 @@ public class PhoneWindowManager {
 	
 	@SuppressLint("NewApi")
 	protected void injectInputEvent(final int keyCode, final int... repeat) {
-		mHandler.post(new Runnable() {
-			public void run() {
-				synchronized(PhoneWindowManager.class) {
-					long now = SystemClock.uptimeMillis();
-					int characterMap = SDK_NEW_CHARACTERMAP ? mKeyCharacterMap : 0;
-					int eventType = repeat.length == 0 || repeat[0] >= 0 ? KeyEvent.ACTION_DOWN : KeyEvent.ACTION_UP;
+		synchronized(PhoneWindowManager.class) {
+			long now = SystemClock.uptimeMillis();
+			int characterMap = SDK_NEW_CHARACTERMAP ? mKeyCharacterMap : 0;
+			int eventType = repeat.length == 0 || repeat[0] >= 0 ? KeyEvent.ACTION_DOWN : KeyEvent.ACTION_UP;
+			
+			int flags = repeat.length > 0 && repeat[0] == 1 ? KeyEvent.FLAG_LONG_PRESS|KeyEvent.FLAG_FROM_SYSTEM|FLAG_INJECTED : KeyEvent.FLAG_FROM_SYSTEM|FLAG_INJECTED;
+			
+			int repeatCount = repeat.length == 0 ? 0 : 
+				repeat[0] < 0 ? 1 : repeat[0];
+				
+			KeyEvent event = new KeyEvent(now, now, eventType, keyCode, repeatCount, 0, characterMap, 0, flags, InputDevice.SOURCE_KEYBOARD);
+			
+			try {
+				if (SDK_HAS_HARDWARE_INPUT_MANAGER) {
+					mMethods.get("injectInputEvent").invoke(event, INJECT_INPUT_EVENT_MODE_ASYNC);
 					
-					int flags = repeat.length > 0 && repeat[0] == 1 ? KeyEvent.FLAG_LONG_PRESS|KeyEvent.FLAG_FROM_SYSTEM|FLAG_INJECTED : KeyEvent.FLAG_FROM_SYSTEM|FLAG_INJECTED;
-					
-					int repeatCount = repeat.length == 0 ? 0 : 
-						repeat[0] < 0 ? 1 : repeat[0];
+				} else {
+					mMethods.get("injectInputEvent").invoke(event);
+				}
+				
+				if (repeat.length == 0) {
+					if (SDK_HAS_HARDWARE_INPUT_MANAGER) {
+						mMethods.get("injectInputEvent").invoke(KeyEvent.changeAction(event, KeyEvent.ACTION_UP), INJECT_INPUT_EVENT_MODE_ASYNC);
 						
-					KeyEvent event = new KeyEvent(now, now, eventType, keyCode, repeatCount, 0, characterMap, 0, flags, InputDevice.SOURCE_KEYBOARD);
-					
-					try {
-						if (SDK_HAS_HARDWARE_INPUT_MANAGER) {
-							mMethods.get("injectInputEvent").invoke(event, INJECT_INPUT_EVENT_MODE_ASYNC);
-							
-						} else {
-							mMethods.get("injectInputEvent").invoke(event);
-						}
-						
-						if (repeat.length == 0) {
-							if (SDK_HAS_HARDWARE_INPUT_MANAGER) {
-								mMethods.get("injectInputEvent").invoke(KeyEvent.changeAction(event, KeyEvent.ACTION_UP), INJECT_INPUT_EVENT_MODE_ASYNC);
-								
-							} else {
-								mMethods.get("injectInputEvent").invoke(KeyEvent.changeAction(event, KeyEvent.ACTION_UP));
-							}
-						}
-						
-					} catch (ReflectException e) {
-						Log.e(TAG, e.getMessage(), e);
+					} else {
+						mMethods.get("injectInputEvent").invoke(KeyEvent.changeAction(event, KeyEvent.ACTION_UP));
 					}
 				}
+				
+			} catch (ReflectException e) {
+				Log.e(TAG, e.getMessage(), e);
 			}
-		});
+		}
 	}
 
 	protected void performHapticFeedback(Integer effectId) {
