@@ -461,6 +461,7 @@ public class PhoneWindowManager {
 			final int repeatCount = (Integer) (!SDK_NEW_PHONE_WINDOW_MANAGER ? 0 : ((KeyEvent) param.args[0]).getRepeatCount());
 			final boolean isScreenOn = (Boolean) (!SDK_NEW_PHONE_WINDOW_MANAGER ? param.args[6] : param.args[2]);
 			final boolean down = action == KeyEvent.ACTION_DOWN;
+			final int policyIndex = SDK_NEW_PHONE_WINDOW_MANAGER ? 1 : 5;
 			
 			String tag = TAG + "#Queueing/" + (down ? "Down" : "Up") + ":" + keyCode;
 
@@ -481,6 +482,9 @@ public class PhoneWindowManager {
 					 * stock ROM's are treating these as both new and repeated events. 
 					 */
 					param.setResult(ACTION_PASS_QUEUEING);
+					
+				} else {
+					param.args[policyIndex] = policyFlags & ~FLAG_INJECTED;
 				}
 				
 				synchronized(hook_performHapticFeedbackLw) {
@@ -633,6 +637,7 @@ public class PhoneWindowManager {
 			final int eventFlags = (Integer) (!SDK_NEW_PHONE_WINDOW_MANAGER ? param.args[2] : ((KeyEvent) param.args[1]).getFlags());
 			final int repeatCount = (Integer) (!SDK_NEW_PHONE_WINDOW_MANAGER ? param.args[6] : ((KeyEvent) param.args[1]).getRepeatCount());
 			final boolean down = action == KeyEvent.ACTION_DOWN;
+			final int policyIndex = SDK_NEW_PHONE_WINDOW_MANAGER ? 2 : 7;
 			
 			String tag = TAG + "#Dispatch/" + (down ? "Down" : "Up") + ":" + keyCode;
 			
@@ -653,6 +658,8 @@ public class PhoneWindowManager {
 					mIsOriginalLocked = true;
 					mOriginalLocks += 1;
 				}
+				
+				param.args[policyIndex] = policyFlags & ~FLAG_INJECTED;
 			
 				return;
 				
