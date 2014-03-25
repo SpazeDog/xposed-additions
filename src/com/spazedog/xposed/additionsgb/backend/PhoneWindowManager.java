@@ -122,6 +122,11 @@ public class PhoneWindowManager {
 	protected static final int HAPTIC_VIRTUAL_KEY = (0 - (HapticFeedbackConstants.VIRTUAL_KEY + 1));
 	protected static final int HAPTIC_LONG_PRESS = (0 - (HapticFeedbackConstants.LONG_PRESS + 1));
 	
+	/*
+	 * A hack to indicate when a key is being processed by one of the original methods. 
+	 */
+	protected int mOriginalLocks = 0;
+	
 	protected Context mContext;
 	protected XServiceManager mPreferences;
 	
@@ -211,8 +216,8 @@ public class PhoneWindowManager {
 	protected XC_MethodHook hook_viewConfigTimeouts = new XC_MethodHook() {
 		@Override
 		protected final void afterHookedMethod(final MethodHookParam param) {
-			if (mKeyFlags.isKeyDown() && !mKeyFlags.wasCanceled()) {
-				param.setResult(100);
+			if ((mKeyFlags.isKeyDown() && !mKeyFlags.wasCanceled()) || mOriginalLocks > 0) {
+				param.setResult(10);
 			}
 		}
 	};
@@ -433,6 +438,9 @@ public class PhoneWindowManager {
 	 * ICS/JellyBean uses arguments interceptKeyBeforeQueueing(KeyEvent event, Integer policyFlags, Boolean isScreenOn)
 	 */
 	protected XC_MethodHook hook_interceptKeyBeforeQueueing = new XC_MethodHook() {
+		
+		protected Boolean mIsOriginalLocked = false;
+		
 		@TargetApi(Build.VERSION_CODES.HONEYCOMB)
 		@Override
 		protected final void beforeHookedMethod(final MethodHookParam param) {
@@ -472,6 +480,11 @@ public class PhoneWindowManager {
 					 */
 					param.setResult(ACTION_PASS_QUEUEING);
 				}
+				
+				synchronized(hook_performHapticFeedbackLw) {
+					mIsOriginalLocked = true;
+					mOriginalLocks += 1;
+				}
 			
 				return;
 			}
@@ -483,7 +496,7 @@ public class PhoneWindowManager {
 					if (mInterceptKeyCode) {
 						param.setResult(ACTION_DISABLE_QUEUEING);
 					}
-					
+
 					mKeyFlags.cancel();
 					
 					return;
@@ -571,6 +584,21 @@ public class PhoneWindowManager {
 				}
 			}
 		}
+		
+		@Override
+		protected final void afterHookedMethod(final MethodHookParam param) {
+			if (mIsOriginalLocked) {
+				mIsOriginalLocked = false;
+				
+				/*
+				 * We don't use "-= 1" to avoid it going below 0. 
+				 * It should only be 0, 1 or 2
+				 */
+				synchronized(hook_performHapticFeedbackLw) {
+					mOriginalLocks = mOriginalLocks > 1 ? 1 : 0;
+				}
+			}
+		}
 	};
 	
 	/**
@@ -579,6 +607,9 @@ public class PhoneWindowManager {
 	 * ICS/JellyBean uses arguments interceptKeyBeforeDispatching(WindowState win, KeyEvent event, Integer policyFlags)
 	 */
 	protected XC_MethodHook hook_interceptKeyBeforeDispatching = new XC_MethodHook() {
+		
+		protected Boolean mIsOriginalLocked = false;
+		
 		@Override
 		protected final void beforeHookedMethod(final MethodHookParam param) {
 			/*
@@ -610,6 +641,11 @@ public class PhoneWindowManager {
 					if(Common.debug()) Log.d(tag, "Repeating default long press event count " + repeatCount);
 					
 					injectInputEvent(keyCode, repeatCount+1);
+				}
+				
+				synchronized(hook_performHapticFeedbackLw) {
+					mIsOriginalLocked = true;
+					mOriginalLocks += 1;
 				}
 			
 				return;
@@ -736,6 +772,22 @@ public class PhoneWindowManager {
 			
 			param.setResult(ACTION_DISABLE_DISPATCHING);
 		}
+		
+		
+		@Override
+		protected final void afterHookedMethod(final MethodHookParam param) {
+			if (mIsOriginalLocked) {
+				mIsOriginalLocked = false;
+				
+				/*
+				 * We don't use "-= 1" to avoid it going below 0. 
+				 * It should only be 0, 1 or 2
+				 */
+				synchronized(hook_performHapticFeedbackLw) {
+					mOriginalLocks = mOriginalLocks > 1 ? 1 : 0;
+				}
+			}
+		}
 	};
 	
 	protected XC_MethodHook hook_performHapticFeedbackLw = new XC_MethodHook() {
@@ -746,11 +798,19 @@ public class PhoneWindowManager {
 			 * Some Stock ROM's like TouchWiz often does this, even on injected keys. 
 			 */
 			switch ( (Integer) param.args[1] ) {
+				/*
+				 * Makes sure that we never disable our own feedback calls
+				 */
 				case HAPTIC_VIRTUAL_KEY: param.args[1] = HapticFeedbackConstants.VIRTUAL_KEY; return; 
 				case HAPTIC_LONG_PRESS: param.args[1] = HapticFeedbackConstants.LONG_PRESS; return;
 				
+				/*
+				 * We can't disable original calls completely. 
+				 * The key handling methods are not the only once using this.
+				 * Lock screen pattern feedback and others use it as well. 
+				 */
 				default:
-					if (!mKeyFlags.wasCanceled() && mKeyFlags.isKeyDown()) {
+					if (mOriginalLocks > 0) {
 						param.setResult(true);
 					}
 			}
