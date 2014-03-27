@@ -156,8 +156,6 @@ public class PhoneWindowManager {
 	
 	protected Intent mTorchIntent;
 	
-	protected int mKeyCharacterMap;
-	
 	protected WakeLock mWakelock;
 	
 	protected Map<String, ReflectConstructor> mConstructors = new HashMap<String, ReflectConstructor>();
@@ -404,17 +402,6 @@ public class PhoneWindowManager {
 									
 								} catch (ReflectException e) {
 									Log.e(TAG, e.getMessage(), e);
-								}
-								
-								if (SDK_NEW_CHARACTERMAP) {
-									try {
-										mKeyCharacterMap = KeyCharacterMap.load(-1).getKeyboardType();
-										
-									} catch (Throwable ei) {
-										Log.e(TAG, ei.getMessage(), ei);
-										
-										mKeyCharacterMap = KeyCharacterMap.VIRTUAL_KEYBOARD;
-									}
 								}
 								
 							} catch (ReflectException e) {
@@ -878,7 +865,7 @@ public class PhoneWindowManager {
 	protected void injectInputEvent(final int keyCode, final int... repeat) {
 		synchronized(PhoneWindowManager.class) {
 			long now = SystemClock.uptimeMillis();
-			int characterMap = SDK_NEW_CHARACTERMAP ? mKeyCharacterMap : 0;
+			int characterMap = SDK_NEW_CHARACTERMAP ? KeyCharacterMap.VIRTUAL_KEYBOARD : 0;
 			int eventType = repeat.length == 0 || repeat[0] >= 0 ? KeyEvent.ACTION_DOWN : KeyEvent.ACTION_UP;
 			
 			int flags = repeat.length > 0 && repeat[0] == 1 ? KeyEvent.FLAG_LONG_PRESS|KeyEvent.FLAG_FROM_SYSTEM|FLAG_INJECTED : KeyEvent.FLAG_FROM_SYSTEM|FLAG_INJECTED;
