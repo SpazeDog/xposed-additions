@@ -79,7 +79,6 @@ public final class XService extends IXService.Stub {
 	private ExecutorService mThreadExecuter = Executors.newSingleThreadExecutor();
 	
 	private Set<IBinder> mListeners = new HashSet<IBinder>();
-	private Set<IBinder> mDeadListeners = new HashSet<IBinder>();
 	
 	private static class PREFERENCE {
 		private static File ROOT = new File(Environment.getDataDirectory(), "data/" + Common.PACKAGE_NAME);
@@ -523,7 +522,18 @@ public final class XService extends IXService.Stub {
 	
 	@Override
 	public void setOnChangeListener(IXServiceChangeListener listener) throws RemoteException {
-		IBinder binder = listener.asBinder();
+		final IBinder binder = listener.asBinder();
+		binder.linkToDeath(new DeathRecipient(){
+			@Override
+			public void binderDied() {
+				synchronized(mListeners) {
+					binder.unlinkToDeath(this, 0);
+					
+					mListeners.remove(binder);
+				}
+			}
+			
+		}, 0);
 		
 		synchronized(mListeners) {
 			if (!mListeners.contains(binder)) {
@@ -536,20 +546,15 @@ public final class XService extends IXService.Stub {
 	public void sendBroadcast(String action, Bundle data) {
 		synchronized(mListeners) {
 			for (IBinder listener : mListeners) {
-				if (listener != null && listener.isBinderAlive()) {
+				if (listener != null && listener.pingBinder()) {
 					try {
 						IXServiceChangeListener.Stub.asInterface(listener).onBroadcastReceive(action, data);
 						
 					} catch (RemoteException e) {
 						Log.e(TAG, e.getMessage(), e);
 					}
-					
-				} else {
-					mDeadListeners.add(listener);
 				}
 			}
-			
-			cleanupListeners();
 		}
 	}
 	
@@ -558,20 +563,15 @@ public final class XService extends IXService.Stub {
 		public void onReceive(Context context, Intent intent) {
 			synchronized(mListeners) {
 				for (IBinder listener : mListeners) {
-					if (listener != null && listener.isBinderAlive()) {
+					if (listener != null && listener.pingBinder()) {
 						try {
 							IXServiceChangeListener.Stub.asInterface(listener).onPackageChanged();
 							
 						} catch (RemoteException e) {
 							Log.e(TAG, e.getMessage(), e);
 						}
-						
-					} else {
-						mDeadListeners.add(listener);
 					}
 				}
-				
-				cleanupListeners();
 			}
 		}
 	};
@@ -581,7 +581,7 @@ public final class XService extends IXService.Stub {
 		
 		synchronized(mListeners) {
 			for (IBinder listener : mListeners) {
-				if (listener != null && listener.isBinderAlive()) {
+				if (listener != null && listener.pingBinder()) {
 					try {
 						if (type == TYPE_EMPTY) {
 							IXServiceChangeListener.Stub.asInterface(listener).onPreferenceRemoved(key);
@@ -593,24 +593,7 @@ public final class XService extends IXService.Stub {
 					} catch (RemoteException e) {
 						Log.e(TAG, e.getMessage(), e);
 					}
-					
-				} else {
-					mDeadListeners.add(listener);
 				}
-			}
-			
-			cleanupListeners();
-		}
-	}
-	
-	private void cleanupListeners() {
-		synchronized(mListeners) {
-			if (mDeadListeners.size() > 0) {
-				for (IBinder listener : mDeadListeners) {
-					mListeners.remove(listener);
-				}
-				
-				mDeadListeners.clear();
 			}
 		}
 	}
