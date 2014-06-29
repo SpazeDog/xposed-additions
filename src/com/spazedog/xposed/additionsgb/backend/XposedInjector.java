@@ -31,8 +31,9 @@ import android.util.Log;
 
 import com.spazedog.lib.reflecttools.ReflectClass;
 import com.spazedog.lib.reflecttools.ReflectMethod;
-import com.spazedog.lib.reflecttools.utils.ReflectMember.Match;
+import com.spazedog.lib.reflecttools.utils.ReflectConstants.Match;
 import com.spazedog.xposed.additionsgb.Common;
+import com.spazedog.xposed.additionsgb.backend.pwm.PhoneWindowManager;
 import com.spazedog.xposed.additionsgb.backend.service.XService;
 
 import de.robv.android.xposed.IXposedHookZygoteInit;

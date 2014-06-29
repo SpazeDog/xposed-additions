@@ -67,7 +67,7 @@ public class InputManager {
 					 * KeyEvent itself whenever it get's parsed though this service method.
 					 */
 					try {
-						new ReflectClass(param.args[0]).findField("mFlags").setValue(((KeyEvent) param.args[0]).getFlags() | FLAG_INJECTED);
+						ReflectClass.forReceiver(param.args[0]).findField("mFlags").setValue(((KeyEvent) param.args[0]).getFlags() | FLAG_INJECTED);
 
 					} catch (ReflectException e) {
 						Log.e(TAG, e.getMessage(), e);

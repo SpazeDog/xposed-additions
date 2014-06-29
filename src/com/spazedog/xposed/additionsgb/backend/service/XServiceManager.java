@@ -103,7 +103,7 @@ public class XServiceManager {
 			}
 			
 			try {
-				instance.mService = (IXService) new ReflectClass(IXService.class).bindInterface(Common.XSERVICE_NAME).getReceiver();
+				instance.mService = (IXService) ReflectClass.forClass(IXService.class).bindInterface(Common.XSERVICE_NAME).getReceiver();
 			
 				if (instance.mService != null) {
 					instance.mService.setOnChangeListener(instance.mInternalListener);
@@ -126,7 +126,7 @@ public class XServiceManager {
 	
 	private synchronized void handleRemoteException(RemoteException e) {
 		try {
-			mService = (IXService) new ReflectClass(IXService.class).bindInterface(Common.XSERVICE_NAME).getReceiver();
+			mService = (IXService) ReflectClass.forClass(IXService.class).bindInterface(Common.XSERVICE_NAME).getReceiver();
 			mService.setOnChangeListener(mInternalListener);
 			
 		} catch (Throwable ei) {

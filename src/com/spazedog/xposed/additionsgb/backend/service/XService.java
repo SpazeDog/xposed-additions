@@ -51,7 +51,7 @@ import android.util.Log;
 
 import com.spazedog.lib.reflecttools.ReflectClass;
 import com.spazedog.lib.reflecttools.ReflectMethod;
-import com.spazedog.lib.reflecttools.utils.ReflectMember.Match;
+import com.spazedog.lib.reflecttools.utils.ReflectConstants.Match;
 import com.spazedog.xposed.additionsgb.Common;
 
 import de.robv.android.xposed.XC_MethodHook;

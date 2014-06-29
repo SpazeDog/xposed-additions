@@ -24,8 +24,8 @@ import android.os.BatteryManager;
 import android.util.Log;
 
 import com.spazedog.lib.reflecttools.ReflectClass;
+import com.spazedog.lib.reflecttools.utils.ReflectConstants.Match;
 import com.spazedog.lib.reflecttools.utils.ReflectException;
-import com.spazedog.lib.reflecttools.utils.ReflectMember.Match;
 import com.spazedog.xposed.additionsgb.Common;
 import com.spazedog.xposed.additionsgb.Common.Index;
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
@@ -80,7 +80,7 @@ public final class PowerManager {
 			try {
 				if(Common.debug()) Log.d(TAG, "Initiating Power Manager Hook");
 				
-				mPowerManager = new ReflectClass(param.thisObject);
+				mPowerManager = ReflectClass.forReceiver(param.thisObject);
 				mBatteryService = mPowerManager.findField("mBatteryService").getValueToInstance();
 				
 				mContext = (Context) mPowerManager.findField("mContext").getValue();
@@ -94,7 +94,7 @@ public final class PowerManager {
 			} catch (ReflectException e) {
 				Log.e(TAG, e.getMessage(), e);
 				
-				new ReflectClass(param.thisObject).removeInjections();
+				ReflectClass.forReceiver(param.thisObject).removeInjections();
 			}
 		}
 	};

@@ -89,17 +89,20 @@ public class ActivityScreenRemapKey extends PreferenceActivity implements OnPref
     
     private void setup() {
     	if (mSetup != (mSetup = true)) {
-    		if (!mKey.endsWith(":0")) {
+    		/*
+    		 * TODO: This has been disabled temp while testing the new fix for the Samsung Haptic Feedback issue. This preference might not be needed anymore. 
+    		 * 
+    		if (!mKey.endsWith(":0")) { */
     			((PreferenceCategory) findPreference("settings_group")).removePreference(findPreference("haptic_forced_preference"));
     			
-    		} else {
+    		/*} else {
     			mKeyCode = mKey.substring(0, mKey.indexOf(":"));
     			mForcedHapticKeys = (ArrayList<String>) mPreferences.getStringArray(Index.array.key.forcedHapticKeys, Index.array.value.forcedHapticKeys);
     					
     			CheckBoxPreference hapticForced = (CheckBoxPreference) findPreference("haptic_forced_preference");
     			hapticForced.setChecked( mForcedHapticKeys.contains(mKeyCode) );
     			hapticForced.setOnPreferenceClickListener(this);
-    		}
+    		}*/
     		
 			CheckBoxPreference callButton = (CheckBoxPreference) findPreference("call_button_preference");
 			callButton.setChecked(mPreferences.getBooleanGroup(Index.bool.key.remapCallButton, mKey, Index.bool.value.remapCallButton));

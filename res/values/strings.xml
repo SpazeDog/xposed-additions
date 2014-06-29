@@ -96,11 +96,12 @@
     <string name='category_keys'>Keys</string>
     <string name='category_keys_secondary'>Secondary Keys</string>
     <string name='preference_add_key'>Add new Key</string>
-    
-    <string name='category_button_states'>Button Actions</string>
-    <string name="preference_state_click">Click Action</string>
-    <string name="preference_state_tap">Double Tap Action</string>
-    <string name="preference_state_press">Long Press Action</string>
+
+    <string name='category_button_single_states'>Single Actions</string>
+    <string name='category_button_double_states'>Double Actions</string>
+    <string name='category_button_triple_states'>Triple Actions</string>
+    <string name="preference_state_click">Click</string>
+    <string name="preference_state_press">Long Press</string>
 
     <string name="preference_condition_count_$0">No Conditions</string>
     <string name="preference_condition_count_$1">%1$d Condition</string>
