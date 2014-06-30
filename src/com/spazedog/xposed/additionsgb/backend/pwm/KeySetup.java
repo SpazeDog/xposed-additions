@@ -28,48 +28,47 @@ public class KeySetup {
 		mXServiceManager = xserviceManager;
 	}
 	
-	public void registerEvent(Integer primaryKey, Integer secondaryKey, String runningPackage, Boolean inKeyguard, Boolean isScreenOn) {
+	public void registerEvent(Integer primaryKey, Integer secondaryKey, Boolean isCombo, String runningPackage, Boolean inKeyguard, Boolean isScreenOn) {
 		mHasExtended = mXServiceManager.isPackageUnlocked();
 		mTapTimeout = mXServiceManager.getInt(Common.Index.integer.key.remapTapDelay, Common.Index.integer.value.remapTapDelay);
 		mPressTimeout = mXServiceManager.getInt(Common.Index.integer.key.remapPressDelay, Common.Index.integer.value.remapPressDelay);
 		
 		/*
+		 *  TODO: Clean this method up a bit.
+		 *  
 		 * Change settings array {click, double click, press, double press, triple click, triple press}
 		 * Into temp array {click, double click, triple click, press, double press, triple press}
 		 * 
 		 * This is to support older configs that only contained 3 actions. 
 		 */
 		Integer[] pos = new Integer[]{0,1,3,4,2,5};
-		Boolean comboKeys = secondaryKey > 0;
+		String keyGroupName = primaryKey + ":" + secondaryKey;
+		String appCondition = !isScreenOn ? null : inKeyguard ? "guard" : mHasExtended ? runningPackage : null;
+		List<String> actions = appCondition != null ? mXServiceManager.getStringArrayGroup(String.format(Index.array.groupKey.remapKeyActions_$, appCondition), keyGroupName, null) : null;
 		
-		if (!comboKeys || mHasExtended) {
-			String keyGroupName = primaryKey + ":" + secondaryKey;
-			String appCondition = !isScreenOn ? null : inKeyguard ? "guard" : mHasExtended ? runningPackage : null;
-			List<String> actions = appCondition != null ? mXServiceManager.getStringArrayGroup(String.format(Index.array.groupKey.remapKeyActions_$, appCondition), keyGroupName, null) : null;
+		if ((isCombo && !mHasExtended) ||
+				(actions == null && (actions = mXServiceManager.getStringArrayGroup(String.format(Index.array.groupKey.remapKeyActions_$, isScreenOn ? "on" : "off"), keyGroupName, null)) == null)) {
 			
-			if (actions == null 
-					&& (actions = mXServiceManager.getStringArrayGroup(String.format(Index.array.groupKey.remapKeyActions_$, isScreenOn ? "on" : "off"), keyGroupName, null)) == null) {
-				
-				actions = new ArrayList<String>();
-			}
+			actions = new ArrayList<String>();
+		}
+		
+		/*
+		 * This should never be wrapped in any condition. No mater how the 'actions' list look, the values below needs to be reset. 
+		 */
+		for (int i=0; i < pos.length; i++) {
+			mActions[ pos[i] ] = ((pos[i] != 1 && pos[i] != 2 && pos[i] != 4 && pos[i] != 5) || mHasExtended) && 
+					actions.size() > i && actions.get(i) != null && (mHasExtended || !actions.get(i).contains(".")) ? actions.get(i) : null;
 			
-			/*
-			 * This should never be wrapped in any condition. No mater how the 'actions' list look, the values below needs to be reset. 
-			 */
-			for (int i=0; i < pos.length; i++) {
-				mActions[ pos[i] ] = actions.size() > i && actions.get(i) != null && (mHasExtended || !actions.get(i).contains(".")) ? actions.get(i) : null;
-				
-				switch (pos[i]) {
-					case 0: mHasSingleClick = mHasClick[0] = mActions[ pos[i] ] != null; break;
-				
-					case 1:
-					case 2: mHasTapClick = mHasClick[pos[i]] = mActions[ pos[i] ] != null; break;
-						
-					case 3: mHasSinglePress = mHasPress[0] = mActions[ pos[i] ] != null; break;
+			switch (pos[i]) {
+				case 0: mHasSingleClick = mHasClick[0] = mActions[ pos[i] ] != null; break;
+			
+				case 1:
+				case 2: mHasTapClick = mHasClick[pos[i]] = mActions[ pos[i] ] != null; break;
 					
-					case 4:
-					case 5: mHasTapPress = mHasPress[pos[i]-3] = mActions[ pos[i] ] != null;
-				}
+				case 3: mHasSinglePress = mHasPress[0] = mActions[ pos[i] ] != null; break;
+				
+				case 4:
+				case 5: mHasTapPress = mHasPress[pos[i]-3] = mActions[ pos[i] ] != null;
 			}
 		}
 	}
