@@ -8,7 +8,9 @@ import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.ActivityManager;
 import android.content.Context;
+import android.content.Intent;
 import android.media.AudioManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.PowerManager;
@@ -105,6 +107,11 @@ public final class Mediator {
 		 * Some of the character map values are missing in API below 11, such as VirtualKey for an example.
 		 */
 		public static final Integer INPUT_CHARACTERMAP_VERSION = android.os.Build.VERSION.SDK_INT >= 11 ? 2 : 1;
+		
+		/*
+		 * Multi users was not available until API 17
+		 */
+		public static final Integer MANAGER_MULTIUSER_VERSION = android.os.Build.VERSION.SDK_INT >= 17 ? 1 :0;
 	}
 	
 	/**
@@ -252,6 +259,16 @@ public final class Mediator {
 		 * Get Audio tools
 		 */
 		mAudioManager = ReflectClass.forReceiver(((Context) mContext.getReceiver()).getSystemService(Context.AUDIO_SERVICE));
+		
+		/*
+		 * Get Multi User tools
+		 */
+		if (SDK.MANAGER_MULTIUSER_VERSION > 0) {
+			mConstructors.put("UserHandle", ReflectClass.forName("android.os.UserHandle").findConstructor(Match.BEST, Integer.TYPE));
+			mFields.put("UserHandle.current", ReflectClass.forName("android.os.UserHandle").findField("USER_CURRENT"));
+			mMethods.put("startActivityAsUser", mContext.findMethodDeep("startActivityAsUser", Match.BEST, Intent.class, "android.os.UserHandle"));
+			mMethods.put("sendBroadcastAsUser", mContext.findMethodDeep("sendBroadcastAsUser", Match.BEST, Intent.class, "android.os.UserHandle"));
+		}
 		
 		mReady = true;
 	}
@@ -478,7 +495,7 @@ public final class Mediator {
 		return packages.size() > 0 ? packages.get(0).baseActivity.getPackageName() : null;
 	}
 	
-	public Boolean invokeCallButton() {
+	protected Boolean invokeCallButton() {
 		Integer mode = ((AudioManager) mAudioManager.getReceiver()).getMode();
 		Integer callCode = 0;
 		
@@ -494,6 +511,49 @@ public final class Mediator {
 		}
 		
 		return false;
+	}
+	
+	public Object getUserInstance() {
+		return mConstructors.get("UserHandle").invoke(
+				mFields.get("UserHandle.current").getValue()
+		);
+	}
+	
+	protected void launchIntent(Intent intent) {
+		if (SDK.MANAGER_MULTIUSER_VERSION > 0) {
+			try {
+				mMethods.get("startActivityAsUser").invoke(intent, getUserInstance());
+				
+			} catch (ReflectException e) {
+				Log.e(TAG, e.getMessage(), e);
+			}
+			
+		} else {
+			((Context) mContext.getReceiver()).startActivity(intent);
+		}
+	}
+	
+	protected void launchPackage(String packageName) {
+		Intent intent = ((Context) mContext.getReceiver()).getPackageManager().getLaunchIntentForPackage(packageName);
+		
+		if (isKeyguardLockedAndInsecure()) {
+			keyGuardDismiss();
+		}
+		
+		if (intent != null) {
+			intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+			intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+			
+		} else {
+			/*
+			 * In case the app has been deleted after button setup
+			 */
+			intent = new Intent(Intent.ACTION_VIEW);
+			intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+			intent.setData(Uri.parse("market://details?id="+packageName));
+		}
+		
+		launchIntent(intent);
 	}
 	
 	protected void handleKeyAction(final String action, final ActionType actionType, final Integer keyCode, final Long downTime, final Integer flags, final Integer policyFlags, final Boolean isScreenOn) {
@@ -520,7 +580,7 @@ public final class Mediator {
 				String type = Common.actionType(action);
 				
 				if ("launcher".equals(type)) {
-					// TODO: Add this part
+					launchPackage(action);
 					
 				} else if ("custom".equals(type)) {
 					// TODO: Add this part
