@@ -342,7 +342,7 @@ public final class PhoneWindowManager {
 			 * Using KitKat work-around from the InputManager Hook
 			 */
 			Boolean isInjected = Mediator.SDK.MANAGER_HARDWAREINPUT_VERSION > 1 ? 
-					(((KeyEvent) param.args[0]).getFlags() & Mediator.ORIGINAL.FLAG_INJECTED) != 0 : (policyFlags & Mediator.ORIGINAL.FLAG_INJECTED) != 0;
+					(((KeyEvent) param.args[1]).getFlags() & Mediator.ORIGINAL.FLAG_INJECTED) != 0 : (policyFlags & Mediator.ORIGINAL.FLAG_INJECTED) != 0;
 			
 			if (isInjected) {
 				if (down && mKeyFlags.isKeyDown() && mKeyFlags.hasState(State.DEFAULT) && mKeyFlags.getCurrentKey() == keyCode) {
