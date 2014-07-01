@@ -141,7 +141,7 @@ public final class PhoneWindowManager {
 									mXServiceManager.addBroadcastListener(listener_XServiceBroadcast);
 								}
 								
-							} catch (ReflectException e) {
+							} catch (Throwable e) {
 								Log.e(TAG, e.getMessage(), e);
 								
 								if (pwm != null) {
