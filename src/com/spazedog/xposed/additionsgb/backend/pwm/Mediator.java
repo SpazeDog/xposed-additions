@@ -356,6 +356,11 @@ public final class Mediator {
 						            	String action = intent.getAction();
 						            	
 						            	if (packageName != null && (mTorchIntent == null || packageName.equals(mTorchIntent.getPackage()))) {
+						            		/*
+						            		 * We can't wrap the whole block below, as the receiver and the locator are executed in different Threads.
+						            		 */
+						            		synchronized (mtorchLocatorLock) {}
+						            		
 						            		PackageManager pm = context.getPackageManager();
 											Intent pkgIntent = new Intent(packageName + ".TOGGLE_FLASHLIGHT");
 											List<ResolveInfo> recievers = pm.queryBroadcastReceivers(pkgIntent, 0);
