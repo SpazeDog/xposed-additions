@@ -28,6 +28,7 @@ import android.view.KeyEvent;
 
 import com.spazedog.lib.reflecttools.ReflectClass;
 import com.spazedog.lib.reflecttools.ReflectClass.OnErrorListener;
+import com.spazedog.lib.reflecttools.ReflectClass.OnReceiverListener;
 import com.spazedog.lib.reflecttools.ReflectConstructor;
 import com.spazedog.lib.reflecttools.ReflectField;
 import com.spazedog.lib.reflecttools.ReflectMethod;
@@ -117,6 +118,11 @@ public final class Mediator {
 		 * Multi users was not available until API 17
 		 */
 		public static final Integer MANAGER_MULTIUSER_VERSION = android.os.Build.VERSION.SDK_INT >= 17 ? 1 :0;
+		
+		/*
+		 * This one got it's own service in API 11
+		 */
+		public static final Integer MANAGER_RECENT_DIALOG_VERSION = android.os.Build.VERSION.SDK_INT >= 11 ? 2 :1;
 	}
 	
 	/**
@@ -156,6 +162,7 @@ public final class Mediator {
 	private ReflectClass mPowerManagerService;					// android.os.IPowerManager (com.android.server.power.PowerManagerService)
 	private ReflectClass mInputManager;							// android.hardware.input.InputManager
 	private ReflectClass mAudioManager;
+	private ReflectClass mRecentApplicationsDialog;	// com.android.internal.policy.impl.RecentApplicationsDialog or com.android.internal.statusbar.IStatusBarService
 	
 	private Boolean mReady = false;
 	
@@ -293,6 +300,34 @@ public final class Mediator {
 			} catch (ReflectException e) {
 				if(Common.debug()) Log.d(TAG, "Missing PhoneWindowManager.showGlobalActionsDialog()");
 			}
+			
+			mRecentApplicationsDialog = ReflectClass.forName( SDK.MANAGER_RECENT_DIALOG_VERSION > 1 ? "com.android.internal.statusbar.IStatusBarService" : "com.android.internal.policy.impl.RecentApplicationsDialog" );
+			mRecentApplicationsDialog.setOnReceiverListener(new OnReceiverListener(){
+				@Override
+				public Object onReceiver(ReflectMember<?> member) {
+					Object recentAppsService;
+					
+					if (SDK.MANAGER_RECENT_DIALOG_VERSION > 1) {
+						recentAppsService = member.getReflectClass().bindInterface("statusbar").getReceiver();
+						
+					} else {
+						recentAppsService = member.getReflectClass().newInstance(mContext);
+					}
+					
+					member.getReflectClass().setReceiver(recentAppsService);
+					
+					return recentAppsService;
+				}
+			});
+			mRecentApplicationsDialog.setOnErrorListener(new OnErrorListener(){
+				@Override
+				public void onError(ReflectMember<?> member) {
+					member.getReflectClass().setReceiver(null);
+				}
+			});
+			
+			mMethods.put("toggleRecentApps", mRecentApplicationsDialog.findMethodDeep( SDK.MANAGER_RECENT_DIALOG_VERSION > 1 ? "toggleRecentApps" : "show" ));
+			mXServiceManager.putBoolean("variable:remap.support.recent_dialog", true);
 			
 		} catch (ReflectException e) {
 			if(Common.debug()) Log.d(TAG, "Missing IActivityManager.closeSystemDialogs()");
@@ -738,6 +773,19 @@ public final class Mediator {
 		}
 	}
 	
+	protected void openRecentAppsDialog() {
+		if(Common.debug()) Log.d(TAG, "Invoking Recent Application Dialog");
+		
+		sendCloseSystemWindows("recentapps");
+		
+		try {
+			mMethods.get("toggleRecentApps").invoke();
+			
+		} catch (ReflectException e) {
+			Log.e(TAG, e.getMessage(), e);
+		}
+	}
+	
 	protected void handleKeyAction(final String action, final ActionType actionType, final Integer keyCode, final Long downTime, final Integer flags, final Integer policyFlags, final Boolean isScreenOn) {
 		/*
 		 * We handle display on here, because some devices has issues
@@ -771,6 +819,9 @@ public final class Mediator {
 							
 						} else if ("powermenu".equals(action)) {
 							openGlobalActionsDialog();	
+							
+						} else if ("recentapps".equals(action)) {
+							openRecentAppsDialog();
 						}
 					}
 					
