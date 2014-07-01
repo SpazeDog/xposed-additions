@@ -154,7 +154,6 @@ public final class Common {
 			new RemapAction("guarddismiss", R.string.remap_title_dismissguard, R.string.remap_summary_dismissguard, 0, 0, false, "off", "on");
 			new RemapAction("recentapps", R.string.remap_title_recentapps, R.string.remap_summary_recentapps, 0, 0, false, "off");
 			new RemapAction("lastapp", R.string.remap_title_last_app, R.string.remap_summary_last_app, 0, 0, false, "off", "guard");
-			new RemapAction("powermenu", R.string.remap_title_powermenu, R.string.remap_summary_powermenu, 0, 0, false, "off");
 			new RemapAction("killapp", R.string.remap_title_killapp, R.string.remap_summary_killapp, 0, 0, false, "off", "guard");
 			new RemapAction("fliptoggle", R.string.remap_title_fliptoggle, R.string.remap_summary_fliptoggle, 0, 0, false, "off");
 			
@@ -173,6 +172,13 @@ public final class Common {
 				@Override
 				public Boolean onDisplayAlert(Context context) { 
 					return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
+				}
+			});
+			
+			new RemapAction("powermenu", R.string.remap_title_powermenu, R.string.remap_summary_powermenu, 0, 0, false, "off", new Validate(){ 
+				@Override
+				public Boolean onValidate(Context context) { 
+					return XServiceManager.getInstance().getBoolean("variable:remap.support.global_actions"); 
 				}
 			});
 

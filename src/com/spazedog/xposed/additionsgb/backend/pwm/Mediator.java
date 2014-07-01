@@ -281,6 +281,24 @@ public final class Mediator {
 		}
 		
 		/*
+		 * Get Tools for displaying Global Actions Menu
+		 */
+		try {
+			mMethods.put("closeSystemDialogs", mActivityManagerService.findMethodDeep("closeSystemDialogs", Match.BEST, String.class));
+			
+			try {
+				mMethods.put("showGlobalActionsDialog", mPhoneWindowManager.findMethodDeep("showGlobalActionsDialog"));
+				mXServiceManager.putBoolean("variable:remap.support.global_actions", true);
+				
+			} catch (ReflectException e) {
+				if(Common.debug()) Log.d(TAG, "Missing PhoneWindowManager.showGlobalActionsDialog()");
+			}
+			
+		} catch (ReflectException e) {
+			if(Common.debug()) Log.d(TAG, "Missing IActivityManager.closeSystemDialogs()");
+		}
+		
+		/*
 		 * Start searching for torch support
 		 */
 		if (((Context) mContext.getReceiver()).getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH)) {
@@ -696,6 +714,30 @@ public final class Mediator {
 		}
 	}
 	
+	protected void sendCloseSystemWindows(String reason) {
+		if(Common.debug()) Log.d(TAG, "Closing all system windows");
+		
+		try {
+			mMethods.get("closeSystemDialogs").invoke(reason);
+			
+		} catch (ReflectException e) {
+			Log.e(TAG, e.getMessage(), e);
+		}
+	}
+	
+	protected void openGlobalActionsDialog() {
+		if(Common.debug()) Log.d(TAG, "Invoking Global Actions Dialog");
+		
+		sendCloseSystemWindows("globalactions");
+		
+		try {
+			mMethods.get("showGlobalActionsDialog").invoke();
+			
+		} catch (ReflectException e) {
+			Log.e(TAG, e.getMessage(), e);
+		}
+	}
+	
 	protected void handleKeyAction(final String action, final ActionType actionType, final Integer keyCode, final Long downTime, final Integer flags, final Integer policyFlags, final Boolean isScreenOn) {
 		/*
 		 * We handle display on here, because some devices has issues
@@ -726,6 +768,9 @@ public final class Mediator {
 					if (!"disabled".equals(action)) {
 						if ("torch".equals(action)) {
 							toggleFlashLight();
+							
+						} else if ("powermenu".equals(action)) {
+							openGlobalActionsDialog();	
 						}
 					}
 					
