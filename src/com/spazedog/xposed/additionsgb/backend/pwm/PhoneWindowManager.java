@@ -305,6 +305,8 @@ public final class PhoneWindowManager {
 							 * Don't handle this event
 							 */
 							mKeyFlags.refresh();
+							
+							return;
 						}
 					}
 					
