@@ -26,24 +26,26 @@
     
     <PreferenceCategory
         android:key="options_group"
-        android:title="@string/group_options" />
+        android:title="@string/group_options">
     
-    <Preference
-        android:key="layout_link"
-        android:title="@string/category_title_layout"
-        android:summary="@string/category_summary_layout"
-        android:persistent="false" />
+	    <Preference
+	        android:key="layout_link"
+	        android:title="@string/category_title_layout"
+	        android:summary="@string/category_summary_layout"
+	        android:persistent="false" />
+	    
+	    <Preference
+	        android:key="usbplug_link"
+	        android:title="@string/category_title_usbplug"
+	        android:summary="@string/category_summary_usbplug"
+	        android:persistent="false" />
+	    
+	    <Preference
+	        android:key="buttons_link"
+	        android:title="@string/category_title_buttons"
+	        android:summary="@string/category_summary_buttons"
+	        android:persistent="false" />
     
-    <Preference
-        android:key="usbplug_link"
-        android:title="@string/category_title_usbplug"
-        android:summary="@string/category_summary_usbplug"
-        android:persistent="false" />
-    
-    <Preference
-        android:key="buttons_link"
-        android:title="@string/category_title_buttons"
-        android:summary="@string/category_summary_buttons"
-        android:persistent="false" />
+    </PreferenceCategory>
     
 </PreferenceScreen>
