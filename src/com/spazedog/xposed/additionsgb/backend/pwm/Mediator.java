@@ -970,7 +970,7 @@ public final class Mediator {
 			changeDisplayState(downTime, true); return;
 		}
 		
-		if (actionType == ActionType.PRESS) {
+		if (actionType != ActionType.CLICK) {
 			performHapticFeedback(null, HapticFeedbackConstants.LONG_PRESS, policyFlags);
 		}
 		

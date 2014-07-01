@@ -65,12 +65,21 @@ public class KeySetup {
 				case 0: mHasSingleClick = mHasClick[0] = mActions[ pos[i] ] != null; break;
 			
 				case 1:
-				case 2: mHasTapClick = mHasClick[pos[i]] = mActions[ pos[i] ] != null; break;
+				case 2: mHasClick[pos[i]] = mActions[ pos[i] ] != null; 
+				
+						if (!mHasTapClick) {
+							mHasTapClick = mHasClick[pos[i]];
+						}
+						break;
 					
 				case 3: mHasSinglePress = mHasPress[0] = mActions[ pos[i] ] != null; break;
 				
 				case 4:
-				case 5: mHasTapPress = mHasPress[pos[i]-3] = mActions[ pos[i] ] != null;
+				case 5: mHasPress[pos[i]-3] = mActions[ pos[i] ] != null;
+				
+						if (!mHasTapPress) {
+							mHasTapPress = mHasPress[pos[i]-3];
+						}
 			}
 		}
 	}
