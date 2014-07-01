@@ -130,6 +130,11 @@ public final class Mediator {
 		 * Before API 11, we did not have tools like freezeRotation
 		 */
 		public static final Integer MANAGER_ROTATION_VERSION = android.os.Build.VERSION.SDK_INT >= 11 ? 2 :1;
+		
+		/*
+		 * More tools like bringToFront was added in API 11
+		 */
+		public static final Integer MANAGER_ACTIVITY_VERSION = android.os.Build.VERSION.SDK_INT >= 11 ? 2 :1;
 	}
 	
 	/**
@@ -690,10 +695,36 @@ public final class Mediator {
 		}
 	}
 	
-	public String getCurrentPackageName() {
-		List<ActivityManager.RunningTaskInfo> packages = ((ActivityManager) mActivityManager.getReceiver()).getRunningTasks(1);
+	public ActivityManager.RunningTaskInfo getPackageFromStack(Integer stack, Boolean excludeHome) {
+		List<ActivityManager.RunningTaskInfo> packages = ((ActivityManager) mActivityManager.getReceiver()).getRunningTasks(5);
+		String currentHome = !excludeHome ? getHomePackage() : null;
+		Integer currentStack = 0;
 		
-		return packages.size() > 0 ? packages.get(0).baseActivity.getPackageName() : null;
+		for (int i=0; i < packages.size(); i++) {
+			String packageName = packages.get(i).baseActivity.getPackageName();
+			
+			if ((!excludeHome || !packageName.equals(currentHome)) && !packageName.equals("com.android.systemui") && packages.get(i).id != 0) {
+				if (currentStack == stack) {
+					return packages.get(i);
+				}
+				
+				currentStack++;
+			}
+		}
+		
+		return null;
+	}
+	
+	public String getPackageNameFromStack(Integer stack, Boolean excludeHome) {
+		ActivityManager.RunningTaskInfo pkg = getPackageFromStack(stack, excludeHome);
+		
+		return pkg != null ? pkg.baseActivity.getPackageName() : null;
+	}
+	
+	public Integer getPackageIdFromStack(Integer stack, Boolean excludeHome) {
+		ActivityManager.RunningTaskInfo pkg = getPackageFromStack(stack, excludeHome);
+		
+		return pkg != null ? pkg.id : 0;
 	}
 	
 	protected Boolean invokeCallButton() {
@@ -742,8 +773,7 @@ public final class Mediator {
 		}
 		
 		if (intent != null) {
-			intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-			intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+			intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
 			
 		} else {
 			/*
@@ -755,6 +785,24 @@ public final class Mediator {
 		}
 		
 		launchIntent(intent);
+	}
+	
+	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
+	protected void togglePreviousApplication() {
+		if (SDK.MANAGER_ACTIVITY_VERSION > 1) {
+			Integer packageId = getPackageIdFromStack(1, true);
+			
+			if (packageId > 0) {
+				((ActivityManager) mActivityManager.getReceiver()).moveTaskToFront(packageId, 0);
+			}
+			
+		} else {
+			String packageName = getPackageNameFromStack(1, true);
+			
+			if (packageName != null) {
+				launchPackage(packageName);
+			}
+		}
 	}
 	
 	protected void sendBroadcast(Intent intent) {
@@ -875,6 +923,15 @@ public final class Mediator {
 			(position == Surface.ROTATION_270 || position == Surface.ROTATION_0) && !backwards ? 90 : 0;
 	}
 	
+	public String getHomePackage() {
+		Intent intent = new Intent(Intent.ACTION_MAIN);
+		intent.addCategory(Intent.CATEGORY_HOME);
+		ResolveInfo res = ((Context) mContext.getReceiver()).getPackageManager().resolveActivity(intent, 0);
+		
+		return res.activityInfo != null && !"android".equals(res.activityInfo.packageName) ? 
+				res.activityInfo.packageName : "com.android.launcher";
+	}
+	
 	protected void handleKeyAction(final String action, final ActionType actionType, final Integer keyCode, final Long downTime, final Integer flags, final Integer policyFlags, final Boolean isScreenOn) {
 		/*
 		 * We handle display on here, because some devices has issues
@@ -930,6 +987,9 @@ public final class Mediator {
 								Toast.makeText((Context) mContext.getReceiver(), "Rotation has been Disabled", Toast.LENGTH_SHORT).show();
 								freezeRotation(-1);
 							}
+							
+						} else if ("previousapp".equals(action)) {
+							togglePreviousApplication();
 						}
 					}
 					

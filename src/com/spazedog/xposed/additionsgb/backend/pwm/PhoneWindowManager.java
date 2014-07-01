@@ -286,7 +286,7 @@ public final class PhoneWindowManager {
 							/*
 							 * Prepare the event information for this key or key combo.
 							 */
-							mKeySetup.registerEvent(mKeyFlags.getPrimaryKey(), mKeyFlags.getSecondaryKey(), mKeyFlags.isComboAction(), mMediator.getCurrentPackageName(), mMediator.isKeyguardLocked(), isScreenOn);
+							mKeySetup.registerEvent(mKeyFlags.getPrimaryKey(), mKeyFlags.getSecondaryKey(), mKeyFlags.isComboAction(), mMediator.getPackageNameFromStack(0, false), mMediator.isKeyguardLocked(), isScreenOn);
 							
 							/*
 							 * If the screen is off, it's a good idea to poke the device out of deep sleep. 

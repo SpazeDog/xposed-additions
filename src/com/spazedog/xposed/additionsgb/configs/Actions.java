@@ -46,7 +46,7 @@ public class Actions {
 		
 		COLLECTION.add(new RemapAction("disabled", 0, R.string.remap_title_disabled, R.string.remap_summary_disabled, 0, 0));
 		COLLECTION.add(new RemapAction("guarddismiss", 0, R.string.remap_title_dismissguard, R.string.remap_summary_dismissguard, 0, 0, "off", "on"));
-		COLLECTION.add(new RemapAction("lastapp", 0, R.string.remap_title_last_app, R.string.remap_summary_last_app, 0, 0, "off", "guard"));
+		COLLECTION.add(new RemapAction("previousapp", 0, R.string.remap_title_previous_app, R.string.remap_summary_previous_app, 0, 0, "off", "guard"));
 		COLLECTION.add(new RemapAction("killapp", 0, R.string.remap_title_killapp, R.string.remap_summary_killapp, 0, 0, "off", "guard"));
 		COLLECTION.add(new RemapAction("fliptoggle", 0, R.string.remap_title_fliptoggle, R.string.remap_summary_fliptoggle, 0, 0, "off"));
 		COLLECTION.add(new RemapAction("flipleft", 11, R.string.remap_title_flipleft, R.string.remap_summary_flipleft, 0, 0, "off"));
