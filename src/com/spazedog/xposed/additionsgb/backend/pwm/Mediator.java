@@ -334,6 +334,18 @@ public final class Mediator {
 		}
 		
 		/*
+		 * Get ScreenShot Tools
+		 */
+		try {
+			/*
+			 * This does not exists in all Gingerbread versions
+			 */
+			mMethods.put("takeScreenshot", mPhoneWindowManager.findMethodDeep("takeScreenshot"));
+			mXServiceManager.putBoolean("variable:remap.support.screenshot", true);
+			
+		} catch (ReflectException e) {}
+		
+		/*
 		 * Start searching for torch support
 		 */
 		if (((Context) mContext.getReceiver()).getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH)) {
@@ -786,6 +798,15 @@ public final class Mediator {
 		}
 	}
 	
+	protected void takeScreenshot() {
+		try {
+			mMethods.get("takeScreenshot").invoke();
+			
+		} catch (ReflectException e) {
+			Log.e(TAG, e.getMessage(), e);
+		}
+	}
+	
 	protected void handleKeyAction(final String action, final ActionType actionType, final Integer keyCode, final Long downTime, final Integer flags, final Integer policyFlags, final Boolean isScreenOn) {
 		/*
 		 * We handle display on here, because some devices has issues
@@ -822,6 +843,9 @@ public final class Mediator {
 							
 						} else if ("recentapps".equals(action)) {
 							openRecentAppsDialog();
+							
+						} else if ("screenshot".equals(action)) {
+							takeScreenshot();
 						}
 					}
 					

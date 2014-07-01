@@ -51,7 +51,6 @@ public class Actions {
 		COLLECTION.add(new RemapAction("fliptoggle", 0, R.string.remap_title_fliptoggle, R.string.remap_summary_fliptoggle, 0, 0, "off"));
 		COLLECTION.add(new RemapAction("flipleft", 11, R.string.remap_title_flipleft, R.string.remap_summary_flipleft, 0, 0, "off"));
 		COLLECTION.add(new RemapAction("flipright", 11, R.string.remap_title_flipright, R.string.remap_summary_flipright, 0, 0, "off"));
-		COLLECTION.add(new RemapAction("screenshot", 11, R.string.remap_title_screenshot, R.string.remap_summary_screenshot, 0, 0, "off"));
 		
 		COLLECTION.add(new RemapAction("torch", 0, R.string.remap_title_torch, R.string.remap_summary_torch, R.string.selector_alert_missing_torch, 0, new Validate(){ 
 			@Override
@@ -76,6 +75,13 @@ public class Actions {
 			@Override
 			public Boolean onValidate(Context context) { 
 				return XServiceManager.getInstance().getBoolean("variable:remap.support.recent_dialog"); 
+			}
+		}));
+		
+		COLLECTION.add(new RemapAction("screenshot", 0, R.string.remap_title_screenshot, R.string.remap_summary_screenshot, 0, 0, "off", new Validate(){ 
+			@Override
+			public Boolean onValidate(Context context) { 
+				return XServiceManager.getInstance().getBoolean("variable:remap.support.screenshot"); 
 			}
 		}));
 	}
