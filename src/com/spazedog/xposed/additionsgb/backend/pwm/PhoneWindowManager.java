@@ -284,6 +284,8 @@ public final class PhoneWindowManager {
 						 * Make sure that we have a valid and supported device type
 						 */
 						if (mMediator.validateDeviceType(keyEvent == null ? keyCode : keyEvent)) {
+							mMediator.performHapticFeedback(keyEvent, HapticFeedbackConstants.VIRTUAL_KEY, policyFlags);
+							
 							/*
 							 * Prepare the event information for this key or key combo.
 							 */
