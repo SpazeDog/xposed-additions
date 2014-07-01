@@ -45,6 +45,7 @@ public final class Mediator {
 	public static final String TAG = Mediator.class.getName();
 	
 	public static enum ActionType { CLICK, TAP, PRESS }
+	public static enum StackAction { EXLUDE_HOME, INCLUDE_HOME, JUMP_HOME }
 	
 	/**
 	 * A class containing different feature versions based on Gingerbread and up.
@@ -373,6 +374,11 @@ public final class Mediator {
 			torchLocator();
 		}
 		
+		/*
+		 * 
+		 */
+		mMethods.put("forceStopPackage", mActivityManagerService.findMethodDeep("forceStopPackage", Match.BEST, SDK.MANAGER_MULTIUSER_VERSION > 0 ? new Object[]{String.class, Integer.TYPE} : new Object[]{String.class}));
+		
 		mReady = true;
 	}
 	
@@ -695,34 +701,36 @@ public final class Mediator {
 		}
 	}
 	
-	public ActivityManager.RunningTaskInfo getPackageFromStack(Integer stack, Boolean excludeHome) {
+	public ActivityManager.RunningTaskInfo getPackageFromStack(Integer stack, StackAction action) {
 		List<ActivityManager.RunningTaskInfo> packages = ((ActivityManager) mActivityManager.getReceiver()).getRunningTasks(5);
-		String currentHome = !excludeHome ? getHomePackage() : null;
-		Integer currentStack = 0;
+		String currentHome = action != StackAction.EXLUDE_HOME ? getHomePackage() : null;
 		
-		for (int i=0; i < packages.size(); i++) {
+		for (int i=stack; i < packages.size(); i++) {
 			String packageName = packages.get(i).baseActivity.getPackageName();
 			
-			if ((!excludeHome || !packageName.equals(currentHome)) && !packageName.equals("com.android.systemui") && packages.get(i).id != 0) {
-				if (currentStack == stack) {
+			if (!packageName.equals("com.android.systemui") && packages.get(i).id != 0) {
+				if (action == StackAction.INCLUDE_HOME || !packageName.equals(currentHome)) {
 					return packages.get(i);
+					
+				} else if (action == StackAction.JUMP_HOME) {
+					continue;
 				}
 				
-				currentStack++;
+				break;
 			}
 		}
 		
 		return null;
 	}
 	
-	public String getPackageNameFromStack(Integer stack, Boolean excludeHome) {
-		ActivityManager.RunningTaskInfo pkg = getPackageFromStack(stack, excludeHome);
+	public String getPackageNameFromStack(Integer stack, StackAction action) {
+		ActivityManager.RunningTaskInfo pkg = getPackageFromStack(stack, action);
 		
 		return pkg != null ? pkg.baseActivity.getPackageName() : null;
 	}
 	
-	public Integer getPackageIdFromStack(Integer stack, Boolean excludeHome) {
-		ActivityManager.RunningTaskInfo pkg = getPackageFromStack(stack, excludeHome);
+	public Integer getPackageIdFromStack(Integer stack, StackAction action) {
+		ActivityManager.RunningTaskInfo pkg = getPackageFromStack(stack, action);
 		
 		return pkg != null ? pkg.id : 0;
 	}
@@ -790,17 +798,37 @@ public final class Mediator {
 	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
 	protected void togglePreviousApplication() {
 		if (SDK.MANAGER_ACTIVITY_VERSION > 1) {
-			Integer packageId = getPackageIdFromStack(1, true);
+			Integer packageId = getPackageIdFromStack(1, StackAction.JUMP_HOME);
 			
 			if (packageId > 0) {
 				((ActivityManager) mActivityManager.getReceiver()).moveTaskToFront(packageId, 0);
 			}
 			
 		} else {
-			String packageName = getPackageNameFromStack(1, true);
+			String packageName = getPackageNameFromStack(1, StackAction.JUMP_HOME);
 			
 			if (packageName != null) {
 				launchPackage(packageName);
+			}
+		}
+	}
+	
+	protected void killForegroundApplication() {
+		String packageName = getPackageNameFromStack(0, StackAction.EXLUDE_HOME);
+		
+		if (packageName != null) {
+			if(Common.debug()) Log.d(TAG, "Invoking force stop on " + packageName);
+			
+			try {
+				if (SDK.MANAGER_MULTIUSER_VERSION > 0) {
+					mMethods.get("forceStopPackage").invoke(packageName, mFields.get("UserHandle.current").getValue());
+
+				} else {
+					mMethods.get("forceStopPackage").invoke(packageName);
+				}
+				
+			} catch (ReflectException e) {
+				Log.e(TAG, e.getMessage(), e);
 			}
 		}
 	}
@@ -990,6 +1018,9 @@ public final class Mediator {
 							
 						} else if ("previousapp".equals(action)) {
 							togglePreviousApplication();
+							
+						} else if ("killapp".equals(action)) {
+							killForegroundApplication();
 						}
 					}
 					

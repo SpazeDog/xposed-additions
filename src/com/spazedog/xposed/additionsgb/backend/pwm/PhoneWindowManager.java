@@ -14,6 +14,7 @@ import com.spazedog.lib.reflecttools.utils.ReflectException;
 import com.spazedog.xposed.additionsgb.backend.pwm.KeyFlags.State;
 import com.spazedog.xposed.additionsgb.backend.pwm.Mediator.ActionType;
 import com.spazedog.xposed.additionsgb.backend.pwm.Mediator.SDK;
+import com.spazedog.xposed.additionsgb.backend.pwm.Mediator.StackAction;
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager.XServiceBroadcastListener;
 
@@ -286,7 +287,7 @@ public final class PhoneWindowManager {
 							/*
 							 * Prepare the event information for this key or key combo.
 							 */
-							mKeySetup.registerEvent(mKeyFlags.getPrimaryKey(), mKeyFlags.getSecondaryKey(), mKeyFlags.isComboAction(), mMediator.getPackageNameFromStack(0, false), mMediator.isKeyguardLocked(), isScreenOn);
+							mKeySetup.registerEvent(mKeyFlags.getPrimaryKey(), mKeyFlags.getSecondaryKey(), mKeyFlags.isComboAction(), mMediator.getPackageNameFromStack(0, StackAction.INCLUDE_HOME), mMediator.isKeyguardLocked(), isScreenOn);
 							
 							/*
 							 * If the screen is off, it's a good idea to poke the device out of deep sleep. 
