@@ -33,6 +33,7 @@ import android.util.Log;
 
 import com.spazedog.lib.reflecttools.ReflectClass;
 import com.spazedog.xposed.additionsgb.Common;
+import com.spazedog.xposed.additionsgb.backend.service.XService.DataType;
 
 /*
  * This manager makes it easier to work with the XService. 
@@ -62,13 +63,13 @@ public class XServiceManager {
 	
 	private IXServiceChangeListener mInternalListener = new IXServiceChangeListener.Stub(){
 		@Override
-		public void onPreferenceChanged(String key, int type) {
+		public void onPreferenceChanged(String key, String type) {
 			try {
-				switch(type) {
-					case XService.TYPE_STRING: mData.put(key, mService.getString(key, "")); break;
-					case XService.TYPE_INTEGER: mData.put(key, mService.getInt(key, -1)); break;
-					case XService.TYPE_BOOLEAN: mData.put(key, mService.getBoolean(key, false)); break;
-					case XService.TYPE_LIST: mData.put(key, mService.getStringArray(key, new ArrayList<String>())); 
+				switch(DataType.valueOf(type)) {
+					case STRING: mData.put(key, mService.getString(key, "")); break;
+					case INTEGER: mData.put(key, mService.getInt(key, -1)); break;
+					case BOOLEAN: mData.put(key, mService.getBoolean(key, false)); break;
+					case ARRAY: mData.put(key, mService.getStringArray(key, new ArrayList<String>())); 
 				}
 				
 			} catch (RemoteException e) { handleRemoteException(e); }
@@ -285,8 +286,8 @@ public class XServiceManager {
 		} catch (RemoteException e) { handleRemoteException(e); return defaultValue; }
 	}
 
-	public String getString(String key) {
-		return getString(key, null);
+	public List<String> getStringArray(String key) {
+		return getStringArray(key, null);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -303,6 +304,10 @@ public class XServiceManager {
 			return list != null ? list : defaultValue;
 			
 		} catch (RemoteException e) { handleRemoteException(e); return defaultValue; }
+	}
+	
+	public String getString(String key) {
+		return getString(key, null);
 	}
 	
 	public String getString(String key, String defaultValue) {
@@ -392,13 +397,13 @@ public class XServiceManager {
 		return null;
 	}
 	
-	public int getType(String key) {
+	public DataType getType(String key) {
 		try {
-			return mService.getType(key);
+			return DataType.valueOf(mService.getType(key));
 			
 		} catch (RemoteException e) { handleRemoteException(e); }
 		
-		return -1;
+		return DataType.EMPTY;
 	}
 	
 	public List<String> getKeys() {

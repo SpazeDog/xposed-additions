@@ -35,7 +35,7 @@ interface IXService {
 	
 	boolean remove(String key);
 	
-	int getType(String key);
+	String getType(String key);
 	
 	List<String> getKeys();
 	List<String> getPreservedKeys();

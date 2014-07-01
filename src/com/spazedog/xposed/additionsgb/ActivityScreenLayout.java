@@ -37,8 +37,8 @@ import android.widget.ListView;
 
 import com.spazedog.xposed.additionsgb.Common.AppBuilder;
 import com.spazedog.xposed.additionsgb.Common.AppBuilder.BuildAppView;
-import com.spazedog.xposed.additionsgb.Common.Index;
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
+import com.spazedog.xposed.additionsgb.configs.Settings;
 
 public class ActivityScreenLayout extends PreferenceActivity implements OnPreferenceClickListener {
 	
@@ -88,7 +88,7 @@ public class ActivityScreenLayout extends PreferenceActivity implements OnPrefer
     	super.onPause();
     	
     	if (mUpdateBlacklist && mPreferences != null) {
-    		mPreferences.putStringArray(Index.array.key.layoutRotationBlacklist, mBlacklist, true);
+    		mPreferences.putStringArray(Settings.LAYOUT_GLOBAL_ROTATION_BLACKLIST, mBlacklist, true);
     	}
     }
     
@@ -112,13 +112,13 @@ public class ActivityScreenLayout extends PreferenceActivity implements OnPrefer
     private void setup() {
     	if (mSetup != (mSetup = true)) {
     		mRotationPreference = (CheckBoxPreference) findPreference("rotation_preference");
-    		mRotationPreference.setChecked( mPreferences.getBoolean(Index.bool.key.layoutRotationSwitch, Index.bool.value.layoutRotationSwitch) );
+    		mRotationPreference.setChecked( mPreferences.getBoolean(Settings.LAYOUT_ENABLE_GLOBAL_ROTATION) );
     		
     		if (mPreferences.isPackageUnlocked()) {
     			mBlacklistCategory = (PreferenceCategory) findPreference("app_blacklist_group");
     			mBlacklistCategory.setEnabled( mRotationPreference.isChecked() );
     			
-    			mBlacklist = (ArrayList<String>) mPreferences.getStringArray(Index.array.key.layoutRotationBlacklist, Index.array.value.layoutRotationBlacklist);
+    			mBlacklist = (ArrayList<String>) mPreferences.getStringArray(Settings.LAYOUT_GLOBAL_ROTATION_BLACKLIST, new ArrayList<String>());
     			
     			findPreference("load_apps_preference").setOnPreferenceClickListener(this);
     			
@@ -131,7 +131,7 @@ public class ActivityScreenLayout extends PreferenceActivity implements OnPrefer
 	@Override
 	public boolean onPreferenceTreeClick(PreferenceScreen preferenceScreen, Preference preference) {
 		if (preference.getKey().equals("rotation_preference")) {
-			mPreferences.putBoolean(Index.bool.key.layoutRotationSwitch, mRotationPreference.isChecked(), true);
+			mPreferences.putBoolean(Settings.LAYOUT_ENABLE_GLOBAL_ROTATION, mRotationPreference.isChecked(), true);
 			
 			if (mBlacklistCategory != null) {
 				mBlacklistCategory.setEnabled(mRotationPreference.isChecked());

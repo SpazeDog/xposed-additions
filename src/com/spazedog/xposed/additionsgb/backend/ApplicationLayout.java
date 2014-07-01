@@ -32,8 +32,8 @@ import android.view.Window;
 import com.spazedog.lib.reflecttools.ReflectClass;
 import com.spazedog.lib.reflecttools.utils.ReflectException;
 import com.spazedog.xposed.additionsgb.Common;
-import com.spazedog.xposed.additionsgb.Common.Index;
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
+import com.spazedog.xposed.additionsgb.configs.Settings;
 
 import de.robv.android.xposed.XC_MethodHook;
 
@@ -79,7 +79,7 @@ public final class ApplicationLayout {
 					
 					if (preferences != null) {
 						mConfigureKeyguard = false;
-						mKeyguardOverwriteRotation = preferences.getBoolean(Index.bool.key.layoutRotationSwitch, Index.bool.value.layoutRotationSwitch);
+						mKeyguardOverwriteRotation = preferences.getBoolean(Settings.LAYOUT_ENABLE_GLOBAL_ROTATION);
 					}
 				}
 				
@@ -103,10 +103,14 @@ public final class ApplicationLayout {
 				
 				if (preferences != null) {
 					mGetSettings = false;
-					mEnableRotation = preferences.getBoolean(Index.bool.key.layoutRotationSwitch, Index.bool.value.layoutRotationSwitch);
+					mEnableRotation = preferences.getBoolean(Settings.LAYOUT_ENABLE_GLOBAL_ROTATION);
 					
 					if (mEnableRotation && preferences.isPackageUnlocked()) {
-						mBlackList = preferences.getStringArray(Index.array.key.layoutRotationBlacklist, Index.array.value.layoutRotationBlacklist);
+						mBlackList = preferences.getStringArray(Settings.LAYOUT_GLOBAL_ROTATION_BLACKLIST);
+						
+						if (mBlackList == null) {
+							mBlackList = new ArrayList<String>();
+						}
 					}
 					
 				} else {

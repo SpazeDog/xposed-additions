@@ -18,8 +18,8 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceCategory;
 import android.view.View;
 
-import com.spazedog.xposed.additionsgb.Common.Index;
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
+import com.spazedog.xposed.additionsgb.configs.Settings;
 import com.spazedog.xposed.additionsgb.tools.views.IWidgetPreference;
 import com.spazedog.xposed.additionsgb.tools.views.IWidgetPreference.OnWidgetClickListener;
 import com.spazedog.xposed.additionsgb.tools.views.WidgetPreference;
@@ -105,7 +105,7 @@ public class ActivityScreenRemapKey extends PreferenceActivity implements OnPref
     		}*/
     		
 			CheckBoxPreference callButton = (CheckBoxPreference) findPreference("call_button_preference");
-			callButton.setChecked(mPreferences.getBooleanGroup(Index.bool.key.remapCallButton, mKey, Index.bool.value.remapCallButton));
+			callButton.setChecked(mPreferences.getBooleanGroup(Settings.REMAP_KEY_ENABLE_CALLBTN, mKey));
 			callButton.setOnPreferenceClickListener(this);
     		
 			WidgetPreference addConditionPreference = (WidgetPreference) findPreference("add_condition_preference");
@@ -115,7 +115,7 @@ public class ActivityScreenRemapKey extends PreferenceActivity implements OnPref
 					.putExtra("action", "add_condition")
 			);
 			
-			mKeyConditions = (ArrayList<String>) mPreferences.getStringArrayGroup(Index.array.groupKey.remapKeyConditions, mKey, new ArrayList<String>());
+			mKeyConditions = (ArrayList<String>) mPreferences.getStringArrayGroup(Settings.REMAP_KEY_LIST_CONDITIONS, mKey, new ArrayList<String>());
 			for (String key : mKeyConditions) {
 				addConditionPreference(key);
 			}
@@ -149,14 +149,14 @@ public class ActivityScreenRemapKey extends PreferenceActivity implements OnPref
 				mForcedHapticKeys.remove(mKeyCode);
 			}
 			
-			mPreferences.putStringArray(Index.array.key.forcedHapticKeys, mForcedHapticKeys, true);
+			mPreferences.putStringArray(Settings.REMAP_LIST_FORCED_HAPTIC, mForcedHapticKeys, true);
 			
 			return true;
 			
 		} else if (preference.getKey().equals("call_button_preference")) {
 			Boolean isChecked = ((CheckBoxPreference) preference).isChecked();
 			
-			mPreferences.putBooleanGroup(Index.bool.key.remapCallButton, mKey, isChecked, true);
+			mPreferences.putBooleanGroup(Settings.REMAP_KEY_ENABLE_CALLBTN, mKey, isChecked, true);
 			
 			return true;
 		}
@@ -170,8 +170,8 @@ public class ActivityScreenRemapKey extends PreferenceActivity implements OnPref
 			String tag = (String) ((IWidgetPreference) preference).getTag();
 			
 			mKeyConditions.remove(tag);
-			mPreferences.putStringArrayGroup(Index.array.groupKey.remapKeyConditions, mKey, mKeyConditions, true);
-			mPreferences.removeGroup(String.format(Index.array.groupKey.remapKeyActions_$, tag), mKey);
+			mPreferences.putStringArrayGroup(Settings.REMAP_KEY_LIST_CONDITIONS, mKey, mKeyConditions, true);
+			mPreferences.removeGroup(Settings.REMAP_KEY_LIST_ACTIONS.get(tag), mKey);
 			
 			((PreferenceCategory) findPreference("conditions_group")).removePreference(preference);
 		}
@@ -190,7 +190,7 @@ public class ActivityScreenRemapKey extends PreferenceActivity implements OnPref
 
 			if (!mKeyConditions.contains(condition)) {
 				mKeyConditions.add(condition);
-				mPreferences.putStringArrayGroup(Index.array.groupKey.remapKeyConditions, mKey, mKeyConditions, true);
+				mPreferences.putStringArrayGroup(Settings.REMAP_KEY_LIST_CONDITIONS, mKey, mKeyConditions, true);
 				
 				addConditionPreference(condition);
 			}
@@ -239,7 +239,7 @@ public class ActivityScreenRemapKey extends PreferenceActivity implements OnPref
 				Common.getConditionIdentifier(this, condition) > 0;
 				
 		if (enabled) {
-			List<String> actions = mPreferences.getStringArrayGroup(String.format(Index.array.groupKey.remapKeyActions_$, condition), mKey, new ArrayList<String>(3));
+			List<String> actions = mPreferences.getStringArrayGroup(Settings.REMAP_KEY_LIST_ACTIONS.get(condition), mKey, new ArrayList<String>(3));
 			for (String action : actions) {
 				if (action != null) {
 					actionCount += 1;

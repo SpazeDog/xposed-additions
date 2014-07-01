@@ -27,8 +27,8 @@ import com.spazedog.lib.reflecttools.ReflectClass;
 import com.spazedog.lib.reflecttools.utils.ReflectConstants.Match;
 import com.spazedog.lib.reflecttools.utils.ReflectException;
 import com.spazedog.xposed.additionsgb.Common;
-import com.spazedog.xposed.additionsgb.Common.Index;
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
+import com.spazedog.xposed.additionsgb.configs.Settings;
 
 import de.robv.android.xposed.XC_MethodHook;
 
@@ -117,13 +117,11 @@ public final class PowerManager {
 						
 						if (powered != wasPowered && (pluggedAC || pluggedUSB)) {
 							Boolean moduleStatus = mPreferences.getBoolean(
-									powered ? Index.bool.key.usbPlugSwitch : Index.bool.key.usbUnPlugSwitch, 
-											powered ? Index.bool.value.usbPlugSwitch : Index.bool.value.usbUnPlugSwitch);
+									powered ? Settings.USB_CONNECTION_SWITCH_PLUG : Settings.USB_CONNECTION_SWITCH_UNPLUG);
 							
 							if (moduleStatus) {
 								String configAction = mPreferences.getString(
-										powered ? Index.string.key.usbPlugAction : Index.string.key.usbUnPlugAction, 
-												powered ? Index.string.value.usbPlugAction : Index.string.value.usbUnPlugAction);
+										powered ? Settings.USB_CONNECTION_PLUG : Settings.USB_CONNECTION_UNPLUG);
 								
 								if(Common.debug()) Log.d(TAG, "Handling USB Plug/UnPlug display state");
 								

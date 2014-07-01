@@ -3,21 +3,19 @@ package com.spazedog.xposed.additionsgb;
 import java.util.ArrayList;
 
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Bundle;
-import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.Preference;
+import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceActivity;
-import android.preference.PreferenceCategory;
 import android.view.View;
 import android.widget.CheckBox;
 
-import com.spazedog.xposed.additionsgb.Common.Index;
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
+import com.spazedog.xposed.additionsgb.configs.Settings;
 import com.spazedog.xposed.additionsgb.tools.views.IWidgetPreference;
-import com.spazedog.xposed.additionsgb.tools.views.WidgetPreference;
 import com.spazedog.xposed.additionsgb.tools.views.IWidgetPreference.OnWidgetBindListener;
 import com.spazedog.xposed.additionsgb.tools.views.IWidgetPreference.OnWidgetClickListener;
+import com.spazedog.xposed.additionsgb.tools.views.WidgetPreference;
 
 public class ActivityScreenRemapCondition extends PreferenceActivity implements OnPreferenceClickListener, OnWidgetClickListener, OnWidgetBindListener {
 	
@@ -78,7 +76,7 @@ public class ActivityScreenRemapCondition extends PreferenceActivity implements 
     
     private void setup() {
     	if (mSetup != (mSetup = true)) {
-			mKeyActions = (ArrayList<String>) mPreferences.getStringArrayGroup(String.format(Index.array.groupKey.remapKeyActions_$, mCondition), mKey, new ArrayList<String>());
+			mKeyActions = (ArrayList<String>) mPreferences.getStringArrayGroup(Settings.REMAP_KEY_LIST_ACTIONS.get(mCondition), mKey, new ArrayList<String>());
 			
 			String condition = Common.getConditionIdentifier(this, mCondition) > 0 ? mCondition : "on";
 			
@@ -195,7 +193,7 @@ public class ActivityScreenRemapCondition extends PreferenceActivity implements 
 			((IWidgetPreference) preference).setPreferenceEnabled(checbox.isChecked());
 
 			mKeyActions.set(index, checbox.isChecked() ? "disabled" : null);
-			mPreferences.putStringArrayGroup(String.format(Index.array.groupKey.remapKeyActions_$, mCondition), mKey, mKeyActions, true);
+			mPreferences.putStringArrayGroup(Settings.REMAP_KEY_LIST_ACTIONS.get(mCondition), mKey, mKeyActions, true);
 
 			preference.setSummary( mKeyActions.get(index) != null ? Common.actionToString(this, mKeyActions.get(index)) : "" );
 		}
@@ -225,7 +223,7 @@ public class ActivityScreenRemapCondition extends PreferenceActivity implements 
 			String keyName = data.getStringExtra("preference");
 			
 			mKeyActions.set(index, action);
-			mPreferences.putStringArrayGroup(String.format(Index.array.groupKey.remapKeyActions_$, mCondition), mKey, mKeyActions, true);
+			mPreferences.putStringArrayGroup(Settings.REMAP_KEY_LIST_ACTIONS.get(mCondition), mKey, mKeyActions, true);
 			
 			findPreference(keyName).setSummary( mKeyActions.get(index) != null ? Common.actionToString(this, mKeyActions.get(index)) : "" );
 		}

@@ -2,8 +2,8 @@ package com.spazedog.xposed.additionsgb.backend.pwm;
 
 import android.os.SystemClock;
 
-import com.spazedog.xposed.additionsgb.Common.Index;
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
+import com.spazedog.xposed.additionsgb.configs.Settings;
 
 public class KeyFlags {
 	public static enum State { PENDING, ONGOING, INVOKE, CANCEL, RESET, DEFAULT }
@@ -84,7 +84,7 @@ public class KeyFlags {
 					mSecondaryFlags = 0;
 					mDownTime = time;
 
-					mIsCallButton = mXServiceManager.getBooleanGroup(Index.bool.key.remapCallButton, (mPrimaryKey + ":" + mSecondaryKey), Index.bool.value.remapCallButton);
+					mIsCallButton = mXServiceManager.getBooleanGroup(Settings.REMAP_KEY_ENABLE_CALLBTN, (mPrimaryKey + ":" + mSecondaryKey));
 				}
 				
 			} else {

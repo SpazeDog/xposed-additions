@@ -35,8 +35,8 @@ import com.spazedog.lib.reflecttools.utils.ReflectConstants.Match;
 import com.spazedog.lib.reflecttools.utils.ReflectException;
 import com.spazedog.lib.reflecttools.utils.ReflectMember;
 import com.spazedog.xposed.additionsgb.Common;
-import com.spazedog.xposed.additionsgb.backend.PhoneWindowManager;
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
+import com.spazedog.xposed.additionsgb.configs.Settings;
 
 public final class Mediator {
 	public static final String TAG = Mediator.class.getName();
@@ -447,7 +447,7 @@ public final class Mediator {
 		/*
 		 * Now that we know that the device type is supported, let's see if we should handle external once.
 		 */
-		if (!mXServiceManager.getBoolean(Common.Index.bool.key.remapAllowExternals, Common.Index.bool.value.remapAllowExternals)) {
+		if (!mXServiceManager.getBoolean(Settings.REMAP_ALLOW_EXTERNALS)) {
 			if (SDK.INPUT_DEVICESTORAGE_VERSION > 1) {
 				InputDevice device = keyEvent.getDevice();
 				

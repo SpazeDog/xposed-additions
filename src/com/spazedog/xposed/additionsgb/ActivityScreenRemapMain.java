@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
 import android.preference.Preference;
@@ -12,13 +11,13 @@ import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceCategory;
-import android.util.Log;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.spazedog.xposed.additionsgb.Common.Index;
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
+import com.spazedog.xposed.additionsgb.configs.Settings;
 import com.spazedog.xposed.additionsgb.tools.DialogBroadcastReceiver;
 import com.spazedog.xposed.additionsgb.tools.views.IWidgetPreference;
 import com.spazedog.xposed.additionsgb.tools.views.IWidgetPreference.OnWidgetClickListener;
@@ -87,7 +86,7 @@ public class ActivityScreenRemapMain extends PreferenceActivity implements OnPre
     	if (mSetup != (mSetup = true)) {
 			if (mPreferences.isPackageUnlocked()) {
     			WidgetListPreference tapDelayPreference = (WidgetListPreference) findPreference("delay_key_tap_preference");
-    			tapDelayPreference.setValue( "" + mPreferences.getInt(Index.integer.key.remapTapDelay, Index.integer.value.remapTapDelay) );
+    			tapDelayPreference.setValue( "" + mPreferences.getInt(Settings.REMAP_TIMEOUT_DOUBLECLICK, ViewConfiguration.getDoubleTapTimeout()) );
     			tapDelayPreference.setOnPreferenceChangeListener(this);
     			tapDelayPreference.loadSummary();
     			
@@ -96,7 +95,7 @@ public class ActivityScreenRemapMain extends PreferenceActivity implements OnPre
 			}
 			
 			WidgetListPreference pressDelayPreference = (WidgetListPreference) findPreference("delay_key_press_preference");
-			pressDelayPreference.setValue( "" + mPreferences.getInt(Index.integer.key.remapPressDelay, Index.integer.value.remapPressDelay) );
+			pressDelayPreference.setValue( "" + mPreferences.getInt(Settings.REMAP_TIMEOUT_LONGPRESS, ViewConfiguration.getLongPressTimeout()) );
 			pressDelayPreference.setOnPreferenceChangeListener(this);
 			pressDelayPreference.loadSummary();
 			
@@ -105,9 +104,9 @@ public class ActivityScreenRemapMain extends PreferenceActivity implements OnPre
 			
 			CheckBoxPreference allowExternalsPreference = (CheckBoxPreference) findPreference("allow_externals_preference");
 			allowExternalsPreference.setOnPreferenceClickListener(this);
-			allowExternalsPreference.setChecked(mPreferences.getBoolean(Common.Index.bool.key.remapAllowExternals, Common.Index.bool.value.remapAllowExternals));
+			allowExternalsPreference.setChecked(mPreferences.getBoolean(Settings.REMAP_ALLOW_EXTERNALS));
 			
-			mKeyList = (ArrayList<String>) mPreferences.getStringArray(Index.array.key.remapKeys, Index.array.value.remapKeys);
+			mKeyList = (ArrayList<String>) mPreferences.getStringArray(Settings.REMAP_LIST_KEYS, new ArrayList<String>());
 			for (String key : mKeyList) {
 				addKeyPreference(key);
 			}
@@ -134,7 +133,7 @@ public class ActivityScreenRemapMain extends PreferenceActivity implements OnPre
 			listPreference.loadSummary();
 			
 			String configKey = listPreference.getKey().equals("delay_key_tap_preference") ? 
-					Index.integer.key.remapTapDelay : Index.integer.key.remapPressDelay;
+					Settings.REMAP_TIMEOUT_DOUBLECLICK : Settings.REMAP_TIMEOUT_LONGPRESS;
 			
 			mPreferences.putInt(configKey, Integer.parseInt( (String) newValue ), true);
 			
@@ -152,7 +151,7 @@ public class ActivityScreenRemapMain extends PreferenceActivity implements OnPre
 		} else if (preference.getKey().equals("allow_externals_preference")) {
 			Boolean value = ((CheckBoxPreference) preference).isChecked();
 			
-			mPreferences.putBoolean(Common.Index.bool.key.remapAllowExternals, value);
+			mPreferences.putBoolean(Settings.REMAP_ALLOW_EXTERNALS, value);
 			
 			return true;
 		}
@@ -166,15 +165,15 @@ public class ActivityScreenRemapMain extends PreferenceActivity implements OnPre
 			String key = (String) ((IWidgetPreference) preference).getTag();
 			
 			mKeyList.remove(key);
-			mPreferences.putStringArray(Index.array.key.remapKeys, mKeyList, true);
+			mPreferences.putStringArray(Settings.REMAP_LIST_KEYS, mKeyList, true);
 			mPreferences.removeGroup(null, key);
 			
 			if (key.endsWith(":0")) {
 				String keyCode = key.substring(0, key.indexOf(":"));
-				ArrayList<String> forcedKeys = (ArrayList<String>) mPreferences.getStringArray(Index.array.key.forcedHapticKeys, Index.array.value.forcedHapticKeys);
+				ArrayList<String> forcedKeys = (ArrayList<String>) mPreferences.getStringArray(Settings.REMAP_LIST_FORCED_HAPTIC, new ArrayList<String>());
 				
 				forcedKeys.remove(keyCode);
-				mPreferences.putStringArray(Index.array.key.forcedHapticKeys, forcedKeys, true);
+				mPreferences.putStringArray(Settings.REMAP_LIST_FORCED_HAPTIC, forcedKeys, true);
 			}
 			
 			((PreferenceCategory) findPreference("keys_group")).removePreference(preference);
@@ -202,7 +201,7 @@ public class ActivityScreenRemapMain extends PreferenceActivity implements OnPre
 	
 	private void setKeySummary(Preference preference) {
 		String key = (String) ((IWidgetPreference) preference).getTag();
-		List<String> conditionList = mPreferences.getStringArrayGroup(Index.array.groupKey.remapKeyConditions, key, null);
+		List<String> conditionList = mPreferences.getStringArrayGroup(Settings.REMAP_KEY_LIST_CONDITIONS, key, null);
 		Integer conditionCount = conditionList == null ? 0 : conditionList.size();
 		
 		preference.setSummary( getResources().getString(Common.getQuantityResource(getResources(), "preference_condition_count", conditionCount), conditionCount) );
@@ -253,7 +252,7 @@ public class ActivityScreenRemapMain extends PreferenceActivity implements OnPre
 				
 				if (!mKeyList.contains(key)) {
 					mKeyList.add(key);
-					mPreferences.putStringArray(Index.array.key.remapKeys, mKeyList, true);
+					mPreferences.putStringArray(Settings.REMAP_LIST_KEYS, mKeyList, true);
 					
 					addKeyPreference(key);
 					

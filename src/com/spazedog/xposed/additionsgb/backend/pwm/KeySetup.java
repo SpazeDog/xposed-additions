@@ -3,9 +3,11 @@ package com.spazedog.xposed.additionsgb.backend.pwm;
 import java.util.ArrayList;
 import java.util.List;
 
+import android.view.ViewConfiguration;
+
 import com.spazedog.xposed.additionsgb.Common;
-import com.spazedog.xposed.additionsgb.Common.Index;
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
+import com.spazedog.xposed.additionsgb.configs.Settings;
 
 public class KeySetup {
 	private XServiceManager mXServiceManager;
@@ -30,8 +32,8 @@ public class KeySetup {
 	
 	public void registerEvent(Integer primaryKey, Integer secondaryKey, Boolean isCombo, String runningPackage, Boolean inKeyguard, Boolean isScreenOn) {
 		mHasExtended = mXServiceManager.isPackageUnlocked();
-		mTapTimeout = mXServiceManager.getInt(Common.Index.integer.key.remapTapDelay, Common.Index.integer.value.remapTapDelay);
-		mPressTimeout = mXServiceManager.getInt(Common.Index.integer.key.remapPressDelay, Common.Index.integer.value.remapPressDelay);
+		mTapTimeout = mXServiceManager.getInt(Settings.REMAP_TIMEOUT_DOUBLECLICK, ViewConfiguration.getDoubleTapTimeout());
+		mPressTimeout = mXServiceManager.getInt(Settings.REMAP_TIMEOUT_LONGPRESS, ViewConfiguration.getLongPressTimeout());
 		
 		/*
 		 *  TODO: Clean this method up a bit.
@@ -44,10 +46,10 @@ public class KeySetup {
 		Integer[] pos = new Integer[]{0,1,3,4,2,5};
 		String keyGroupName = primaryKey + ":" + secondaryKey;
 		String appCondition = !isScreenOn ? null : inKeyguard ? "guard" : mHasExtended ? runningPackage : null;
-		List<String> actions = appCondition != null ? mXServiceManager.getStringArrayGroup(String.format(Index.array.groupKey.remapKeyActions_$, appCondition), keyGroupName, null) : null;
+		List<String> actions = appCondition != null ? mXServiceManager.getStringArrayGroup(Settings.REMAP_KEY_LIST_ACTIONS.get(appCondition), keyGroupName, null) : null;
 		
 		if ((isCombo && !mHasExtended) ||
-				(actions == null && (actions = mXServiceManager.getStringArrayGroup(String.format(Index.array.groupKey.remapKeyActions_$, isScreenOn ? "on" : "off"), keyGroupName, null)) == null)) {
+				(actions == null && (actions = mXServiceManager.getStringArrayGroup(Settings.REMAP_KEY_LIST_ACTIONS.get(isScreenOn ? "on" : "off"), keyGroupName, null)) == null)) {
 			
 			actions = new ArrayList<String>();
 		}

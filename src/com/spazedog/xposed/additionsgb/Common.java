@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Locale;
 
 import android.annotation.SuppressLint;
-import android.annotation.TargetApi;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
@@ -40,19 +39,19 @@ import android.graphics.Canvas;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Environment;
 import android.support.v4.util.LruCache;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.View;
-import android.view.ViewDebug.IntToString;
 import android.widget.AbsListView;
 import android.widget.AbsListView.OnScrollListener;
 import android.widget.ImageView;
 import android.widget.ListView;
 
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
+import com.spazedog.xposed.additionsgb.configs.Actions;
+import com.spazedog.xposed.additionsgb.configs.Settings;
 
 
 public final class Common {
@@ -69,211 +68,6 @@ public final class Common {
 	
 	public static final File LOG_FILE = new File(Environment.getDataDirectory(), "data/" + PACKAGE_NAME + "/cache/error.log");
 	public static final Long LOG_SIZE = 1024L*512;
-	
-	public static final class Index {
-		public static final class integer {
-			public static final class key {
-				public static final String remapTapDelay = "remap_tap_delay";
-				public static final String remapPressDelay = "remap_press_delay";
-			}
-			
-			public static final class value {
-				public static final Integer remapTapDelay = 100;
-				public static final Integer remapPressDelay = 500;
-			}
-		}
-		
-		public static final class string {
-			public static final class key {
-				public static final String usbPlugAction = "usb_plug_action";
-				public static final String usbUnPlugAction = "usb_unplug_action";
-			}
-			
-			public static final class value {
-				public static final String usbPlugAction = "usb";
-				public static final String usbUnPlugAction = "off";
-			}
-		}
-		
-		public static final class bool {
-			public static final class key {
-				public static final String usbPlugSwitch = "usb_plug_switch";
-				public static final String usbUnPlugSwitch = "usb_unplug_switch";
-				public static final String layoutRotationSwitch = "layout_rotation_switch";
-				public static final String enableDebug = "enable_debug";
-				public static final String remapCallButton = "remap_call_button";
-				public static final String remapAllowExternals = "remap_allow_externals";
-			}
-			
-			public static final class value {
-				public static final Boolean usbPlugSwitch = false;
-				public static final Boolean usbUnPlugSwitch = false;
-				public static final Boolean layoutRotationSwitch = false;
-				public static final Boolean enableDebug = false;
-				public static final Boolean remapCallButton = false;
-				public static final Boolean remapAllowExternals = false;
-			}
-		}
-		
-		public static final class array {
-			public static final class groupKey {
-				public static final String remapKeyConditions = "remap_key_conditions";
-				public static final String remapKeyActions_$ = "remap_key_actions:%1$s";
-			}
-			
-			public static final class key {
-				public static final String layoutRotationBlacklist = "layout_rotation_blacklist";
-				public static final String remapKeys = "remap_keys";
-				public static final String forcedHapticKeys = "forced_haptic_keys";
-			}
-			
-			public static final class value {
-				public static final ArrayList<String> layoutRotationBlacklist = new ArrayList<String>();
-				public static final ArrayList<String> remapKeys = new ArrayList<String>();
-				public static final ArrayList<String> forcedHapticKeys = new ArrayList<String>();
-			}
-		}
-	}
-	
-	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
-	public static class RemapAction {
-		public final Boolean dispatch;
-		public final String name;
-		public final Integer labelRes;
-		public final Integer descriptionRes;
-		public final Integer alertRes;
-		public final Integer noticeRes;
-		public final Validate validate;
-		public final List<String> blacklist = new ArrayList<String>();
-		
-		public static final List<RemapAction> VALUES = new ArrayList<RemapAction>();
-		public static final List<String> NAMES = new ArrayList<String>();
-		
-		static {
-			new RemapAction("disabled", R.string.remap_title_disabled, R.string.remap_summary_disabled, 0, 0, false);
-			new RemapAction("guarddismiss", R.string.remap_title_dismissguard, R.string.remap_summary_dismissguard, 0, 0, false, "off", "on");
-			new RemapAction("recentapps", R.string.remap_title_recentapps, R.string.remap_summary_recentapps, 0, 0, false, "off");
-			new RemapAction("lastapp", R.string.remap_title_last_app, R.string.remap_summary_last_app, 0, 0, false, "off", "guard");
-			new RemapAction("killapp", R.string.remap_title_killapp, R.string.remap_summary_killapp, 0, 0, false, "off", "guard");
-			new RemapAction("fliptoggle", R.string.remap_title_fliptoggle, R.string.remap_summary_fliptoggle, 0, 0, false, "off");
-			
-			if (android.os.Build.VERSION.SDK_INT >= 11) {
-				new RemapAction("flipleft", R.string.remap_title_flipleft, R.string.remap_summary_flipleft, 0, 0, false, "off");
-				new RemapAction("flipright", R.string.remap_title_flipright, R.string.remap_summary_flipright, 0, 0, false, "off");
-				new RemapAction("screenshot", R.string.remap_title_screenshot, R.string.remap_summary_screenshot, 0, 0, false, "off");
-			}
-			
-			new RemapAction("torch", R.string.remap_title_torch, R.string.remap_summary_torch, R.string.selector_alert_missing_torch, 0, false, new Validate(){ 
-				@Override
-				public Boolean onValidate(Context context) { 
-					return XServiceManager.getInstance().getBoolean("variable:remap.support.torch"); 
-				} 
-				
-				@Override
-				public Boolean onDisplayAlert(Context context) { 
-					return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
-				}
-			});
-			
-			new RemapAction("powermenu", R.string.remap_title_powermenu, R.string.remap_summary_powermenu, 0, 0, false, "off", new Validate(){ 
-				@Override
-				public Boolean onValidate(Context context) { 
-					return XServiceManager.getInstance().getBoolean("variable:remap.support.global_actions"); 
-				}
-			});
-
-			new RemapAction("" + KeyEvent.KEYCODE_POWER, 0, 0, 0, 0, true);
-			new RemapAction("" + KeyEvent.KEYCODE_HOME, 0, 0, 0, 0, true, "off", "guard"); 
-			new RemapAction("" + KeyEvent.KEYCODE_MENU, 0, 0, 0, 0, true, "off", "guard"); 
-			new RemapAction("" + KeyEvent.KEYCODE_BACK, 0, 0, 0, 0, true, "off", "guard");
-			new RemapAction("" + KeyEvent.KEYCODE_SEARCH, 0, 0, 0, 0, true, "off");
-			new RemapAction("" + KeyEvent.KEYCODE_CAMERA, 0, 0, 0, R.string.selector_notice_camera_buttons, true, "off"); 
-			new RemapAction("" + KeyEvent.KEYCODE_FOCUS, 0, 0, 0, R.string.selector_notice_camera_buttons, true, "off", "guard");
-			new RemapAction("" + KeyEvent.KEYCODE_CALL, 0, 0, 0, 0, true);
-			new RemapAction("" + KeyEvent.KEYCODE_ENDCALL, 0, 0, 0, 0, true);
-			new RemapAction("" + KeyEvent.KEYCODE_MUTE, 0, 0, 0, 0, true); 
-			new RemapAction("" + KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, 0, 0, 0, R.string.selector_notice_media_buttons, true); 
-			new RemapAction("" + KeyEvent.KEYCODE_MEDIA_NEXT, 0, 0, 0, R.string.selector_notice_media_buttons, true);
-			new RemapAction("" + KeyEvent.KEYCODE_MEDIA_PREVIOUS, 0, 0, 0, R.string.selector_notice_media_buttons, true);
-			new RemapAction("" + KeyEvent.KEYCODE_PAGE_UP, 0, 0, 0, 0, true, "off", "guard"); 
-			new RemapAction("" + KeyEvent.KEYCODE_PAGE_DOWN, 0, 0, 0, 0, true, "off", "guard"); 
-			new RemapAction("" + KeyEvent.KEYCODE_HEADSETHOOK, 0, 0, 0, 0, true);
-			new RemapAction("" + KeyEvent.KEYCODE_VOLUME_UP, 0, 0, 0, 0, true); 
-			new RemapAction("" + KeyEvent.KEYCODE_VOLUME_DOWN, 0, 0, 0, 0, true); 
-			
-			if (android.os.Build.VERSION.SDK_INT >= 11) {
-				new RemapAction("" + KeyEvent.KEYCODE_VOLUME_MUTE, 0, 0, 0, 0, true);
-				new RemapAction("" + KeyEvent.KEYCODE_ZOOM_IN, 0, 0, 0, 0, true, "off", "guard"); 
-				new RemapAction("" + KeyEvent.KEYCODE_ZOOM_OUT, 0, 0, 0, 0, true, "off", "guard"); 
-			}
-		}
-		
-		private RemapAction(String name, Integer labelRes, Integer descriptionRes, Integer alertRes, Integer noticeRes, Boolean dispatch, Object... blacklist) {
-			int x = blacklist.length-1;
-			
-			this.name = name;
-			this.labelRes = labelRes;
-			this.descriptionRes = descriptionRes;
-			this.alertRes = alertRes;
-			this.noticeRes = noticeRes;
-			this.dispatch = dispatch;
-			this.validate = blacklist.length > 0 && blacklist[x] instanceof Validate ? (Validate) blacklist[x] : null;
-			
-			for (int i=0; i < blacklist.length; i++) {
-				if (blacklist[i] instanceof String) {
-					this.blacklist.add( (String) blacklist[i] );
-				}
-			}
-			
-			VALUES.add(this);
-			NAMES.add(name);
-		}
-		
-		public String getLabel(Context context) {
-			if (labelRes > 0) {
-				return context.getResources().getString(labelRes);
-			}
-			
-			return keyToString(name);
-		}
-		
-		public String getDescription(Context context) {
-			if (descriptionRes > 0) {
-				return context.getResources().getString(descriptionRes);
-			}
-			
-			return null;
-		}
-		
-		public String getAlert(Context context) {
-			if (alertRes > 0) {
-				return context.getResources().getString(alertRes);
-			}
-			
-			return null;
-		}
-		
-		public String getNotice(Context context) {
-			if (noticeRes > 0) {
-				return context.getResources().getString(noticeRes);
-			}
-			
-			return null;
-		}
-		
-		public Boolean isValid(Context context, String condition) {
-			return !blacklist.contains(condition) && (validate == null || validate.onValidate(context));
-		}
-		
-		public Boolean displayAlert(Context context) {
-			return alertRes > 0 && (validate == null || validate.onDisplayAlert(context));
-		}
-		
-		public static abstract class Validate {
-			public abstract Boolean onValidate(Context context);
-			public Boolean onDisplayAlert(Context context) { return false; }
-		}
-	}
 	
 	public static String actionType(String action) {
 		return action == null ? null : 
@@ -298,7 +92,11 @@ public final class Common {
 			
 		} else {
 			try {
-				return RemapAction.VALUES.get( RemapAction.NAMES.indexOf(action) ).getLabel(context);
+				for (RemapAction current : Actions.COLLECTION) {
+					if (current.getAction().equals(action)) {
+						return current.getLabel(context);
+					}
+				}
 				
 			} catch(Throwable e) {}
 		}
@@ -655,7 +453,7 @@ public final class Common {
 			XServiceManager preferences = XServiceManager.getInstance();
 			
 			if (preferences != null && preferences.isServiceReady()) {
-				ENABLE_DEBUG = preferences.getBoolean(Index.bool.key.enableDebug, Index.bool.value.enableDebug);
+				ENABLE_DEBUG = preferences.getBoolean(Settings.DEBUG_ENABLE_LOGGING);
 				
 			} else {
 				ENABLE_DEBUG = null;
@@ -663,5 +461,110 @@ public final class Common {
 		}
 		
 		return DEBUG || (ENABLE_DEBUG != null && ENABLE_DEBUG);
+	}
+
+	public static class PlaceHolder {
+		private final String mKey;
+		
+		public PlaceHolder(String key) {
+			mKey = key;
+		}
+		
+		public String get(Object... replacements) {
+			return String.format(mKey, replacements);
+		}
+	}
+	
+	public static class RemapAction {
+		private final Boolean mDispatchAction;
+		private final String mAction;
+		private final Integer mMinSDK;
+		private final Integer mLabelRes;
+		private final Integer mDescRes;
+		private final Integer mAlertRes;
+		private final Integer mNoticeRes;
+		
+		private final List<String> mConditionBlacklist = new ArrayList<String>();
+		
+		private final Validate mValidator;
+		
+		public RemapAction(String name, Integer sdk, Integer labelRes, Integer descriptionRes, Integer alertRes, Integer noticeRes, Object... blacklist) {
+			mDispatchAction = name.matches("^[0-9]+$");
+			mAction = name;
+			mMinSDK = sdk;
+			mLabelRes = labelRes;
+			mDescRes = descriptionRes;
+			mAlertRes = alertRes;
+			mNoticeRes = noticeRes;
+			mValidator = blacklist.length > 0 && blacklist[ blacklist.length-1 ] instanceof Validate ? (Validate) blacklist[ blacklist.length-1 ] : null;
+			
+			for (int i=0; i < blacklist.length; i++) {
+				if (blacklist[i] instanceof String) {
+					mConditionBlacklist.add( (String) blacklist[i] );
+				}
+			}
+		}
+		
+		public RemapAction(Integer key, Integer sdk, Integer labelRes, Integer descriptionRes, Integer alertRes, Integer noticeRes, Object... blacklist) {
+			this(""+key, sdk, labelRes, descriptionRes, alertRes, noticeRes, blacklist);
+		}
+		
+		public String getAction() {
+			return mAction;
+		}
+		
+		public String getLabel(Context context) {
+			if (mLabelRes > 0) {
+				return context.getResources().getString(mLabelRes);
+			}
+			
+			return keyToString(mAction);
+		}
+		
+		public String getDescription(Context context) {
+			if (mDescRes > 0) {
+				return context.getResources().getString(mDescRes);
+			}
+			
+			return null;
+		}
+		
+		public String getNotice(Context context) {
+			if (mNoticeRes > 0) {
+				return context.getResources().getString(mNoticeRes);
+			}
+			
+			return null;
+		}
+		
+		public String getAlert(Context context) {
+			if (mAlertRes > 0) {
+				return context.getResources().getString(mAlertRes);
+			}
+			
+			return null;
+		}
+		
+		public Boolean isDispatchAction() {
+			return mDispatchAction;
+		}
+		
+		public Boolean hasNotice(Context context) {
+			return mNoticeRes > 0 && (mValidator == null || mValidator.onDisplayNotice(context));
+		}
+		
+		public Boolean hasAlert(Context context) {
+			return mAlertRes > 0 && (mValidator == null || mValidator.onDisplayAlert(context));
+		}
+		
+		public Boolean isValid(Context context, String condition) {
+			return android.os.Build.VERSION.SDK_INT >= mMinSDK && !mConditionBlacklist.contains(condition) && (mValidator == null || mValidator.onValidate(context));
+		}
+		
+		public static abstract class Validate {
+			public Boolean onValidate(Context context) { return true; };
+			public Boolean onDisplayAlert(Context context) { return false; }
+			public Boolean onDisplayNotice(Context context) { return true; }
+		}
 	}
 }

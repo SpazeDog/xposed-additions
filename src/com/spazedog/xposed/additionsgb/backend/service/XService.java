@@ -42,6 +42,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.content.res.Resources;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.Environment;
@@ -59,11 +60,19 @@ import de.robv.android.xposed.XC_MethodHook;
 public final class XService extends IXService.Stub {
 	public static final String TAG = XService.class.getName();
 	
-	public static final int TYPE_EMPTY = 0;
-	public static final int TYPE_STRING = 1;
-	public static final int TYPE_INTEGER = 2;
-	public static final int TYPE_BOOLEAN = 3;
-	public static final int TYPE_LIST = 4;
+	public static enum DataType { 
+		EMPTY("empty"), STRING("string"), INTEGER("integer"), BOOLEAN("bool"), ARRAY("array");
+		
+		private final String mType;
+		
+		private DataType(String type) {
+			mType = type;
+		}
+		
+		public String getType() {
+			return mType;
+		}
+	}
 	
 	private Context mContextSystem;
 	private Context mContextModule;
@@ -312,9 +321,42 @@ public final class XService extends IXService.Stub {
 		}
 	}
 	
-	private Object getCached(String key, Object defaultValue) {
+	private Object getCached(String key, Object defaultValue, DataType type) {
 		if (mCachedData.containsKey(key)) {
 			return mCachedData.get(key);
+		}
+		
+		PackageManager manager = mContextSystem.getPackageManager();
+		
+		try {
+			Resources resources = manager.getResourcesForApplication(Common.PACKAGE_NAME);
+			Integer resourceId = resources.getIdentifier(key, type.getType(), Common.PACKAGE_NAME);
+			
+			if (resourceId > 0) {
+				switch (type) {
+					case STRING: 
+						return resources.getString(resourceId);
+						
+					case ARRAY:
+						String[] array = resources.getStringArray(resourceId);
+						List<String> list = new ArrayList<String>();
+						
+						for (int i=0; i < array.length; i++) {
+							list.add(array[i]);
+						}
+						
+						return list;
+		
+					case BOOLEAN:
+						return resources.getBoolean(resourceId);
+		
+					case INTEGER:
+						return resources.getInteger(resourceId);
+				}
+			} 
+			
+		} catch (NameNotFoundException e) { 
+			Log.e(TAG, "Could not access the application resources!"); 
 		}
 		
 		return defaultValue;
@@ -342,23 +384,23 @@ public final class XService extends IXService.Stub {
 
 	@Override
 	public String getString(String key, String defaultValue) throws RemoteException {
-		return (String) getCached(key, defaultValue);
+		return (String) getCached(key, defaultValue, DataType.STRING);
 	}
 	
 	@SuppressWarnings("unchecked")
 	@Override
 	public List<String> getStringArray(String key, List<String> defaultValue) throws RemoteException {
-		return (List<String>) getCached(key, defaultValue);
+		return (List<String>) getCached(key, defaultValue, DataType.ARRAY);
 	}
 
 	@Override
 	public int getInt(String key, int defaultValue) throws RemoteException {
-		return (Integer) getCached(key, defaultValue);
+		return (Integer) getCached(key, defaultValue, DataType.INTEGER);
 	}
 
 	@Override
 	public boolean getBoolean(String key, boolean defaultValue) throws RemoteException {
-		return (Boolean) getCached(key, defaultValue);
+		return (Boolean) getCached(key, defaultValue, DataType.BOOLEAN);
 	}
 	
 	@Override
@@ -379,21 +421,21 @@ public final class XService extends IXService.Stub {
 	}
 	
 	@Override
-	public int getType(String key) {
+	public String getType(String key) {
 		if (mCachedData.containsKey(key)) {
 			Object object = mCachedData.get(key);
 			
 			if (object instanceof Integer) 
-				return TYPE_INTEGER;
+				return DataType.INTEGER.name();
 			else if (object instanceof Boolean) 
-				return TYPE_BOOLEAN;
+				return DataType.BOOLEAN.name();
 			else if (object instanceof List) 
-				return TYPE_LIST;
+				return DataType.ARRAY.name();
 			else
-				return TYPE_STRING;
+				return DataType.STRING.name();
 		}
 		
-		return TYPE_EMPTY;
+		return DataType.EMPTY.name();
 	}
 	
 	@Override
@@ -577,17 +619,17 @@ public final class XService extends IXService.Stub {
 	};
 	
 	private void broadcastChange(String key) {
-		Integer type = getType(key);
+		DataType type = DataType.valueOf(getType(key));
 		
 		synchronized(mListeners) {
 			for (IBinder listener : mListeners) {
 				if (listener != null && listener.pingBinder()) {
 					try {
-						if (type == TYPE_EMPTY) {
+						if (type == DataType.EMPTY) {
 							IXServiceChangeListener.Stub.asInterface(listener).onPreferenceRemoved(key);
 							
 						} else {
-							IXServiceChangeListener.Stub.asInterface(listener).onPreferenceChanged(key, type);
+							IXServiceChangeListener.Stub.asInterface(listener).onPreferenceChanged(key, type.name());
 						}
 						
 					} catch (RemoteException e) {

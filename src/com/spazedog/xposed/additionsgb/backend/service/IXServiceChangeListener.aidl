@@ -19,9 +19,11 @@
 
 package com.spazedog.xposed.additionsgb.backend.service;
 
+
+
 /** {@hide} */
 oneway interface IXServiceChangeListener {
-	void onPreferenceChanged(String key, int type);
+	void onPreferenceChanged(String key, String type);
 	void onPreferenceRemoved(String key);
 	void onPackageChanged();
 	void onBroadcastReceive(String action, in Bundle data);

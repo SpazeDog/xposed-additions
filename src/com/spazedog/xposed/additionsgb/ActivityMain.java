@@ -31,6 +31,7 @@ import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceActivity;
 
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
+import com.spazedog.xposed.additionsgb.configs.Settings;
 
 public class ActivityMain extends PreferenceActivity implements OnPreferenceClickListener {
 	
@@ -121,7 +122,7 @@ public class ActivityMain extends PreferenceActivity implements OnPreferenceClic
 	    		
 	    		CheckBoxPreference debugPreference = (CheckBoxPreference) findPreference("debug_preference");
 	    		debugPreference.setOnPreferenceClickListener(this);
-	    		debugPreference.setChecked(mPreferences.getBoolean(Common.Index.bool.key.enableDebug, Common.Index.bool.value.enableDebug));
+	    		debugPreference.setChecked(mPreferences.getBoolean(Settings.DEBUG_ENABLE_LOGGING));
 	    		
     		} else {
     			findPreference("options_group").setEnabled(false);
@@ -137,7 +138,7 @@ public class ActivityMain extends PreferenceActivity implements OnPreferenceClic
 		if (preference.getKey().equals("debug_preference")) {
 			Boolean isChecked = ((CheckBoxPreference) preference).isChecked();
 
-			mPreferences.putBoolean(Common.Index.bool.key.enableDebug, isChecked, true);
+			mPreferences.putBoolean(Settings.DEBUG_ENABLE_LOGGING, isChecked, true);
 			
 			return true;
 			

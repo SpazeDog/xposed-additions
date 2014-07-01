@@ -26,11 +26,11 @@ import android.preference.PreferenceActivity;
 import android.view.View;
 import android.widget.CheckBox;
 
-import com.spazedog.xposed.additionsgb.Common.Index;
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
-import com.spazedog.xposed.additionsgb.tools.views.WidgetListPreference;
+import com.spazedog.xposed.additionsgb.configs.Settings;
 import com.spazedog.xposed.additionsgb.tools.views.IWidgetPreference.OnWidgetBindListener;
 import com.spazedog.xposed.additionsgb.tools.views.IWidgetPreference.OnWidgetClickListener;
+import com.spazedog.xposed.additionsgb.tools.views.WidgetListPreference;
 
 public class ActivityScreenUSB extends PreferenceActivity implements OnPreferenceChangeListener, OnWidgetClickListener, OnWidgetBindListener {
 	
@@ -82,7 +82,7 @@ public class ActivityScreenUSB extends PreferenceActivity implements OnPreferenc
 	    	WidgetListPreference plugPreference = (WidgetListPreference) findPreference("usb_plug_preference");
 	    	plugPreference.setEntries(wakeplugNames);
 	    	plugPreference.setEntryValues(wakeplugValues);
-	    	plugPreference.setValue( mPreferences.getString(Index.string.key.usbPlugAction, Index.string.value.usbPlugAction) );
+	    	plugPreference.setValue( mPreferences.getString(Settings.USB_CONNECTION_PLUG) );
 	    	plugPreference.setOnPreferenceChangeListener(this);
 	    	plugPreference.setOnWidgetClickListener(this);
 	    	plugPreference.setOnWidgetBindListener(this);
@@ -91,7 +91,7 @@ public class ActivityScreenUSB extends PreferenceActivity implements OnPreferenc
 	    	WidgetListPreference unplugPreference = (WidgetListPreference) findPreference("usb_unplug_preference");
 	    	unplugPreference.setEntries(wakeplugNames);
 	    	unplugPreference.setEntryValues(wakeplugValues);
-	    	unplugPreference.setValue( mPreferences.getString(Index.string.key.usbUnPlugAction, Index.string.value.usbUnPlugAction) );
+	    	unplugPreference.setValue( mPreferences.getString(Settings.USB_CONNECTION_UNPLUG) );
 	    	unplugPreference.setOnPreferenceChangeListener(this);
 	    	unplugPreference.setOnWidgetClickListener(this);
 	    	unplugPreference.setOnWidgetBindListener(this);
@@ -105,8 +105,8 @@ public class ActivityScreenUSB extends PreferenceActivity implements OnPreferenc
 		listPreference.setValue((String) newValue);
 		
 		String settingsKey = listPreference.getKey().equals("usb_plug_preference") ? 
-				Index.string.key.usbPlugAction : 
-					Index.string.key.usbUnPlugAction;
+				Settings.USB_CONNECTION_PLUG : 
+					Settings.USB_CONNECTION_UNPLUG;
 		
 		mPreferences.putString(settingsKey, (String) newValue, true);
 		
@@ -118,8 +118,8 @@ public class ActivityScreenUSB extends PreferenceActivity implements OnPreferenc
 	@Override
 	public void onWidgetClick(Preference preference, View widgetView) {
 		String settingsKey = preference.getKey().equals("usb_plug_preference") ? 
-				Index.bool.key.usbPlugSwitch : 
-					Index.bool.key.usbUnPlugSwitch;
+				Settings.USB_CONNECTION_SWITCH_PLUG : 
+					Settings.USB_CONNECTION_SWITCH_UNPLUG;
 		
 		CheckBox checbox = (CheckBox) widgetView.findViewById(android.R.id.checkbox);
 		checbox.setChecked( !checbox.isChecked() );
@@ -132,15 +132,11 @@ public class ActivityScreenUSB extends PreferenceActivity implements OnPreferenc
 	@Override
 	public void onWidgetBind(Preference preference, View widgetView) {
 		String settingsKey = preference.getKey().equals("usb_plug_preference") ? 
-				Index.bool.key.usbPlugSwitch : 
-					Index.bool.key.usbUnPlugSwitch;
-		
-		Boolean defaultValue = preference.getKey().equals("usb_plug_preference") ? 
-				Index.bool.value.usbPlugSwitch : 
-					Index.bool.value.usbUnPlugSwitch;
+				Settings.USB_CONNECTION_SWITCH_PLUG : 
+					Settings.USB_CONNECTION_SWITCH_UNPLUG;
 		
 		CheckBox checbox = (CheckBox) widgetView.findViewById(android.R.id.checkbox);
-		checbox.setChecked( mPreferences.getBoolean(settingsKey, defaultValue) );
+		checbox.setChecked( mPreferences.getBoolean(settingsKey) );
 		
 		((WidgetListPreference) preference).setPreferenceEnabled(checbox.isChecked());
 	}

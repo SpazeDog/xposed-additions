@@ -40,6 +40,7 @@ import com.spazedog.xposed.additionsgb.Common.AppBuilder;
 import com.spazedog.xposed.additionsgb.Common.AppBuilder.BuildAppView;
 import com.spazedog.xposed.additionsgb.Common.RemapAction;
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
+import com.spazedog.xposed.additionsgb.configs.Actions;
 import com.spazedog.xposed.additionsgb.tools.views.IWidgetPreference;
 import com.spazedog.xposed.additionsgb.tools.views.WidgetPreference;
 
@@ -124,23 +125,23 @@ public class ActivitySelectorRemap extends PreferenceActivity implements OnPrefe
     			PreferenceCategory category = (PreferenceCategory) findPreference("custom_group");
     			String condition = getIntent().getStringExtra("condition");
     			
-    			for (RemapAction value : RemapAction.VALUES) {
-    				Boolean isValid = value.isValid(this, condition);
-    				Boolean displayAlert = value.displayAlert(this);
-    				String alertMsg = value.getAlert(this);
-    				String noticeMsg = value.getNotice(this);
+    			for (RemapAction current : Actions.COLLECTION) {
+    				Boolean isValid = current.isValid(this, condition);
+    				Boolean displayAlert = current.hasAlert(this);
+    				String alertMsg = current.getAlert(this);
+    				String noticeMsg = current.getNotice(this);
     				
     				if (isValid || displayAlert) {
     					PreferenceGroup preferenceGroup = null;
     					Preference preference = null;
     					
-    					if (value.dispatch) {
+    					if (current.isDispatchAction()) {
     						preferenceGroup = preferenceScreen;
-    						preference = getSelectPreference(value.getLabel(this), getResources().getString(R.string.text_key, value.name), value.name, null, null);
+    						preference = getSelectPreference(current.getLabel(this), getResources().getString(R.string.text_key, current.getAction()), current.getAction(), null, null);
     						
     					} else {
     						preferenceGroup = category;
-    						preference = getSelectPreference(value.getLabel(this), value.getDescription(this), value.name, null, null);
+    						preference = getSelectPreference(current.getLabel(this), current.getDescription(this), current.getAction(), null, null);
     					}
     					
     					if (!isValid && displayAlert) {

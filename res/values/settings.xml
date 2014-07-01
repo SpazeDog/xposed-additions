@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    
+    <!-- 
+    This file contains default values for some of the module options.
+    Each name should match the name used in the module config file Common.PREFERENCE_FILE which are defined in configs.Settings -->
+    
+    <bool name="usb_plug_switch">false</bool>
+    <bool name="usb_unplug_switch">false</bool>
+    <bool name="layout_rotation_switch">false</bool>
+    <bool name="enable_debug">false</bool>
+    <bool name="remap_allow_externals">false</bool>
+    
+    <string name="usb_plug_action" translatable="false">usb</string>
+    <string name="usb_unplug_action" translatable="false">off</string>
+    
+    <integer name="remap_tap_delay">100</integer>
+    <integer name="remap_press_delay">500</integer>
+    
+</resources>
