@@ -25,6 +25,8 @@ import android.view.HapticFeedbackConstants;
 import android.view.InputDevice;
 import android.view.KeyCharacterMap;
 import android.view.KeyEvent;
+import android.view.Surface;
+import android.widget.Toast;
 
 import com.spazedog.lib.reflecttools.ReflectClass;
 import com.spazedog.lib.reflecttools.ReflectClass.OnErrorListener;
@@ -123,6 +125,11 @@ public final class Mediator {
 		 * This one got it's own service in API 11
 		 */
 		public static final Integer MANAGER_RECENT_DIALOG_VERSION = android.os.Build.VERSION.SDK_INT >= 11 ? 2 :1;
+		
+		/*
+		 * Before API 11, we did not have tools like freezeRotation
+		 */
+		public static final Integer MANAGER_ROTATION_VERSION = android.os.Build.VERSION.SDK_INT >= 11 ? 2 :1;
 	}
 	
 	/**
@@ -344,6 +351,15 @@ public final class Mediator {
 			mXServiceManager.putBoolean("variable:remap.support.screenshot", true);
 			
 		} catch (ReflectException e) {}
+		
+		/*
+		 * Get Rotation Tools
+		 */
+		mMethods.put("getRotation", mWindowManagerService.findMethodDeep("getRotation"));
+		if (SDK.MANAGER_ROTATION_VERSION > 1) {
+			mMethods.put("freezeRotation", mWindowManagerService.findMethodDeep("freezeRotation", Match.BEST, Integer.TYPE));
+			mMethods.put("thawRotation", mWindowManagerService.findMethodDeep("thawRotation"));
+		}
 		
 		/*
 		 * Start searching for torch support
@@ -807,6 +823,58 @@ public final class Mediator {
 		}
 	}
 	
+	protected void freezeRotation(Integer orientation) {
+		if (SDK.MANAGER_ROTATION_VERSION > 1) {
+			if (orientation != 1) {
+				switch (orientation) {
+					case 90: orientation = Surface.ROTATION_90; break;
+					case 180: orientation = Surface.ROTATION_180; break;
+					case 270: orientation = Surface.ROTATION_270;
+				}
+				
+				try {
+					mMethods.get("freezeRotation").invoke(orientation);
+					
+				} catch (ReflectException e) {
+					Log.e(TAG, e.getMessage(), e);
+				}
+				
+			} else {
+				try {
+					mMethods.get("thawRotation").invoke();
+					
+				} catch (ReflectException e) {
+					Log.e(TAG, e.getMessage(), e);
+				}
+			}
+			
+		} else {
+			android.provider.Settings.System.putInt(((Context) mContext.getReceiver()).getContentResolver(), android.provider.Settings.System.ACCELEROMETER_ROTATION, orientation != 1 ? 1 : 0);
+		}
+	}
+	
+	public Boolean isRotationLocked() {
+        return android.provider.Settings.System.getInt(((Context) mContext.getReceiver()).getContentResolver(), android.provider.Settings.System.ACCELEROMETER_ROTATION, 0) == 0;
+	}
+	
+	public Integer getCurrentRotation() {
+		try {
+			return (Integer) mMethods.get("getRotation").invoke();
+
+		} catch (ReflectException e) {
+			Log.e(TAG, e.getMessage(), e);
+		}
+		
+		return 0;
+	}
+	
+	public Integer getNextRotation(Boolean backwards) {
+		Integer  position = getCurrentRotation();
+		
+		return (position == Surface.ROTATION_90 || position == Surface.ROTATION_0) && backwards ? 270 : 
+			(position == Surface.ROTATION_270 || position == Surface.ROTATION_0) && !backwards ? 90 : 0;
+	}
+	
 	protected void handleKeyAction(final String action, final ActionType actionType, final Integer keyCode, final Long downTime, final Integer flags, final Integer policyFlags, final Boolean isScreenOn) {
 		/*
 		 * We handle display on here, because some devices has issues
@@ -846,6 +914,22 @@ public final class Mediator {
 							
 						} else if ("screenshot".equals(action)) {
 							takeScreenshot();
+							
+						} else if ("flipleft".equals(action)) {
+							freezeRotation( getNextRotation(true) );
+							
+						} else if ("flipright".equals(action)) {
+							freezeRotation( getNextRotation(false) );
+							
+						} else if ("fliptoggle".equals(action)) {
+							if (isRotationLocked()) {
+								Toast.makeText((Context) mContext.getReceiver(), "Rotation has been Enabled", Toast.LENGTH_SHORT).show();
+								freezeRotation(1);
+								
+							} else {
+								Toast.makeText((Context) mContext.getReceiver(), "Rotation has been Disabled", Toast.LENGTH_SHORT).show();
+								freezeRotation(-1);
+							}
 						}
 					}
 					
