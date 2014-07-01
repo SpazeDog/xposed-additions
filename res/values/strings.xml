@@ -164,5 +164,12 @@
     
     <string name='remap_title_last_app'>Last Application</string>
     <string name='remap_summary_last_app'>Toggle between the foreground and last applications</string>
+    
+    <!-- ================================================
+         Strings for Common used by Remap Selector
+    ================================================ -->
+    <string name='selector_alert_missing_torch'>In order to use this action, you will need to install a Torch app from the Market that support Intents!</string>
+    <string name='selector_notice_media_buttons'>Note that this action will only have an effect if your current media player support key events</string>
+    <string name='selector_notice_camera_buttons'>Note that this action will only have an effect if your current camera application support key events</string>
 	
 </resources>

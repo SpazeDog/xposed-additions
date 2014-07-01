@@ -46,6 +46,7 @@ import android.support.v4.util.LruCache;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.ViewDebug.IntToString;
 import android.widget.AbsListView;
 import android.widget.AbsListView.OnScrollListener;
 import android.widget.ImageView;
@@ -140,6 +141,8 @@ public final class Common {
 		public final String name;
 		public final Integer labelRes;
 		public final Integer descriptionRes;
+		public final Integer alertRes;
+		public final Integer noticeRes;
 		public final Validate validate;
 		public final List<String> blacklist = new ArrayList<String>();
 		
@@ -147,59 +150,66 @@ public final class Common {
 		public static final List<String> NAMES = new ArrayList<String>();
 		
 		static {
-			new RemapAction("disabled", R.string.remap_title_disabled, R.string.remap_summary_disabled, false);
-			new RemapAction("guarddismiss", R.string.remap_title_dismissguard, R.string.remap_summary_dismissguard, false, "off", "on");
-			new RemapAction("recentapps", R.string.remap_title_recentapps, R.string.remap_summary_recentapps, false, "off");
-			new RemapAction("lastapp", R.string.remap_title_last_app, R.string.remap_summary_last_app, false, "off", "guard");
-			new RemapAction("powermenu", R.string.remap_title_powermenu, R.string.remap_summary_powermenu, false, "off");
-			new RemapAction("killapp", R.string.remap_title_killapp, R.string.remap_summary_killapp, false, "off", "guard");
-			new RemapAction("fliptoggle", R.string.remap_title_fliptoggle, R.string.remap_summary_fliptoggle, false, "off");
+			new RemapAction("disabled", R.string.remap_title_disabled, R.string.remap_summary_disabled, 0, 0, false);
+			new RemapAction("guarddismiss", R.string.remap_title_dismissguard, R.string.remap_summary_dismissguard, 0, 0, false, "off", "on");
+			new RemapAction("recentapps", R.string.remap_title_recentapps, R.string.remap_summary_recentapps, 0, 0, false, "off");
+			new RemapAction("lastapp", R.string.remap_title_last_app, R.string.remap_summary_last_app, 0, 0, false, "off", "guard");
+			new RemapAction("powermenu", R.string.remap_title_powermenu, R.string.remap_summary_powermenu, 0, 0, false, "off");
+			new RemapAction("killapp", R.string.remap_title_killapp, R.string.remap_summary_killapp, 0, 0, false, "off", "guard");
+			new RemapAction("fliptoggle", R.string.remap_title_fliptoggle, R.string.remap_summary_fliptoggle, 0, 0, false, "off");
 			
 			if (android.os.Build.VERSION.SDK_INT >= 11) {
-				new RemapAction("flipleft", R.string.remap_title_flipleft, R.string.remap_summary_flipleft, false, "off");
-				new RemapAction("flipright", R.string.remap_title_flipright, R.string.remap_summary_flipright, false, "off");
-				new RemapAction("screenshot", R.string.remap_title_screenshot, R.string.remap_summary_screenshot, false, "off");
+				new RemapAction("flipleft", R.string.remap_title_flipleft, R.string.remap_summary_flipleft, 0, 0, false, "off");
+				new RemapAction("flipright", R.string.remap_title_flipright, R.string.remap_summary_flipright, 0, 0, false, "off");
+				new RemapAction("screenshot", R.string.remap_title_screenshot, R.string.remap_summary_screenshot, 0, 0, false, "off");
 			}
 			
-			new RemapAction("torch", R.string.remap_title_torch, R.string.remap_summary_torch, false, new Validate(){ 
+			new RemapAction("torch", R.string.remap_title_torch, R.string.remap_summary_torch, R.string.selector_alert_missing_torch, 0, false, new Validate(){ 
 				@Override
 				public Boolean onValidate(Context context) { 
-					return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH); 
+					return XServiceManager.getInstance().getBoolean("variable:remap.support.torch"); 
 				} 
+				
+				@Override
+				public Boolean onDisplayAlert(Context context) { 
+					return context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
+				}
 			});
 
-			new RemapAction("" + KeyEvent.KEYCODE_POWER, 0, 0, true);
-			new RemapAction("" + KeyEvent.KEYCODE_HOME, 0, 0, true, "off", "guard"); 
-			new RemapAction("" + KeyEvent.KEYCODE_MENU, 0, 0, true, "off", "guard"); 
-			new RemapAction("" + KeyEvent.KEYCODE_BACK, 0, 0, true, "off", "guard");
-			new RemapAction("" + KeyEvent.KEYCODE_SEARCH, 0, 0, true, "off");
-			new RemapAction("" + KeyEvent.KEYCODE_CAMERA, 0, 0, true, "off"); 
-			new RemapAction("" + KeyEvent.KEYCODE_FOCUS, 0, 0, true, "off", "guard");
-			new RemapAction("" + KeyEvent.KEYCODE_CALL, 0, 0, true);
-			new RemapAction("" + KeyEvent.KEYCODE_ENDCALL, 0, 0, true);
-			new RemapAction("" + KeyEvent.KEYCODE_MUTE, 0, 0, true); 
-			new RemapAction("" + KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, 0, 0, true); 
-			new RemapAction("" + KeyEvent.KEYCODE_MEDIA_NEXT, 0, 0, true);
-			new RemapAction("" + KeyEvent.KEYCODE_MEDIA_PREVIOUS, 0, 0, true);
-			new RemapAction("" + KeyEvent.KEYCODE_PAGE_UP, 0, 0, true, "off", "guard"); 
-			new RemapAction("" + KeyEvent.KEYCODE_PAGE_DOWN, 0, 0, true, "off", "guard"); 
-			new RemapAction("" + KeyEvent.KEYCODE_HEADSETHOOK, 0, 0, true);
-			new RemapAction("" + KeyEvent.KEYCODE_VOLUME_UP, 0, 0, true); 
-			new RemapAction("" + KeyEvent.KEYCODE_VOLUME_DOWN, 0, 0, true); 
+			new RemapAction("" + KeyEvent.KEYCODE_POWER, 0, 0, 0, 0, true);
+			new RemapAction("" + KeyEvent.KEYCODE_HOME, 0, 0, 0, 0, true, "off", "guard"); 
+			new RemapAction("" + KeyEvent.KEYCODE_MENU, 0, 0, 0, 0, true, "off", "guard"); 
+			new RemapAction("" + KeyEvent.KEYCODE_BACK, 0, 0, 0, 0, true, "off", "guard");
+			new RemapAction("" + KeyEvent.KEYCODE_SEARCH, 0, 0, 0, 0, true, "off");
+			new RemapAction("" + KeyEvent.KEYCODE_CAMERA, 0, 0, 0, R.string.selector_notice_camera_buttons, true, "off"); 
+			new RemapAction("" + KeyEvent.KEYCODE_FOCUS, 0, 0, 0, R.string.selector_notice_camera_buttons, true, "off", "guard");
+			new RemapAction("" + KeyEvent.KEYCODE_CALL, 0, 0, 0, 0, true);
+			new RemapAction("" + KeyEvent.KEYCODE_ENDCALL, 0, 0, 0, 0, true);
+			new RemapAction("" + KeyEvent.KEYCODE_MUTE, 0, 0, 0, 0, true); 
+			new RemapAction("" + KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, 0, 0, 0, R.string.selector_notice_media_buttons, true); 
+			new RemapAction("" + KeyEvent.KEYCODE_MEDIA_NEXT, 0, 0, 0, R.string.selector_notice_media_buttons, true);
+			new RemapAction("" + KeyEvent.KEYCODE_MEDIA_PREVIOUS, 0, 0, 0, R.string.selector_notice_media_buttons, true);
+			new RemapAction("" + KeyEvent.KEYCODE_PAGE_UP, 0, 0, 0, 0, true, "off", "guard"); 
+			new RemapAction("" + KeyEvent.KEYCODE_PAGE_DOWN, 0, 0, 0, 0, true, "off", "guard"); 
+			new RemapAction("" + KeyEvent.KEYCODE_HEADSETHOOK, 0, 0, 0, 0, true);
+			new RemapAction("" + KeyEvent.KEYCODE_VOLUME_UP, 0, 0, 0, 0, true); 
+			new RemapAction("" + KeyEvent.KEYCODE_VOLUME_DOWN, 0, 0, 0, 0, true); 
 			
 			if (android.os.Build.VERSION.SDK_INT >= 11) {
-				new RemapAction("" + KeyEvent.KEYCODE_VOLUME_MUTE, 0, 0, true);
-				new RemapAction("" + KeyEvent.KEYCODE_ZOOM_IN, 0, 0, true, "off", "guard"); 
-				new RemapAction("" + KeyEvent.KEYCODE_ZOOM_OUT, 0, 0, true, "off", "guard"); 
+				new RemapAction("" + KeyEvent.KEYCODE_VOLUME_MUTE, 0, 0, 0, 0, true);
+				new RemapAction("" + KeyEvent.KEYCODE_ZOOM_IN, 0, 0, 0, 0, true, "off", "guard"); 
+				new RemapAction("" + KeyEvent.KEYCODE_ZOOM_OUT, 0, 0, 0, 0, true, "off", "guard"); 
 			}
 		}
 		
-		private RemapAction(String name, Integer labelRes, Integer descriptionRes, Boolean dispatch, Object... blacklist) {
+		private RemapAction(String name, Integer labelRes, Integer descriptionRes, Integer alertRes, Integer noticeRes, Boolean dispatch, Object... blacklist) {
 			int x = blacklist.length-1;
 			
 			this.name = name;
 			this.labelRes = labelRes;
 			this.descriptionRes = descriptionRes;
+			this.alertRes = alertRes;
+			this.noticeRes = noticeRes;
 			this.dispatch = dispatch;
 			this.validate = blacklist.length > 0 && blacklist[x] instanceof Validate ? (Validate) blacklist[x] : null;
 			
@@ -229,12 +239,33 @@ public final class Common {
 			return null;
 		}
 		
-		public Boolean isValid(Context context, String condition) {
-			return (validate == null || validate.onValidate(context)) && !blacklist.contains(condition);
+		public String getAlert(Context context) {
+			if (alertRes > 0) {
+				return context.getResources().getString(alertRes);
+			}
+			
+			return null;
 		}
 		
-		public static interface Validate {
-			public Boolean onValidate(Context context);
+		public String getNotice(Context context) {
+			if (noticeRes > 0) {
+				return context.getResources().getString(noticeRes);
+			}
+			
+			return null;
+		}
+		
+		public Boolean isValid(Context context, String condition) {
+			return !blacklist.contains(condition) && (validate == null || validate.onValidate(context));
+		}
+		
+		public Boolean displayAlert(Context context) {
+			return alertRes > 0 && (validate == null || validate.onDisplayAlert(context));
+		}
+		
+		public static abstract class Validate {
+			public abstract Boolean onValidate(Context context);
+			public Boolean onDisplayAlert(Context context) { return false; }
 		}
 	}
 	
