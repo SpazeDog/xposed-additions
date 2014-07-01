@@ -1021,6 +1021,9 @@ public final class Mediator {
 							
 						} else if ("killapp".equals(action)) {
 							killForegroundApplication();
+							
+						} else if ("guarddismiss".equals(action)) {
+							keyGuardDismiss();
 						}
 					}
 					
