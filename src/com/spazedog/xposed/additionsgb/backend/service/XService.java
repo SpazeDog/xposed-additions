@@ -592,9 +592,7 @@ public final class XService extends IXService.Stub {
 					try {
 						IXServiceChangeListener.Stub.asInterface(listener).onBroadcastReceive(action, data);
 						
-					} catch (RemoteException e) {
-						Log.e(TAG, e.getMessage(), e);
-					}
+					} catch (RemoteException e) {}
 				}
 			}
 		}
@@ -609,9 +607,7 @@ public final class XService extends IXService.Stub {
 						try {
 							IXServiceChangeListener.Stub.asInterface(listener).onPackageChanged();
 							
-						} catch (RemoteException e) {
-							Log.e(TAG, e.getMessage(), e);
-						}
+						} catch (RemoteException e) {}
 					}
 				}
 			}
@@ -632,9 +628,7 @@ public final class XService extends IXService.Stub {
 							IXServiceChangeListener.Stub.asInterface(listener).onPreferenceChanged(key, type.name());
 						}
 						
-					} catch (RemoteException e) {
-						Log.e(TAG, e.getMessage(), e);
-					}
+					} catch (RemoteException e) {}
 				}
 			}
 		}
