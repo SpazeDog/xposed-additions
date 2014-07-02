@@ -447,7 +447,7 @@ public final class Mediator {
 						            	String packageName = uri != null ? uri.getSchemeSpecificPart() : null;
 						            	String action = intent.getAction();
 						            	
-						            	if (packageName != null && ((mTorchIntent == null && Intent.ACTION_PACKAGE_ADDED.equals(action)) || packageName.equals(mTorchIntent.getPackage()))) {
+						            	if (packageName != null && ((mTorchIntent == null && Intent.ACTION_PACKAGE_ADDED.equals(action)) || (mTorchIntent != null && packageName.equals(mTorchIntent.getPackage())))) {
 						            		/*
 						            		 * We can't wrap the whole block below, as the receiver and the locator are executed in different Threads.
 						            		 */
