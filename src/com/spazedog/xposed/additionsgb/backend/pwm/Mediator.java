@@ -960,18 +960,24 @@ public final class Mediator {
 				res.activityInfo.packageName : "com.android.launcher";
 	}
 	
-	protected void handleKeyAction(final String action, final ActionType actionType, final Integer keyCode, final Long downTime, final Integer flags, final Integer policyFlags, final Boolean isScreenOn) {
+	protected Boolean handleKeyAction(final String action, final ActionType actionType, final Long downTime, final Integer flags, final Integer policyFlags, final Boolean isScreenOn, KeyFlags keyFlags, KeySetup keySetup) {		
+		if (actionType != ActionType.CLICK) {
+			performHapticFeedback(null, HapticFeedbackConstants.LONG_PRESS, policyFlags);
+		}
+		
 		/*
 		 * We handle display on here, because some devices has issues
 		 * when executing handlers while in deep sleep. 
 		 * Some times they will need a few key presses before reacting. 
 		 */
 		if (!isScreenOn && ((action != null && action.equals("" + KeyEvent.KEYCODE_POWER)) || (action == null && (policyFlags & ORIGINAL.FLAG_WAKE) != 0))) {
-			changeDisplayState(downTime, true); return;
-		}
-		
-		if (actionType != ActionType.CLICK) {
-			performHapticFeedback(null, HapticFeedbackConstants.LONG_PRESS, policyFlags);
+			changeDisplayState(downTime, true); return true;
+			
+		} else if (keyFlags.isCallButton() && invokeCallButton()) {
+			return true;
+			
+		} else if (action == null) {
+			return false;
 		}
 		
 		/*
@@ -1028,9 +1034,11 @@ public final class Mediator {
 					}
 					
 				} else {
-					injectInputEvent(action == null ? keyCode : Integer.parseInt(action), KeyEvent.ACTION_MULTIPLE, downTime, 0L, 0, flags);
+					injectInputEvent(Integer.parseInt(action), KeyEvent.ACTION_MULTIPLE, downTime, 0L, 0, flags);
 				}
 			}
 		});
+		
+		return true;
 	}
 }

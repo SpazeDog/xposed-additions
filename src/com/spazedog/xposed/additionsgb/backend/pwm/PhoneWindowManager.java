@@ -279,7 +279,7 @@ public final class PhoneWindowManager {
 					/*
 					 * Check to see if this is a new event (Which means not a continued tap event or a general key up event).
 					 */
-					if (mKeyFlags.registerKey(keyCode, down, eventFlags)) {
+					if (mKeyFlags.registerKey(keyEvent == null ? keyCode : keyEvent, down, eventFlags)) {
 						/*
 						 * Make sure that we have a valid and supported device type
 						 */
@@ -366,7 +366,10 @@ public final class PhoneWindowManager {
 				mMediator.injectInputEvent(keyEvent == null ? keyCode : keyEvent, KeyEvent.ACTION_UP, mKeyFlags.getDownTime(), mKeyFlags.getEventTime(), repeatCount+1, eventFlags);
 				
 				if (mKeyFlags.isComboAction()) {
-					Integer primary = mKeyFlags.getKeyLevel(keyCode) < 2 ? mKeyFlags.getSecondaryKey() : mKeyFlags.getPrimaryKey();
+					Object primary = mKeyFlags.getKeyLevel(keyCode) < 2 ? 
+							(mKeyFlags.hasKeyObjects() ? mKeyFlags.getSecondaryKeyObject() : mKeyFlags.getSecondaryKey()) : 
+								(mKeyFlags.hasKeyObjects() ? mKeyFlags.getPrimaryKeyObject() : mKeyFlags.getPrimaryKey());
+					
 					Integer flags = mKeyFlags.getKeyLevel(keyCode) < 2 ? mKeyFlags.getSecondaryFlags() : mKeyFlags.getPrimaryFlags();
 					
 					mMediator.injectInputEvent(primary, KeyEvent.ACTION_UP, mKeyFlags.getDownTime(), mKeyFlags.getEventTime(), 0, flags);
@@ -391,22 +394,19 @@ public final class PhoneWindowManager {
 						if (mKeyFlags.isKeyDown() && keyCode == mKeyFlags.getCurrentKey()) {
 							if (mKeySetup.hasPress( mKeyFlags.getTapCount() )) {
 								mKeyFlags.invoke();
-								mMediator.handleKeyAction(mKeySetup.getPressAction( mKeyFlags.getTapCount() ), ActionType.PRESS, keyCode, mKeyFlags.getDownTime(), eventFlags, policyFlags, wasScreenOn);
+								mMediator.handleKeyAction(mKeySetup.getPressAction( mKeyFlags.getTapCount() ), ActionType.PRESS, mKeyFlags.getDownTime(), eventFlags, policyFlags, wasScreenOn, mKeyFlags, mKeySetup);
 								
 							} else {
 								mKeyFlags.invoke(true);
 								
 								if (mKeyFlags.isComboAction()) {
-									Integer primary = mKeyFlags.getKeyLevel(keyCode) < 2 ? mKeyFlags.getSecondaryKey() : mKeyFlags.getPrimaryKey();
-									Integer flags = mKeyFlags.getKeyLevel(keyCode) < 2 ? mKeyFlags.getSecondaryFlags() : mKeyFlags.getPrimaryFlags();
-									
-									mMediator.injectInputEvent(primary, KeyEvent.ACTION_DOWN, mKeyFlags.getDownTime(), mKeyFlags.getEventTime(), 0, flags);
+									mMediator.injectInputEvent(mKeyFlags.hasKeyObjects() ? mKeyFlags.getPrimaryKeyObject() : mKeyFlags.getPrimaryKey(), KeyEvent.ACTION_DOWN, mKeyFlags.getDownTime(), mKeyFlags.getEventTime(), 0, mKeyFlags.getPrimaryFlags());
 								}
 								
 								/*
 								 * This will start a chain reaction of injections to imitate long press
 								 */
-								mMediator.injectInputEvent(keyEvent == null ? keyCode : keyEvent, KeyEvent.ACTION_DOWN, mKeyFlags.getDownTime(), mKeyFlags.getEventTime(), 0, eventFlags);
+								mMediator.injectInputEvent(mKeyFlags.hasKeyObjects() ? mKeyFlags.getCurrentKeyObject() : mKeyFlags.getCurrentKey(), KeyEvent.ACTION_DOWN, mKeyFlags.getDownTime(), mKeyFlags.getEventTime(), 0, mKeyFlags.getCurrentFlags());
 								
 								/*
 								 * The first one MUST be dispatched throughout the system.
@@ -440,15 +440,26 @@ public final class PhoneWindowManager {
 							mKeyFlags.invoke();
 							
 							if (mKeyFlags.getTapCount() < 3 && mKeySetup.hasClick( mKeyFlags.getTapCount() )) {
-								mMediator.handleKeyAction(mKeySetup.getClickAction( mKeyFlags.getTapCount() ), ActionType.TAP, keyCode, mKeyFlags.getDownTime(), eventFlags, policyFlags, wasScreenOn);
+								mMediator.handleKeyAction(mKeySetup.getClickAction( mKeyFlags.getTapCount() ), ActionType.TAP, mKeyFlags.getDownTime(), eventFlags, policyFlags, wasScreenOn, mKeyFlags, mKeySetup);
 								
 							} else {
-								for (int i=0; i <= mKeyFlags.getTapCount(); i++) {
-									if (i == 0 && mKeyFlags.isCallButton() && mMediator.invokeCallButton()) {
-										continue;
+								Boolean handleKey = true;
+								Integer i = 0;
+								
+								for (; i <= mKeyFlags.getTapCount(); i++) {
+									if(!handleKey || !mMediator.handleKeyAction(mKeySetup.getClickAction(0), ActionType.CLICK, mKeyFlags.getDownTime(), eventFlags, policyFlags, wasScreenOn, mKeyFlags, mKeySetup)) {
+										handleKey = false;
+										
+										if (i == 0 && mKeyFlags.isComboAction()) {
+											mMediator.injectInputEvent(mKeyFlags.hasKeyObjects() ? mKeyFlags.getPrimaryKeyObject() : mKeyFlags.getPrimaryKey(), KeyEvent.ACTION_DOWN, mKeyFlags.getDownTime(), mKeyFlags.getEventTime(), 0, mKeyFlags.getPrimaryFlags());
+										}
+										
+										mMediator.injectInputEvent(mKeyFlags.hasKeyObjects() ? mKeyFlags.getCurrentKeyObject() : mKeyFlags.getCurrentKey(), KeyEvent.ACTION_MULTIPLE, mKeyFlags.getDownTime(), mKeyFlags.getEventTime(), 0, mKeyFlags.getCurrentFlags());
 									}
-									
-									mMediator.handleKeyAction(mKeySetup.getClickAction(0), ActionType.CLICK, keyCode, mKeyFlags.getDownTime(), eventFlags, policyFlags, wasScreenOn);
+								}
+								
+								if (!handleKey && mKeyFlags.isComboAction()) {
+									mMediator.injectInputEvent(mKeyFlags.hasKeyObjects() ? mKeyFlags.getPrimaryKeyObject() : mKeyFlags.getPrimaryKey(), KeyEvent.ACTION_UP, mKeyFlags.getDownTime(), mKeyFlags.getEventTime(), 0, mKeyFlags.getPrimaryFlags());
 								}
 							}
 						}

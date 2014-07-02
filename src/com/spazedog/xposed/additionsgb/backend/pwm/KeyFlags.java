@@ -1,6 +1,7 @@
 package com.spazedog.xposed.additionsgb.backend.pwm;
 
 import android.os.SystemClock;
+import android.view.KeyEvent;
 
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
 import com.spazedog.xposed.additionsgb.configs.Settings;
@@ -17,10 +18,15 @@ public class KeyFlags {
 	private Boolean mIsSecondaryDown = false;
 	private Integer mPrimaryFlags = 0;
 	private Integer mSecondaryFlags = 0;
+	private Integer mCurrentFlags = 0;
 	
 	private Integer mPrimaryKey = 0;
 	private Integer mSecondaryKey = 0;
 	private Integer mCurrentKey = 0;
+	
+	private KeyEvent mPrimaryKeyObject = null;
+	private KeyEvent mSecondaryKeyObject = null;
+	private KeyEvent mCurrentKeyObject = null;
 	
 	private Long mEventTime = 0L;
 	private Long mDownTime = 0L;
@@ -29,12 +35,14 @@ public class KeyFlags {
 		mXServiceManager = xserviceManager;
 	}
 	
-	public Boolean registerKey(Integer keyCode, Boolean keyDown, Integer flags) {
+	public Boolean registerKey(Object key, Boolean keyDown, Integer flags) {
 		synchronized (mState) {
 			Long time = SystemClock.uptimeMillis();
 			Boolean newEvent = true;
-			
-			mCurrentKey = keyCode;
+
+			mCurrentKeyObject = key instanceof KeyEvent ? ((KeyEvent) key) : null;
+			mCurrentKey = key instanceof KeyEvent ? ((KeyEvent) key).getKeyCode() : (Integer) key;
+			mCurrentFlags = flags;
 			
 			if (keyDown) {
 				if ((time - mEventTime) > 1000) {
@@ -46,11 +54,11 @@ public class KeyFlags {
 				 * If the user clicks the same button multiple times without the state changes, another repeat count is added. 
 				 * This can also be a combo repeated click if the user clicks the same secondary button while keeping the primary pressed. 
 				 */
-				if (mState == State.ONGOING && (keyCode == mPrimaryKey || keyCode == mSecondaryKey)) {
+				if (mState == State.ONGOING && (mCurrentKey == mPrimaryKey || mCurrentKey == mSecondaryKey)) {
 					newEvent = false;
 					mTapCount += 1;
 					
-					if (keyCode == mSecondaryKey) {
+					if (mCurrentKey == mSecondaryKey) {
 						mIsSecondaryDown = true;
 						
 					} else {
@@ -63,9 +71,10 @@ public class KeyFlags {
 				 * applies if the state changed to PENDING in between. If it was not changed from ONGOING, we will get a repeat in the above condition instead. If it was changed to CANCEL or RESET, 
 				 * a new event is created in the below condition. 
 				 */
-				} else if (mState != State.CANCEL && mState != State.RESET && mIsPrimaryDown && keyCode != mPrimaryKey && (mSecondaryKey == 0 || mSecondaryKey == keyCode)) {
+				} else if (mState != State.CANCEL && mState != State.RESET && mIsPrimaryDown && mCurrentKey != mPrimaryKey && (mSecondaryKey == 0 || mSecondaryKey == mCurrentKey)) {
 					mIsSecondaryDown = true;
-					mSecondaryKey = keyCode;
+					mSecondaryKey = mCurrentKey;
+					mSecondaryKeyObject = mCurrentKeyObject;
 					mSecondaryFlags = flags;
 					mState = State.ONGOING;
 					mTapCount = 0;
@@ -78,8 +87,10 @@ public class KeyFlags {
 					mTapCount = 0;
 					mIsPrimaryDown = true;
 					mIsSecondaryDown = false;
-					mPrimaryKey = keyCode;
+					mPrimaryKey = mCurrentKey;
 					mSecondaryKey = 0;
+					mPrimaryKeyObject = mCurrentKeyObject;
+					mSecondaryKeyObject = null;
 					mPrimaryFlags = flags;
 					mSecondaryFlags = 0;
 					mDownTime = time;
@@ -90,10 +101,10 @@ public class KeyFlags {
 			} else {
 				newEvent = false;
 				
-				if (keyCode == mPrimaryKey) {
+				if (mCurrentKey == mPrimaryKey) {
 					mIsPrimaryDown = false;
 					
-				} else if (keyCode == mSecondaryKey) {
+				} else if (mCurrentKey == mSecondaryKey) {
 					mIsSecondaryDown = false;
 				}
 			}
@@ -182,6 +193,10 @@ public class KeyFlags {
 		return mSecondaryFlags;
 	}
 	
+	public Integer getCurrentFlags() {
+		return mCurrentFlags;
+	}
+	
 	public Integer getPrimaryKey() {
 		return mPrimaryKey;
 	}
@@ -194,6 +209,22 @@ public class KeyFlags {
 		return mCurrentKey;
 	}
 	
+	public Boolean hasKeyObjects() {
+		return mCurrentKeyObject != null;
+	}
+	
+	public KeyEvent getPrimaryKeyObject() {
+		return mPrimaryKeyObject;
+	}
+	
+	public KeyEvent getSecondaryKeyObject() {
+		return mSecondaryKeyObject;
+	}
+	
+	public KeyEvent getCurrentKeyObject() {
+		return mCurrentKeyObject;
+	}
+
 	public Integer getKeyLevel(Integer keyCode) {
 		return keyCode == mPrimaryKey ? 1 : 
 			keyCode == mSecondaryKey ? 2 : 0;
