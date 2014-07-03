@@ -1,17 +1,22 @@
 package com.spazedog.xposed.additionsgb.backend.pwm;
 
+import android.annotation.TargetApi;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.PowerManager;
 import android.util.Log;
 import android.view.HapticFeedbackConstants;
 import android.view.KeyEvent;
+import android.view.ViewConfiguration;
 
 import com.spazedog.lib.reflecttools.ReflectClass;
 import com.spazedog.lib.reflecttools.utils.ReflectException;
-import com.spazedog.xposed.additionsgb.backend.pwm.KeyFlags.State;
+import com.spazedog.xposed.additionsgb.Common;
+import com.spazedog.xposed.additionsgb.backend.pwm.EventManager.State;
 import com.spazedog.xposed.additionsgb.backend.pwm.Mediator.ActionType;
 import com.spazedog.xposed.additionsgb.backend.pwm.Mediator.SDK;
 import com.spazedog.xposed.additionsgb.backend.pwm.Mediator.StackAction;
@@ -25,15 +30,14 @@ public final class PhoneWindowManager {
 	
 	private XServiceManager mXServiceManager;
 	private Mediator mMediator;
-	private KeySetup mKeySetup;
-	private KeyFlags mKeyFlags;
+	private EventManager mEventManager;
 	
 	private Boolean mInterceptKeyCode = false;
 	
 	private Boolean mActiveQueueing = false;
 	private Boolean mActiveDispatching = false;
 	
-	private Boolean wasScreenOn = true;
+	private final Object mQueueLock = new Object();
 
 	/**
 	 * This is a static initialization method.
@@ -133,8 +137,7 @@ public final class PhoneWindowManager {
 									/*
 									 * Create key class instances for key control
 									 */
-									mKeySetup = new KeySetup(mXServiceManager);
-									mKeyFlags = new KeyFlags(mXServiceManager);
+									mEventManager = new EventManager(mXServiceManager);
 									
 									/*
 									 * Add listener to receive broadcasts from the XService
@@ -195,7 +198,7 @@ public final class PhoneWindowManager {
 	private final XC_MethodHook hook_viewConfigTimeouts = new XC_MethodHook() {
 		@Override
 		protected final void afterHookedMethod(final MethodHookParam param) {
-			if (mKeyFlags.hasState(State.ONGOING, State.DEFAULT)) {
+			if (mEventManager.getState() == State.INVOKED_DEFAULT && mEventManager.isDownEvent()) {
 				param.setResult(10);
 			}
 		}
@@ -211,19 +214,19 @@ public final class PhoneWindowManager {
 	protected final XC_MethodHook hook_interceptKeyBeforeQueueing = new XC_MethodHook() {
 		@Override
 		protected final void beforeHookedMethod(final MethodHookParam param) {
-			synchronized(hook_interceptKeyBeforeQueueing) {
+			synchronized(mQueueLock) {
 				mActiveQueueing = true;
-				
+
 				Integer methodVersion = Mediator.SDK.METHOD_INTERCEPT_VERSION;
 				KeyEvent keyEvent = methodVersion == 1 ? null : (KeyEvent) param.args[0];
 				Integer action = (Integer) (methodVersion == 1 ? param.args[1] : keyEvent.getAction());
 				Integer policyFlags = (Integer) (methodVersion == 1 ? param.args[5] : param.args[1]);
 				Integer policyFlagsPos = methodVersion == 1 ? 5 : 1;
-				Integer eventFlags = (Integer) (methodVersion == 1 ? param.args[2] : keyEvent.getFlags());
 				Integer keyCode = (Integer) (methodVersion == 1 ? param.args[3] : keyEvent.getKeyCode());
 				Integer repeatCount = (Integer) (methodVersion == 1 ? 0 : keyEvent.getRepeatCount());
 				Boolean isScreenOn = (Boolean) (methodVersion == 1 ? param.args[6] : param.args[2]);
 				Boolean down = action == KeyEvent.ACTION_DOWN;
+				String tag = TAG + "#Queueing/" + (down ? "Down " : "Up ") + keyCode + "(" + mEventManager.getTapCount() + "," + repeatCount+ "):";
 				
 				/*
 				 * Using KitKat work-around from the InputManager Hook
@@ -279,7 +282,19 @@ public final class PhoneWindowManager {
 					/*
 					 * Check to see if this is a new event (Which means not a continued tap event or a general key up event).
 					 */
-					if (mKeyFlags.registerKey(keyEvent == null ? keyCode : keyEvent, down, eventFlags)) {
+					Integer[] ongoing = mEventManager.hasOngoingKeyCodes() ? mEventManager.clearOngoingKeyCodes(true) : null;
+					
+					if (mEventManager.registerKey(keyCode, down, policyFlags)) {
+						if(Common.debug()) Log.d(tag, "Starting a new event");
+						
+						if (ongoing != null) {
+							for (int i=0; i < ongoing.length; i++) {
+								if(Common.debug()) Log.d(tag, "Stopping ongoing key " + ongoing[i]);
+								
+								mMediator.injectInputEvent(ongoing[i], KeyEvent.ACTION_UP, 0L, 0L, 0, 0);
+							}
+						}
+						
 						/*
 						 * Make sure that we have a valid and supported device type
 						 */
@@ -287,30 +302,35 @@ public final class PhoneWindowManager {
 							/*
 							 * Prepare the event information for this key or key combo.
 							 */
-							mKeySetup.registerEvent(mKeyFlags.getPrimaryKey(), mKeyFlags.getSecondaryKey(), mKeyFlags.isComboAction(), mMediator.getPackageNameFromStack(0, StackAction.INCLUDE_HOME), mMediator.isKeyguardLocked(), isScreenOn);
+							mEventManager.registerEvent(mMediator.getPackageNameFromStack(0, StackAction.INCLUDE_HOME), mMediator.isKeyguardLocked(), isScreenOn);
 							
 							/*
 							 * If the screen is off, it's a good idea to poke the device out of deep sleep. 
 							 */
-							if (!isScreenOn) {
-								mMediator.pokeUserActivity(mKeyFlags.getDownTime(), false);
+							if (!isScreenOn) {								
+								mMediator.pokeUserActivity(mEventManager.getDownTime(), false);
 							}
 							
-							wasScreenOn = isScreenOn;
-							
 						} else {
+							if(Common.debug()) Log.d(tag, "The key is not valid, skipping...");
+							
 							/*
 							 * Don't handle this event
 							 */
-							mKeyFlags.refresh();
+							mEventManager.cancelEvent(true);
 							
 							return;
 						}
+						
+					} else if(Common.debug()) {
+						 Log.d(tag, "Continuing ongoing event");
 					}
 					
 					if (down) {
 						mMediator.performHapticFeedback(keyEvent, HapticFeedbackConstants.VIRTUAL_KEY, policyFlags);
 					}
+					
+					if(Common.debug()) Log.d(tag, "Parsing the event to the queue");
 					
 					param.setResult(Mediator.ORIGINAL.QUEUEING_ALLOW);
 				}
@@ -329,8 +349,9 @@ public final class PhoneWindowManager {
 	 * Original Arguments
 	 * 		- Gingerbread: PhoneWindowManager.interceptKeyBeforeDispatching(WindowState win, Integer action, Integer flags, Integer keyCode, Integer scanCode, Integer metaState, Integer repeatCount, Integer policyFlags)
 	 * 		- ICS & Above: PhoneWindowManager.interceptKeyBeforeDispatching(WindowState win, KeyEvent event, Integer policyFlags)
-	 */
+	 */	
 	protected XC_MethodHook hook_interceptKeyBeforeDispatching = new XC_MethodHook() {
+		@TargetApi(Build.VERSION_CODES.HONEYCOMB_MR1)
 		@Override
 		protected final void beforeHookedMethod(final MethodHookParam param) {
 			mActiveDispatching = true;
@@ -341,9 +362,10 @@ public final class PhoneWindowManager {
 			Integer action = (Integer) (methodVersion == 1 ? param.args[1] : keyEvent.getAction());
 			Integer policyFlags = (Integer) (methodVersion == 1 ? param.args[7] : param.args[2]);
 			Integer policyFlagsPos = methodVersion == 1 ? 7 : 2;
-			Integer eventFlags = (Integer) (methodVersion == 1 ? param.args[2] : keyEvent.getFlags());
 			Integer repeatCount = (Integer) (methodVersion == 1 ? param.args[6] : keyEvent.getRepeatCount());
 			Boolean down = action == KeyEvent.ACTION_DOWN;
+			EventKey key = mEventManager.getEventKey(keyCode);
+			String tag = TAG + "#Dispatching/" + (down ? "Down " : "Up ") + keyCode + "(" + mEventManager.getTapCount() + "," + repeatCount+ "):";
 			
 			/*
 			 * Using KitKat work-around from the InputManager Hook
@@ -352,8 +374,27 @@ public final class PhoneWindowManager {
 					(((KeyEvent) param.args[1]).getFlags() & Mediator.ORIGINAL.FLAG_INJECTED) != 0 : (policyFlags & Mediator.ORIGINAL.FLAG_INJECTED) != 0;
 			
 			if (isInjected) {
-				if (down && mKeyFlags.isKeyDown() && mKeyFlags.hasState(State.DEFAULT) && mKeyFlags.getCurrentKey() == keyCode) {
-					mMediator.injectInputEvent(keyEvent == null ? keyCode : keyEvent, KeyEvent.ACTION_DOWN, mKeyFlags.getDownTime(), mKeyFlags.getEventTime(), repeatCount+1, eventFlags);
+				if (down && key != null && mEventManager.isDownEvent() && mEventManager.getState() == State.INVOKED_DEFAULT && key.getRepeatCount() > 0) {
+					if(Common.debug()) Log.d(tag, "Injecting a new repeat " + key.getRepeatCount());
+
+					Integer curTimeout = SDK.VIEW_CONFIGURATION_VERSION > 1 ? ViewConfiguration.getKeyRepeatDelay() : 50;
+					
+					do {
+						try {
+							Thread.sleep(10);
+							
+						} catch (Throwable e) {}
+						
+						curTimeout -= 10;
+						
+					} while (mEventManager.isDownEvent() && key.isLastQueued() && key.getKeyCode() == keyCode && curTimeout > 0);
+					
+					synchronized(mQueueLock) {
+						if (curTimeout <= 0) {
+							mEventManager.invokeDefaultEvent(keyCode);
+							mMediator.injectInputEvent(keyCode, KeyEvent.ACTION_DOWN, mEventManager.getDownTime(), mEventManager.getEventTime(), repeatCount+1, key.getPolicFlags());
+						}
+					}
 				}
 				
 				if ((policyFlags & Mediator.ORIGINAL.FLAG_INJECTED) != 0) {
@@ -362,22 +403,22 @@ public final class PhoneWindowManager {
 				
 				return;
 				
-			} else if (!down && !mKeyFlags.isKeyDown() && mKeyFlags.hasState(State.DEFAULT) && mKeyFlags.getKeyLevel(keyCode) > 0) {
-				mMediator.injectInputEvent(keyEvent == null ? keyCode : keyEvent, KeyEvent.ACTION_UP, mKeyFlags.getDownTime(), mKeyFlags.getEventTime(), repeatCount+1, eventFlags);
-				
-				if (mKeyFlags.isComboAction()) {
-					Object primary = mKeyFlags.getKeyLevel(keyCode) < 2 ? 
-							(mKeyFlags.hasKeyObjects() ? mKeyFlags.getSecondaryKeyObject() : mKeyFlags.getSecondaryKey()) : 
-								(mKeyFlags.hasKeyObjects() ? mKeyFlags.getPrimaryKeyObject() : mKeyFlags.getPrimaryKey());
+			} else if (!down && (mEventManager.getState() == State.INVOKED_DEFAULT || mEventManager.getState() == State.INVOKED)) {
+				if (key != null) {
+					if(Common.debug()) Log.d(tag, "Releasing key");
 					
-					Integer flags = mKeyFlags.getKeyLevel(keyCode) < 2 ? mKeyFlags.getSecondaryFlags() : mKeyFlags.getPrimaryFlags();
+					mEventManager.removeOngoingKeyCode(keyCode);
+					mMediator.injectInputEvent(keyCode, KeyEvent.ACTION_UP, mEventManager.getDownTime(), mEventManager.getEventTime(), 0, key.getPolicFlags());
 					
-					mMediator.injectInputEvent(primary, KeyEvent.ACTION_UP, mKeyFlags.getDownTime(), mKeyFlags.getEventTime(), 0, flags);
+				} else {
+					return;
 				}
 				
-			} else if (mKeyFlags.hasState(State.ONGOING)) {
+			} else if (mEventManager.getState() == State.ONGOING) {
 				if (down) {
-					Integer pressTimeout = mKeySetup.getPressTimeout();
+					if(Common.debug()) Log.d(tag, "Waiting on long press timeout");
+					
+					Integer pressTimeout = mEventManager.getPressTimeout();
 					Integer curTimeout = 0;
 					
 					do {
@@ -388,30 +429,41 @@ public final class PhoneWindowManager {
 						
 						curTimeout += 10;
 						
-					} while (mKeyFlags.isKeyDown() && keyCode == mKeyFlags.getCurrentKey() && curTimeout < pressTimeout);
+					} while (mEventManager.isDownEvent() && key.isLastQueued() && key.getKeyCode() == keyCode && curTimeout < pressTimeout);
 					
-					synchronized(hook_interceptKeyBeforeQueueing) {
-						if (mKeyFlags.isKeyDown() && keyCode == mKeyFlags.getCurrentKey()) {
-							if (mKeySetup.hasPress( mKeyFlags.getTapCount() )) {
-								mKeyFlags.invoke();
-								mMediator.handleKeyAction(mKeySetup.getPressAction( mKeyFlags.getTapCount() ), ActionType.PRESS, mKeyFlags.getDownTime(), eventFlags, policyFlags, wasScreenOn, mKeyFlags, mKeySetup);
+					synchronized(mQueueLock) {
+						if (mEventManager.isDownEvent() && key.isLastQueued() && key.getKeyCode() == keyCode) {
+							String eventAction = mEventManager.getAction(true);
+							
+							if (eventAction != null) {
+								if(Common.debug()) Log.d(tag, "Invoking custom long press action");
+								
+								mEventManager.invokeEvent();
+								mMediator.handleKeyAction(eventAction, ActionType.PRESS, mEventManager.isScreenOn(), mEventManager.isCallButtonEvent(), mEventManager.getDownTime(), key.getPolicFlags());
 								
 							} else {
-								mKeyFlags.invoke(true);
+								if(Common.debug()) Log.d(tag, "Invoking default long press action");
 								
-								if (mKeyFlags.isComboAction()) {
-									mMediator.injectInputEvent(mKeyFlags.hasKeyObjects() ? mKeyFlags.getPrimaryKeyObject() : mKeyFlags.getPrimaryKey(), KeyEvent.ACTION_DOWN, mKeyFlags.getDownTime(), mKeyFlags.getEventTime(), 0, mKeyFlags.getPrimaryFlags());
+								mEventManager.invokeDefaultEvent(keyCode);
+								
+								if(mEventManager.isCombiEvent()) {
+									if(Common.debug()) Log.d(tag, "Injecting primary combo event");
+									
+									EventKey parentKey = mEventManager.getParentEventKey(keyCode);
+									
+									mEventManager.addOngoingKeyCode(parentKey.getKeyCode());
+									mMediator.injectInputEvent(parentKey.getKeyCode(), KeyEvent.ACTION_DOWN, mEventManager.getDownTime(), mEventManager.getEventTime(), 0, parentKey.getPolicFlags());
 								}
 								
-								/*
-								 * This will start a chain reaction of injections to imitate long press
-								 */
-								mMediator.injectInputEvent(mKeyFlags.hasKeyObjects() ? mKeyFlags.getCurrentKeyObject() : mKeyFlags.getCurrentKey(), KeyEvent.ACTION_DOWN, mKeyFlags.getDownTime(), mKeyFlags.getEventTime(), 0, mKeyFlags.getCurrentFlags());
+								mEventManager.addOngoingKeyCode(keyCode);
+								mMediator.injectInputEvent(keyCode, KeyEvent.ACTION_DOWN, mEventManager.getDownTime(), mEventManager.getEventTime(), 0, key.getPolicFlags());
 								
 								/*
 								 * The first one MUST be dispatched throughout the system.
 								 * Applications can ONLY start tracking from the original event object.
 								 */
+								if(Common.debug()) Log.d(tag, "Parsing event to the dispatcher");
+								
 								param.setResult(Mediator.ORIGINAL.DISPATCHING_ALLOW); 
 								
 								return;
@@ -420,8 +472,10 @@ public final class PhoneWindowManager {
 					}
 					
 				} else {
-					if ((mKeySetup.hasTapClick() || mKeySetup.hasTapPress()) && mKeyFlags.getTapCount() < 3) {
-						Integer tapTimeout = mKeySetup.getTapTimeout();
+					if (mEventManager.hasTapActions() && mEventManager.getTapCount() < 3) {
+						if(Common.debug()) Log.d(tag, "Waiting on tap timeout");
+						
+						Integer tapTimeout = mEventManager.getTapTimeout();
 						Integer curTimeout = 0;
 						
 						do {
@@ -432,41 +486,41 @@ public final class PhoneWindowManager {
 							
 							curTimeout += 10;
 							
-						} while (!mKeyFlags.isKeyDown() && curTimeout < tapTimeout);
+						} while (!mEventManager.isDownEvent() && key.isLastQueued() && key.getKeyCode() == keyCode && curTimeout < tapTimeout);
 					}
 					
-					synchronized(hook_interceptKeyBeforeQueueing) {
-						if (!mKeyFlags.isKeyDown() && mKeyFlags.getCurrentKey() == keyCode) {
-							mKeyFlags.invoke();
+					synchronized(mQueueLock) {
+						if (!mEventManager.isDownEvent() && key.isLastQueued() && key.getKeyCode() == keyCode) {
+							if(Common.debug()) Log.d(tag, "Invoking custom click action");
 							
-							if (mKeyFlags.getTapCount() < 3 && mKeySetup.hasClick( mKeyFlags.getTapCount() )) {
-								mMediator.handleKeyAction(mKeySetup.getClickAction( mKeyFlags.getTapCount() ), ActionType.TAP, mKeyFlags.getDownTime(), eventFlags, policyFlags, wasScreenOn, mKeyFlags, mKeySetup);
+							String eventAction = mEventManager.getAction(false);
+							ActionType actionType = mEventManager.getTapCount() == 0 ? ActionType.CLICK : ActionType.TAP;
+							
+							mEventManager.invokeEvent();
+							
+							if (!mMediator.handleKeyAction(eventAction, actionType, mEventManager.isScreenOn(), mEventManager.isCallButtonEvent(), mEventManager.getDownTime(), key.getPolicFlags())) {
+								if(Common.debug()) Log.d(tag, "No custom click action available, invoking default actions");
 								
-							} else {
-								Boolean handleKey = true;
-								Integer i = 0;
-								
-								for (; i <= mKeyFlags.getTapCount(); i++) {
-									if(!handleKey || !mMediator.handleKeyAction(mKeySetup.getClickAction(0), ActionType.CLICK, mKeyFlags.getDownTime(), eventFlags, policyFlags, wasScreenOn, mKeyFlags, mKeySetup)) {
-										handleKey = false;
-										
-										if (i == 0 && mKeyFlags.isComboAction()) {
-											mMediator.injectInputEvent(mKeyFlags.hasKeyObjects() ? mKeyFlags.getPrimaryKeyObject() : mKeyFlags.getPrimaryKey(), KeyEvent.ACTION_DOWN, mKeyFlags.getDownTime(), mKeyFlags.getEventTime(), 0, mKeyFlags.getPrimaryFlags());
-										}
-										
-										mMediator.injectInputEvent(mKeyFlags.hasKeyObjects() ? mKeyFlags.getCurrentKeyObject() : mKeyFlags.getCurrentKey(), KeyEvent.ACTION_MULTIPLE, mKeyFlags.getDownTime(), mKeyFlags.getEventTime(), 0, mKeyFlags.getCurrentFlags());
-									}
+								if (mEventManager.isCombiEvent()) {
+									if(Common.debug()) Log.d(tag, "Injecting primary combo event");
+									
+									EventKey parentKey = mEventManager.getParentEventKey(keyCode);
+									
+									mEventManager.addOngoingKeyCode(parentKey.getKeyCode());
+									mMediator.injectInputEvent(parentKey.getKeyCode(), KeyEvent.ACTION_DOWN, mEventManager.getDownTime(), mEventManager.getEventTime(), 0, parentKey.getPolicFlags());
 								}
 								
-								if (!handleKey && mKeyFlags.isComboAction()) {
-									mMediator.injectInputEvent(mKeyFlags.hasKeyObjects() ? mKeyFlags.getPrimaryKeyObject() : mKeyFlags.getPrimaryKey(), KeyEvent.ACTION_UP, mKeyFlags.getDownTime(), mKeyFlags.getEventTime(), 0, mKeyFlags.getPrimaryFlags());
+								for (int i=0; i <= mEventManager.getTapCount(); i++) {
+									if(Common.debug()) Log.d(tag, "Injecting default event");
+									
+									mMediator.injectInputEvent(keyCode, KeyEvent.ACTION_MULTIPLE, mEventManager.getDownTime(), mEventManager.getEventTime(), 0, key.getPolicFlags());
 								}
 							}
 						}
 					}
 				}
 				
-			} else if (mKeyFlags.hasState(State.PENDING)) {
+			} else if (mEventManager.getState() == State.PENDING) {
 				/*
 				 * The module is not handling this event 
 				 */

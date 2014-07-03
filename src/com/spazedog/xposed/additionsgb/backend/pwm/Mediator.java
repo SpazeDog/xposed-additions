@@ -1,5 +1,6 @@
 package com.spazedog.xposed.additionsgb.backend.pwm;
 
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +20,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.PowerManager;
+import android.os.PowerManager.WakeLock;
 import android.os.SystemClock;
 import android.util.Log;
 import android.view.HapticFeedbackConstants;
@@ -136,6 +138,11 @@ public final class Mediator {
 		 * More tools like bringToFront was added in API 11
 		 */
 		public static final Integer MANAGER_ACTIVITY_VERSION = android.os.Build.VERSION.SDK_INT >= 11 ? 2 :1;
+		
+		/*
+		 * ViewConfiguration.getKeyRepeatDelay() was not available until API 12
+		 */
+		public static final Integer VIEW_CONFIGURATION_VERSION = android.os.Build.VERSION.SDK_INT >= 12 ? 2 :1;
 	}
 	
 	/**
@@ -156,6 +163,8 @@ public final class Mediator {
 	}
 	
 	protected Handler mHandler;
+	
+	protected WakeLock mWakelock;
 	
 	private Intent mTorchIntent;
 	private Boolean mTorchReceiverSet = false;
@@ -196,7 +205,7 @@ public final class Mediator {
 		
 		ORIGINAL.FLAG_INJECTED = (Integer) wmp.findField("FLAG_INJECTED").getValue();
 		ORIGINAL.FLAG_VIRTUAL = (Integer) wmp.findField("FLAG_VIRTUAL").getValue();
-		ORIGINAL.FLAG_WAKE = (Integer) ((wmp.findField("FLAG_WAKE").getValue())) | (Integer) ((wmp.findField("FLAG_WAKE_DROPPED").getValue()));
+		ORIGINAL.FLAG_WAKE = (Integer) ((wmp.findField("FLAG_WAKE").getValue()));
 		
 		ORIGINAL.QUEUEING_ALLOW = (Integer) wmp.findFieldDeep("ACTION_PASS_TO_USER").getValue();
 		ORIGINAL.QUEUEING_REJECT = 0;
@@ -260,6 +269,7 @@ public final class Mediator {
 		 */
 		mPowerManager = ReflectClass.forReceiver(((Context) mContext.getReceiver()).getSystemService(Context.POWER_SERVICE));
 		mPowerManagerService = mPowerManager.findField("mService").getValueToInstance();
+		mWakelock = ((PowerManager) mPowerManager.getReceiver()).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "HookedPhoneWindowManager");
 		
 		if (SDK.MANAGER_POWER_VERSION == 1) {
 			mMethods.put("forceUserActivityLocked", mPowerManagerService.findMethodDeep("forceUserActivityLocked"));
@@ -602,10 +612,10 @@ public final class Mediator {
 		try {
 			if (type == HapticFeedbackConstants.VIRTUAL_KEY) {
 				if (SDK.SAMSUNG_FEEDBACK_VERSION == 1) {
-					mMethods.get("samsung.performSystemKeyFeedback").invokeOriginal(keyEvent);
+					mMethods.get("samsung.performSystemKeyFeedback").invokeOriginal(keyEvent); return;
 					
 				} else if (SDK.SAMSUNG_FEEDBACK_VERSION == 2) {
-					mMethods.get("samsung.performSystemKeyFeedback").invokeOriginal(keyEvent, false, true);
+					mMethods.get("samsung.performSystemKeyFeedback").invokeOriginal(keyEvent, false, true); return;
 					
 				} else if ((policyFlags & ORIGINAL.FLAG_VIRTUAL) == 0) {
 					return;
@@ -641,6 +651,10 @@ public final class Mediator {
 			}
 			
 		} else {
+			if (!mWakelock.isHeld()) {
+				mWakelock.acquire(3000);
+			}
+			
 			((PowerManager) mPowerManager.getReceiver()).userActivity(time, true);
 		}
 	}
@@ -960,7 +974,7 @@ public final class Mediator {
 				res.activityInfo.packageName : "com.android.launcher";
 	}
 	
-	protected Boolean handleKeyAction(final String action, final ActionType actionType, final Long downTime, final Integer flags, final Integer policyFlags, final Boolean isScreenOn, KeyFlags keyFlags, KeySetup keySetup) {		
+	protected Boolean handleKeyAction(final String action, final ActionType actionType, final Boolean isScreenOn, final Boolean invokeCallbutton, final Long eventDownTime, final Integer policyFlags) {		
 		if (actionType != ActionType.CLICK) {
 			performHapticFeedback(null, HapticFeedbackConstants.LONG_PRESS, policyFlags);
 		}
@@ -971,9 +985,9 @@ public final class Mediator {
 		 * Some times they will need a few key presses before reacting. 
 		 */
 		if (!isScreenOn && ((action != null && action.equals("" + KeyEvent.KEYCODE_POWER)) || (action == null && (policyFlags & ORIGINAL.FLAG_WAKE) != 0))) {
-			changeDisplayState(downTime, true); return true;
+			changeDisplayState(eventDownTime, true); return true;
 			
-		} else if (keyFlags.isCallButton() && invokeCallButton()) {
+		} else if (invokeCallbutton && invokeCallButton()) {
 			return true;
 			
 		} else if (action == null) {
@@ -1034,7 +1048,7 @@ public final class Mediator {
 					}
 					
 				} else {
-					injectInputEvent(Integer.parseInt(action), KeyEvent.ACTION_MULTIPLE, downTime, 0L, 0, flags);
+					injectInputEvent(Integer.parseInt(action), KeyEvent.ACTION_MULTIPLE, eventDownTime, 0L, 0, policyFlags);
 				}
 			}
 		});
