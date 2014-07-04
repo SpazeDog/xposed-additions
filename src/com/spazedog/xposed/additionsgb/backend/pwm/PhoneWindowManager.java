@@ -284,7 +284,7 @@ public final class PhoneWindowManager {
 					 */
 					Integer[] ongoing = mEventManager.hasOngoingKeyCodes() ? mEventManager.clearOngoingKeyCodes(true) : null;
 					
-					if (mEventManager.registerKey(keyCode, down, policyFlags)) {
+					if (mEventManager.registerKey(keyCode, down, mMediator.fixPolicyFlags(keyCode, policyFlags))) {
 						if(Common.debug()) Log.d(tag, "Starting a new event");
 						
 						if (ongoing != null) {
