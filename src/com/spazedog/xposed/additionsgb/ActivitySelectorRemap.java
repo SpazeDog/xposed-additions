@@ -168,7 +168,13 @@ public class ActivitySelectorRemap extends PreferenceActivity implements OnPrefe
 				}
 				
 			} else {
-				preferenceScreen.removePreference(findPreference("application_group"));
+				if (mPreferences.isPackageUnlocked() && "add_action".equals(mAction) && TaskerIntent.testStatus(this).equals(TaskerIntent.Status.OK)) {
+					((PreferenceGroup) findPreference("application_group")).removePreference(findPreference("load_apps_preference"));
+					findPreference("select_tasker_preference").setOnPreferenceClickListener(this);
+					
+				} else {
+					preferenceScreen.removePreference(findPreference("application_group"));
+				}
 			}
     	}
     }
