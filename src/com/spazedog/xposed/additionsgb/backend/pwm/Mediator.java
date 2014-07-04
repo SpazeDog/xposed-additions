@@ -198,7 +198,13 @@ public final class Mediator {
 		mXServiceManager = xManager;
 		mContext = pwm.findFieldDeep("mContext").getValueToInstance();
 		mPhoneWindowManager = pwm;
-		mHandler = new Handler();
+		
+		try {
+			mHandler = (Handler) pwm.findFieldDeep("mHandler").getValue();
+			
+		} catch (ReflectException e) {
+			mHandler = new Handler();
+		}
 		
 		/*
 		 * Get all needed original property values
