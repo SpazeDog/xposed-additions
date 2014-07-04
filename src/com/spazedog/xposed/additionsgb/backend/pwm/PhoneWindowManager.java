@@ -385,11 +385,11 @@ public final class PhoneWindowManager {
 					
 					do {
 						try {
-							Thread.sleep(10);
+							Thread.sleep(1);
 							
 						} catch (Throwable e) {}
 						
-						curTimeout -= 10;
+						curTimeout -= 1;
 						
 					} while (mEventManager.isDownEvent() && key.isLastQueued() && key.getKeyCode() == keyCode && curTimeout > 0);
 					
@@ -425,17 +425,16 @@ public final class PhoneWindowManager {
 					if(Common.debug()) Log.d(tag, "Waiting on long press timeout");
 					
 					Integer pressTimeout = mEventManager.getPressTimeout();
-					Integer curTimeout = 0;
 					
 					do {
 						try {
-							Thread.sleep(10);
+							Thread.sleep(1);
 							
 						} catch (Throwable e) {}
 						
-						curTimeout += 10;
+						pressTimeout -= 1;
 						
-					} while (mEventManager.isDownEvent() && key.isLastQueued() && key.getKeyCode() == keyCode && curTimeout < pressTimeout);
+					} while (mEventManager.isDownEvent() && key.isLastQueued() && key.getKeyCode() == keyCode && pressTimeout > 0);
 					
 					synchronized(mQueueLock) {
 						if (mEventManager.isDownEvent() && key.isLastQueued() && key.getKeyCode() == keyCode) {
@@ -482,17 +481,16 @@ public final class PhoneWindowManager {
 						if(Common.debug()) Log.d(tag, "Waiting on tap timeout");
 						
 						Integer tapTimeout = mEventManager.getTapTimeout();
-						Integer curTimeout = 0;
 						
 						do {
 							try {
-								Thread.sleep(10);
+								Thread.sleep(1);
 								
 							} catch (Throwable e) {}
 							
-							curTimeout += 10;
+							tapTimeout -= 1;
 							
-						} while (!mEventManager.isDownEvent() && key.isLastQueued() && key.getKeyCode() == keyCode && curTimeout < tapTimeout);
+						} while (!mEventManager.isDownEvent() && key.isLastQueued() && key.getKeyCode() == keyCode && tapTimeout > 0);
 					}
 					
 					synchronized(mQueueLock) {
