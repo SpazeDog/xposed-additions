@@ -278,14 +278,14 @@ public final class PhoneWindowManager {
 					
 					param.setResult(Mediator.ORIGINAL.QUEUEING_REJECT);
 					
-				} else {
-					/*
-					 * Check to see if this is a new event (Which means not a continued tap event or a general key up event).
-					 */
-					Integer[] ongoing = mEventManager.hasOngoingKeyCodes() ? mEventManager.clearOngoingKeyCodes(true) : null;
-					
+				} else {					
 					if (mEventManager.registerKey(keyCode, down, mMediator.fixPolicyFlags(keyCode, policyFlags))) {
 						if(Common.debug()) Log.d(tag, "Starting a new event");
+						
+						/*
+						 * Check to see if this is a new event (Which means not a continued tap event or a general key up event).
+						 */
+						Integer[] ongoing = mEventManager.hasOngoingKeyCodes() ? mEventManager.clearOngoingKeyCodes(true) : null;
 						
 						if (ongoing != null) {
 							for (int i=0; i < ongoing.length; i++) {
