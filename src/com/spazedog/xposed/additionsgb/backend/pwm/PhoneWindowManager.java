@@ -330,7 +330,7 @@ public final class PhoneWindowManager {
 						mMediator.performHapticFeedback(keyEvent, HapticFeedbackConstants.VIRTUAL_KEY, policyFlags);
 					}
 					
-					if (mEventManager.getState() != State.CANCELED) {
+					if (mEventManager.getState() != State.CANCELED && mEventManager.getEventKey(keyCode) != null) {
 						if(Common.debug()) Log.d(tag, "Parsing the event to the queue");
 						param.setResult(Mediator.ORIGINAL.QUEUEING_ALLOW);
 						
@@ -420,7 +420,7 @@ public final class PhoneWindowManager {
 					return;
 				}
 				
-			} else if (mEventManager.getState() == State.ONGOING) {
+			} else if (mEventManager.getState() == State.ONGOING && key != null) {
 				if (down) {
 					if(Common.debug()) Log.d(tag, "Waiting on long press timeout");
 					
@@ -524,12 +524,15 @@ public final class PhoneWindowManager {
 					}
 				}
 				
-			} else if (mEventManager.getState() == State.PENDING) {
+			} else if (mEventManager.getState() == State.PENDING || key == null) {
+				if(Common.debug()) Log.d(tag, "This key is not being handled by the module, skipping...");
 				/*
 				 * The module is not handling this event 
 				 */
 				return;
 			}
+			
+			if(Common.debug()) Log.d(tag, "Sending even to dispatching");
 			
 			param.setResult(Mediator.ORIGINAL.DISPATCHING_REJECT);
 		}
