@@ -141,6 +141,9 @@ public class EventManager {
 						mSecondaryKey.mIsKeyDown = false;
 						
 						newEvent = true;
+						
+					} else {
+						return false;
 					}
 				}
 				
@@ -229,6 +232,10 @@ public class EventManager {
 		return mOnGoingKeyCodes.size() > 0;
 	}
 	
+	public Boolean hasOngoingKeyCodes(Integer keyCode) {
+		return mOnGoingKeyCodes.contains((Object) keyCode);
+	}
+	
 	public Integer[] clearOngoingKeyCodes(Boolean returList) {
 		Integer[] keys = null; 
 		
@@ -242,7 +249,9 @@ public class EventManager {
 	}
 	
 	public void addOngoingKeyCode(Integer keyCode) {
-		mOnGoingKeyCodes.add(keyCode);
+		if (!mOnGoingKeyCodes.contains((Object) keyCode)) {
+			mOnGoingKeyCodes.add(keyCode);
+		}
 	}
 	
 	public void removeOngoingKeyCode(Integer keyCode) {

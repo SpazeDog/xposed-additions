@@ -330,9 +330,13 @@ public final class PhoneWindowManager {
 						mMediator.performHapticFeedback(keyEvent, HapticFeedbackConstants.VIRTUAL_KEY, policyFlags);
 					}
 					
-					if(Common.debug()) Log.d(tag, "Parsing the event to the queue");
-					
-					param.setResult(Mediator.ORIGINAL.QUEUEING_ALLOW);
+					if (mEventManager.getState() != State.CANCELED) {
+						if(Common.debug()) Log.d(tag, "Parsing the event to the queue");
+						param.setResult(Mediator.ORIGINAL.QUEUEING_ALLOW);
+						
+					} else {
+						if(Common.debug()) Log.d(tag, "The event has been canceled, skipping");
+					}
 				}
 			}
 		}
@@ -403,12 +407,14 @@ public final class PhoneWindowManager {
 				
 				return;
 				
-			} else if (!down && (mEventManager.getState() == State.INVOKED_DEFAULT || mEventManager.getState() == State.INVOKED)) {
+			} else if (!down && mEventManager.getState() != State.ONGOING) {
 				if (key != null) {
 					if(Common.debug()) Log.d(tag, "Releasing key");
 					
-					mEventManager.removeOngoingKeyCode(keyCode);
-					mMediator.injectInputEvent(keyCode, KeyEvent.ACTION_UP, mEventManager.getDownTime(), mEventManager.getEventTime(), 0, key.getPolicFlags());
+					if (mEventManager.hasOngoingKeyCodes(keyCode)) {
+						mEventManager.removeOngoingKeyCode(keyCode);
+						mMediator.injectInputEvent(keyCode, KeyEvent.ACTION_UP, mEventManager.getDownTime(), mEventManager.getEventTime(), 0, key.getPolicFlags());
+					}
 					
 				} else {
 					return;
