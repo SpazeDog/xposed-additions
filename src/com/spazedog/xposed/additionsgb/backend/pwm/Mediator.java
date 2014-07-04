@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import net.dinglisch.android.tasker.TaskerIntent;
+
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.ActivityManager;
@@ -1047,6 +1049,9 @@ public final class Mediator {
 						}
 					}
 					
+				} else if ("tasker".equals(type)) { 
+					sendBroadcast(new TaskerIntent(action.replace("tasker:", "")));
+				
 				} else {
 					injectInputEvent(Integer.parseInt(action), KeyEvent.ACTION_MULTIPLE, eventDownTime, 0L, 0, policyFlags);
 				}

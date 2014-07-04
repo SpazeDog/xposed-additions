@@ -30,6 +30,7 @@ import java.util.Locale;
 import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
@@ -72,6 +73,7 @@ public final class Common {
 	public static String actionType(String action) {
 		return action == null ? null : 
 			action.matches("^[0-9]+$") ? "dispatch" : 
+				action.startsWith("tasker:") ? "tasker" : 
 				action.contains(".") ? "launcher" : "custom";
 	}
 	
@@ -89,6 +91,12 @@ public final class Common {
 				return (String) packageManager.getApplicationLabel(applicationInfo);
 				
 			} catch(Throwable e) {}
+			
+		} else if ("tasker".equals(type)) {
+			try {
+				return action.replace("tasker:", "Tasker: ");
+				
+			} catch (Throwable e) {}
 			
 		} else {
 			try {

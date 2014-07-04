@@ -12,6 +12,11 @@
         android:order="1500">
         
         <Preference 
+        	android:key="select_tasker_preference"
+        	android:title="@string/preference_title_select_tasker"
+        	android:summary="@string/preference_summary_select_tasker" />
+        
+        <Preference 
         	android:key="load_apps_preference"
         	android:title="@string/preference_load_apps" />
         

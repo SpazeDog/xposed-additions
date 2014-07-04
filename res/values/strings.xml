@@ -127,6 +127,9 @@
     <string name='category_applications'>Applications</string>
     <string name='category_custom_actions'>Custom Actions</string>
     
+    <string name='preference_title_select_tasker'>Tasker</string>
+    <string name='preference_summary_select_tasker'>Select a task from Tasker</string>
+    
     <string name='text_key'>Key: %1$s</string>
     
     <!-- ================================================

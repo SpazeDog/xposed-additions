@@ -19,6 +19,7 @@
 
 package com.spazedog.xposed.additionsgb;
 
+import net.dinglisch.android.tasker.TaskerIntent;
 import android.annotation.TargetApi;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -159,6 +160,13 @@ public class ActivitySelectorRemap extends PreferenceActivity implements OnPrefe
 			if (mPreferences.isPackageUnlocked() && !("add_action".equals(mAction) && "off".equals(getIntent().getStringExtra("condition")))) {
 				findPreference("load_apps_preference").setOnPreferenceClickListener(this);
 				
+				if ("add_action".equals(mAction) && TaskerIntent.testStatus(this).equals(TaskerIntent.Status.OK)) {
+					findPreference("select_tasker_preference").setOnPreferenceClickListener(this);
+				
+				} else {
+					((PreferenceGroup) findPreference("application_group")).removePreference(findPreference("select_tasker_preference"));
+				}
+				
 			} else {
 				preferenceScreen.removePreference(findPreference("application_group"));
 			}
@@ -195,6 +203,9 @@ public class ActivitySelectorRemap extends PreferenceActivity implements OnPrefe
 				}
 			});
 			
+		} else if ("select_tasker_preference".equals(preference.getKey())) {
+			startActivityForResult(TaskerIntent.getTaskSelectIntent(), 1);
+
 		} else {
 			Intent intent = getIntent();
 			intent.putExtra("result", (String) ((IWidgetPreference) preference).getTag());
@@ -205,6 +216,18 @@ public class ActivitySelectorRemap extends PreferenceActivity implements OnPrefe
 		}
 		
 		return false;
+	}
+	
+	@Override
+	protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
+		if (intent != null) {
+			Intent returnIntent = getIntent();
+			returnIntent.putExtra("result", "tasker:" + intent.getDataString());
+			
+			setResult(RESULT_OK, returnIntent);
+			
+			finish();
+		}
 	}
 	
 	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
