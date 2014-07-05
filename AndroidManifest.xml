@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.spazedog.xposed.additionsgb"
-    android:versionCode="52"
-    android:versionName="3.3.0b3" >
+    android:versionCode="53"
+    android:versionName="3.3.0-pre" >
 
     <uses-sdk
         android:minSdkVersion="9"
