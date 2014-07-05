@@ -331,7 +331,16 @@ public final class Mediator {
 				mXServiceManager.putBoolean("variable:remap.support.global_actions", true);
 				
 			} catch (ReflectException e) {
-				if(Common.debug()) Log.d(TAG, "Missing PhoneWindowManager.showGlobalActionsDialog()");
+				try {
+					/*
+					 * Support for ROM's like SlimKat that uses a 'boolean pokeWakeLock' parameter
+					 */
+					mMethods.put("showGlobalActionsDialog.custom", mPhoneWindowManager.findMethodDeep("showGlobalActionsDialog", Match.BEST, Boolean.TYPE));
+					mXServiceManager.putBoolean("variable:remap.support.global_actions", true);
+					
+				} catch (ReflectException ei) {
+					if(Common.debug()) Log.d(TAG, "Missing PhoneWindowManager.showGlobalActionsDialog()");
+				}
 			}
 			
 			mRecentApplicationsDialog = ReflectClass.forName( SDK.MANAGER_RECENT_DIALOG_VERSION > 1 ? "com.android.internal.statusbar.IStatusBarService" : "com.android.internal.policy.impl.RecentApplicationsDialog" );
@@ -902,7 +911,12 @@ public final class Mediator {
 		sendCloseSystemWindows("globalactions");
 		
 		try {
-			mMethods.get("showGlobalActionsDialog").invoke();
+			if (mMethods.containsKey("showGlobalActionsDialog.custom")) {
+				mMethods.get("showGlobalActionsDialog.custom").invoke(true);
+				
+			} else {
+				mMethods.get("showGlobalActionsDialog").invoke();
+			}
 			
 		} catch (ReflectException e) {
 			Log.e(TAG, e.getMessage(), e);
