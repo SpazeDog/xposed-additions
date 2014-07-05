@@ -408,13 +408,11 @@ public final class PhoneWindowManager {
 				return;
 				
 			} else if (!down && mEventManager.getState() != State.ONGOING) {
-				if (key != null) {
+				if (mEventManager.hasOngoingKeyCodes(keyCode) || (key != null && mEventManager.getState() != State.PENDING)) {
 					if(Common.debug()) Log.d(tag, "Releasing key");
 					
-					if (mEventManager.hasOngoingKeyCodes(keyCode)) {
-						mEventManager.removeOngoingKeyCode(keyCode);
-						mMediator.injectInputEvent(keyCode, KeyEvent.ACTION_UP, mEventManager.getDownTime(), mEventManager.getEventTime(), 0, key.getPolicFlags());
-					}
+					mEventManager.removeOngoingKeyCode(keyCode);
+					mMediator.injectInputEvent(keyCode, KeyEvent.ACTION_UP, 0L, 0L, 0, policyFlags);
 					
 				} else {
 					return;
