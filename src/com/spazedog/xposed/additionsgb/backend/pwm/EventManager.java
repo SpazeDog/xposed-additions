@@ -81,7 +81,7 @@ public class EventManager {
 				/*
 				 * Only include Click and Long Press along with excluding Application Launch on non-pro versions
 				 */
-				String action = ((x == 0 || x == 2) || mIsExtended) && actions.size() > x && (mIsExtended || !".".equals(actions.get(x))) ? actions.get(x) : null;
+				String action = ((x.equals(0) || x.equals(2)) || mIsExtended) && actions.size() > x && (mIsExtended || !".".equals(actions.get(x))) ? actions.get(x) : null;
 				
 				if (i < 3) {
 					mClickActions[i] = action;
@@ -103,17 +103,17 @@ public class EventManager {
 					mState = State.PENDING;
 				}
 				
-				if (mState == State.ONGOING && (keyCode == mPrimaryKey.mKeyCode || keyCode == mSecondaryKey.mKeyCode)) {
+				if (mState == State.ONGOING && (keyCode.equals(mPrimaryKey.mKeyCode) || keyCode.equals(mSecondaryKey.mKeyCode))) {
 					mTapCount += 1;
 					
-					if (keyCode == mSecondaryKey.mKeyCode) {
+					if (keyCode.equals(mSecondaryKey.mKeyCode)) {
 						mSecondaryKey.mIsKeyDown = true;
 						
 					} else {
 						mPrimaryKey.mIsKeyDown = true;
 					}
 					
-				} else if (mState != State.CANCELED && mState != State.PENDING && mPrimaryKey.isKeyDown() && keyCode != mPrimaryKey.mKeyCode && (mSecondaryKey.mKeyCode == 0 || keyCode == mSecondaryKey.mKeyCode)) {
+				} else if (mState != State.CANCELED && mState != State.PENDING && mPrimaryKey.isKeyDown() && keyCode != mPrimaryKey.mKeyCode && (mSecondaryKey.mKeyCode.equals(0) || keyCode.equals(mSecondaryKey.mKeyCode))) {
 					mState = State.ONGOING;
 					mTapCount = 0;
 					mIsCombiEvent = true;
@@ -154,7 +154,7 @@ public class EventManager {
 				mSecondaryKey.mRepeatCount = 0;
 				
 			} else {
-				if (keyCode == mSecondaryKey.mKeyCode) {
+				if (keyCode.equals(mSecondaryKey.mKeyCode)) {
 					mSecondaryKey.mIsKeyDown = false;
 					
 				} else {
@@ -166,16 +166,16 @@ public class EventManager {
 			
 			mEventTime = time;
 			
-			mPrimaryKey.mIsLastQueued = mPrimaryKey.mKeyCode == keyCode;
-			mSecondaryKey.mIsLastQueued = mSecondaryKey.mKeyCode == keyCode;
+			mPrimaryKey.mIsLastQueued = mPrimaryKey.mKeyCode.equals(keyCode);
+			mSecondaryKey.mIsLastQueued = mSecondaryKey.mKeyCode.equals(keyCode);
 			
 			return newEvent;
 		} 
 	}
 	
 	public EventKey getEventKey(Integer keyCode) {
-		return mPrimaryKey.getKeyCode() == keyCode ? mPrimaryKey : 
-				mSecondaryKey.getKeyCode() == keyCode ? mSecondaryKey : null;
+		return mPrimaryKey.getKeyCode().equals(keyCode) ? mPrimaryKey : 
+				mSecondaryKey.getKeyCode().equals(keyCode) ? mSecondaryKey : null;
 	}
 	
 	public EventKey getEventKey(Priority priority) {
@@ -188,8 +188,8 @@ public class EventManager {
 	}
 	
 	public EventKey getParentEventKey(Integer keyCode) {
-		return mPrimaryKey.getKeyCode() == keyCode ? mSecondaryKey : 
-				mSecondaryKey.getKeyCode() == keyCode ? mPrimaryKey : null;
+		return mPrimaryKey.getKeyCode().equals(keyCode) ? mSecondaryKey : 
+				mSecondaryKey.getKeyCode().equals(keyCode) ? mPrimaryKey : null;
 	}
 	
 	public EventKey getParentEventKey(Priority priority) {
