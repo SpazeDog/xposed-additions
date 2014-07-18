@@ -266,7 +266,7 @@ public final class XService extends IXService.Stub {
 							for (int i=1; i <= arrayMap.size(); i++) {
 								if(Common.DEBUG) Log.d(TAG, "Caching preference " + key + "[" + i + "] = '" + arrayMap.get(""+i) + "'");
 								
-								arrayList.add(arrayMap.get(""+i));
+								arrayList.add(i, arrayMap.get(""+i));
 							}
 							
 							mCachedData.put(key, arrayList);
