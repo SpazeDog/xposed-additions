@@ -19,6 +19,7 @@
 
 package com.spazedog.xposed.additionsgb;
 
+import net.dinglisch.android.tasker.TaskerIntent;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -110,6 +111,22 @@ public class ActivityMain extends PreferenceActivity implements OnPreferenceClic
     		
     		if (mPreferences != null && mPreferences.isPackageUnlocked()) {
     			getPreferenceScreen().removePreference( findPreference("pro_link") );
+    			
+    			if (!mPreferences.getBoolean("tasker_external_information") && TaskerIntent.testStatus(this).equals(TaskerIntent.Status.AccessBlocked)) {
+    	    		new AlertDialog.Builder(this)
+    	    		.setTitle("Tasker Detected")
+    	    		.setMessage("In order to use tasker actions, you need to enable external access in Tasker")
+    	    		.setCancelable(false)
+    	    		.setNegativeButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+    					@Override
+    	                public void onClick(DialogInterface dialog, int id) {
+    						dialog.cancel();
+    					}
+    	    		})
+    	    		.show();
+    	    		
+    	    		mPreferences.putBoolean("tasker_external_information", true);
+    			}
     			
     		} else {
     			findPreference("pro_link").setOnPreferenceClickListener(this);
