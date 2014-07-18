@@ -371,6 +371,10 @@ public final class PhoneWindowManager {
 			EventKey key = mEventManager.getEventKey(keyCode);
 			String tag = TAG + "#Dispatching/" + (down ? "Down " : "Up ") + keyCode + "(" + mEventManager.getTapCount() + "," + repeatCount+ "):";
 			
+			if (Common.debug()) {
+				Log.d(tag, "Getting event with state " + mEventManager.getState().name() + " which is an " + (mEventManager.getEventKey(keyCode) != null ? "ongoing" : "non-ongoing") + " event");
+			}
+			
 			/*
 			 * Using KitKat work-around from the InputManager Hook
 			 */
@@ -407,22 +411,66 @@ public final class PhoneWindowManager {
 				
 				return;
 				
-			} else if (!down && mEventManager.getState() != State.ONGOING) {
-				if (mEventManager.hasOngoingKeyCodes(keyCode) || (key != null && mEventManager.getState() != State.PENDING)) {
-					if(Common.debug()) Log.d(tag, "Releasing key");
-					
-					mEventManager.removeOngoingKeyCode(keyCode);
-					mMediator.injectInputEvent(keyCode, KeyEvent.ACTION_UP, 0L, 0L, 0, policyFlags);
-					
-				} else {
-					return;
-				}
+			} else if (down && key != null && mEventManager.getState() == State.ONGOING && key.isLastQueued()) {
+				if(Common.debug()) Log.d(tag, "Waiting on long press timeout");
 				
-			} else if (mEventManager.getState() == State.ONGOING && key != null) {
-				if (down) {
-					if(Common.debug()) Log.d(tag, "Waiting on long press timeout");
+				Integer pressTimeout = mEventManager.getPressTimeout();
+				
+				do {
+					try {
+						Thread.sleep(1);
+						
+					} catch (Throwable e) {}
 					
-					Integer pressTimeout = mEventManager.getPressTimeout();
+					pressTimeout -= 1;
+					
+				} while (mEventManager.isDownEvent() && key.isLastQueued() && pressTimeout > 0);
+				
+				synchronized(mQueueLock) {
+					if (mEventManager.isDownEvent() && key.isLastQueued()) {
+						String eventAction = mEventManager.getAction(true);
+						
+						if (eventAction != null) {
+							if(Common.debug()) Log.d(tag, "Invoking custom long press action");
+							
+							mEventManager.invokeEvent();
+							mMediator.handleKeyAction(eventAction, ActionType.PRESS, mEventManager.isScreenOn(), mEventManager.isCallButtonEvent(), mEventManager.getDownTime(), key.getPolicFlags());
+							
+						} else {
+							if(Common.debug()) Log.d(tag, "Invoking default long press action");
+							
+							mEventManager.invokeDefaultEvent(keyCode);
+							
+							if(mEventManager.isCombiEvent()) {
+								if(Common.debug()) Log.d(tag, "Injecting primary combo event");
+								
+								EventKey parentKey = mEventManager.getParentEventKey(keyCode);
+								
+								mEventManager.addOngoingKeyCode(parentKey.getKeyCode());
+								mMediator.injectInputEvent(parentKey.getKeyCode(), KeyEvent.ACTION_DOWN, mEventManager.getDownTime(), mEventManager.getEventTime(), 0, parentKey.getPolicFlags());
+							}
+							
+							mEventManager.addOngoingKeyCode(keyCode);
+							mMediator.injectInputEvent(keyCode, KeyEvent.ACTION_DOWN, mEventManager.getDownTime(), mEventManager.getEventTime(), 0, key.getPolicFlags());
+							
+							/*
+							 * The first one MUST be dispatched throughout the system.
+							 * Applications can ONLY start tracking from the original event object.
+							 */
+							if(Common.debug()) Log.d(tag, "Parsing event to the dispatcher");
+							
+							param.setResult(Mediator.ORIGINAL.DISPATCHING_ALLOW); 
+							
+							return;
+						}
+					}
+				}
+			
+			} else if (!down && key != null && mEventManager.getState() == State.ONGOING && key.isLastQueued()) {
+				if (mEventManager.hasTapActions() && mEventManager.getTapCount() < 3) {
+					if(Common.debug()) Log.d(tag, "Waiting on tap timeout");
+					
+					Integer tapTimeout = mEventManager.getTapTimeout();
 					
 					do {
 						try {
@@ -430,107 +478,52 @@ public final class PhoneWindowManager {
 							
 						} catch (Throwable e) {}
 						
-						pressTimeout -= 1;
+						tapTimeout -= 1;
 						
-					} while (mEventManager.isDownEvent() && key.isLastQueued() && key.getKeyCode() == keyCode && pressTimeout > 0);
+					} while (!mEventManager.isDownEvent() && key.isLastQueued() && tapTimeout > 0);
+				}
 					
-					synchronized(mQueueLock) {
-						if (mEventManager.isDownEvent() && key.isLastQueued() && key.getKeyCode() == keyCode) {
-							String eventAction = mEventManager.getAction(true);
+				synchronized(mQueueLock) {
+					if (!mEventManager.isDownEvent() && key.isLastQueued()) {
+						if(Common.debug()) Log.d(tag, "Invoking custom click action");
+						
+						String eventAction = mEventManager.getAction(false);
+						ActionType actionType = mEventManager.getTapCount() == 0 ? ActionType.CLICK : ActionType.TAP;
+						
+						mEventManager.invokeEvent();
+						
+						if (!mMediator.handleKeyAction(eventAction, actionType, mEventManager.isScreenOn(), mEventManager.isCallButtonEvent(), mEventManager.getDownTime(), key.getPolicFlags())) {
+							if(Common.debug()) Log.d(tag, "No custom click action available, invoking default actions");
 							
-							if (eventAction != null) {
-								if(Common.debug()) Log.d(tag, "Invoking custom long press action");
+							if (mEventManager.isCombiEvent()) {
+								if(Common.debug()) Log.d(tag, "Injecting primary combo event");
 								
-								mEventManager.invokeEvent();
-								mMediator.handleKeyAction(eventAction, ActionType.PRESS, mEventManager.isScreenOn(), mEventManager.isCallButtonEvent(), mEventManager.getDownTime(), key.getPolicFlags());
+								EventKey parentKey = mEventManager.getParentEventKey(keyCode);
 								
-							} else {
-								if(Common.debug()) Log.d(tag, "Invoking default long press action");
-								
-								mEventManager.invokeDefaultEvent(keyCode);
-								
-								if(mEventManager.isCombiEvent()) {
-									if(Common.debug()) Log.d(tag, "Injecting primary combo event");
-									
-									EventKey parentKey = mEventManager.getParentEventKey(keyCode);
-									
-									mEventManager.addOngoingKeyCode(parentKey.getKeyCode());
-									mMediator.injectInputEvent(parentKey.getKeyCode(), KeyEvent.ACTION_DOWN, mEventManager.getDownTime(), mEventManager.getEventTime(), 0, parentKey.getPolicFlags());
-								}
-								
-								mEventManager.addOngoingKeyCode(keyCode);
-								mMediator.injectInputEvent(keyCode, KeyEvent.ACTION_DOWN, mEventManager.getDownTime(), mEventManager.getEventTime(), 0, key.getPolicFlags());
-								
-								/*
-								 * The first one MUST be dispatched throughout the system.
-								 * Applications can ONLY start tracking from the original event object.
-								 */
-								if(Common.debug()) Log.d(tag, "Parsing event to the dispatcher");
-								
-								param.setResult(Mediator.ORIGINAL.DISPATCHING_ALLOW); 
-								
-								return;
+								mEventManager.addOngoingKeyCode(parentKey.getKeyCode());
+								mMediator.injectInputEvent(parentKey.getKeyCode(), KeyEvent.ACTION_DOWN, mEventManager.getDownTime(), mEventManager.getEventTime(), 0, parentKey.getPolicFlags());
 							}
-						}
-					}
-					
-				} else {
-					if (mEventManager.hasTapActions() && mEventManager.getTapCount() < 3) {
-						if(Common.debug()) Log.d(tag, "Waiting on tap timeout");
-						
-						Integer tapTimeout = mEventManager.getTapTimeout();
-						
-						do {
-							try {
-								Thread.sleep(1);
+							
+							for (int i=0; i <= mEventManager.getTapCount(); i++) {
+								if(Common.debug()) Log.d(tag, "Injecting default event");
 								
-							} catch (Throwable e) {}
-							
-							tapTimeout -= 1;
-							
-						} while (!mEventManager.isDownEvent() && key.isLastQueued() && key.getKeyCode() == keyCode && tapTimeout > 0);
-					}
-					
-					synchronized(mQueueLock) {
-						if (!mEventManager.isDownEvent() && key.isLastQueued() && key.getKeyCode() == keyCode) {
-							if(Common.debug()) Log.d(tag, "Invoking custom click action");
-							
-							String eventAction = mEventManager.getAction(false);
-							ActionType actionType = mEventManager.getTapCount() == 0 ? ActionType.CLICK : ActionType.TAP;
-							
-							mEventManager.invokeEvent();
-							
-							if (!mMediator.handleKeyAction(eventAction, actionType, mEventManager.isScreenOn(), mEventManager.isCallButtonEvent(), mEventManager.getDownTime(), key.getPolicFlags())) {
-								if(Common.debug()) Log.d(tag, "No custom click action available, invoking default actions");
-								
-								if (mEventManager.isCombiEvent()) {
-									if(Common.debug()) Log.d(tag, "Injecting primary combo event");
-									
-									EventKey parentKey = mEventManager.getParentEventKey(keyCode);
-									
-									mEventManager.addOngoingKeyCode(parentKey.getKeyCode());
-									mMediator.injectInputEvent(parentKey.getKeyCode(), KeyEvent.ACTION_DOWN, mEventManager.getDownTime(), mEventManager.getEventTime(), 0, parentKey.getPolicFlags());
-								}
-								
-								for (int i=0; i <= mEventManager.getTapCount(); i++) {
-									if(Common.debug()) Log.d(tag, "Injecting default event");
-									
-									mMediator.injectInputEvent(keyCode, KeyEvent.ACTION_MULTIPLE, mEventManager.getDownTime(), mEventManager.getEventTime(), 0, key.getPolicFlags());
-								}
+								mMediator.injectInputEvent(keyCode, KeyEvent.ACTION_MULTIPLE, mEventManager.getDownTime(), mEventManager.getEventTime(), 0, key.getPolicFlags());
 							}
 						}
 					}
 				}
 				
-			} else if (mEventManager.getState() == State.PENDING || key == null) {
-				if(Common.debug()) Log.d(tag, "This key is not being handled by the module, skipping...");
-				/*
-				 * The module is not handling this event 
-				 */
-				return;
+			} else if (!down && mEventManager.hasOngoingKeyCodes(keyCode)) {
+				if(Common.debug()) Log.d(tag, "Releasing ongoing key");
+				
+				mEventManager.removeOngoingKeyCode(keyCode);
+				mMediator.injectInputEvent(keyCode, KeyEvent.ACTION_UP, 0L, 0L, 0, policyFlags);
+				
+			} else if (mEventManager.getState() == State.PENDING) {
+				if(Common.debug()) Log.d(tag, "Not an active key, returning it to the original dispatcher..."); return;
 			}
 			
-			if(Common.debug()) Log.d(tag, "Sending even to dispatching");
+			if(Common.debug()) Log.d(tag, "Disabling default dispatching");
 			
 			param.setResult(Mediator.ORIGINAL.DISPATCHING_REJECT);
 		}
