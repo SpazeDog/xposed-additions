@@ -106,7 +106,7 @@ public final class PowerManager {
 				try {
 					if(Common.debug()) Log.d(TAG, "Received USB Plug/UnPlug state change");
 	
-					Boolean powered = (Boolean) mBatteryService.findMethod("isPowered", Match.BEST, Integer.TYPE).invoke(BatteryManager.BATTERY_PLUGGED_AC | BatteryManager.BATTERY_PLUGGED_USB);
+					Boolean powered = OLD_SDK ? (Boolean) mBatteryService.findMethod("isPowered").invoke() : (Boolean) mBatteryService.findMethod("isPowered", Match.BEST, Integer.TYPE).invoke(BatteryManager.BATTERY_PLUGGED_AC | BatteryManager.BATTERY_PLUGGED_USB);
 					Integer plugType = (Integer) mBatteryService.findMethod("getPlugType").invoke();
 					Integer oldPlugType = mPlugType;
 					Boolean wasPowered = mIsPowered;
