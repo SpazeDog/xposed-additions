@@ -144,6 +144,11 @@ public final class Mediator {
 		 * ViewConfiguration.getKeyRepeatDelay() was not available until API 12
 		 */
 		public static final Integer VIEW_CONFIGURATION_VERSION = android.os.Build.VERSION.SDK_INT >= 12 ? 2 :1;
+		
+		/*
+		 * 
+		 */
+		public static final Integer HARDWARE_CAMERA_VERSION = android.os.Build.VERSION.SDK_INT >= 11 ? 2 :1;
 	}
 	
 	/**
@@ -168,9 +173,6 @@ public final class Mediator {
 	protected WakeLock mWakelock;
 	
 	private Intent mTorchIntent;
-	private Boolean mTorchReceiverSet = false;
-	
-	private final Object mtorchLocatorLock = new Object();
 	
 	private XServiceManager mXServiceManager;
 	
@@ -433,106 +435,33 @@ public final class Mediator {
 	}
 	
 	protected void torchLocator() {
-		(new Thread() {
-			@Override
-			public void run() {
-				synchronized (mtorchLocatorLock) { 
-					if (mTorchIntent == null) {
-						if(Common.debug()) Log.d(TAG + "$torchLocator()", "Starting the search for a Torch app with Intent support");
-						
-						try {
-							/*
-							 * If the ROM has CM Torch capabilities, then use that instead. 
-							 * 
-							 * Some ROM's who implements some of CM's capabilities, some times changes the name of this util.cm folder to match 
-							 * their name. In these cases we don't care about consistency. If you are going to borrow from others, 
-							 * then make sure to keep compatibility.
-							 */
-							ReflectClass torchConstants = ReflectClass.forName("com.android.internal.util.cm.TorchConstants");
-							mTorchIntent = new Intent((String) torchConstants.findField("ACTION_TOGGLE_STATE").getValue());
-							
-							if(Common.debug()) Log.d(TAG + "$torchLocator()", "Found CyanogenMod Intent");
-							
-						} catch (ReflectException er) {
-							if(Common.debug()) Log.d(TAG + "$torchLocator()", "No CyanogenMod Intent found. Searching in installed applications");
-							
-							/*
-							 * Search for Torch Apps that supports <package name>.TOGGLE_FLASHLIGHT intents
-							 */
-							PackageManager pm = ((Context) mContext.getReceiver()).getPackageManager();
-							List<PackageInfo> packages = pm.getInstalledPackages(0);
-							
-							for (PackageInfo pkg : packages) {
-								Intent intent = new Intent(pkg.packageName + ".TOGGLE_FLASHLIGHT");
-								List<ResolveInfo> recievers = pm.queryBroadcastReceivers(intent, 0);
-								
-								if (recievers.size() > 0) {
-									if(Common.debug()) Log.d(TAG + "$torchLocator()", "Found Application Intent for " + pkg.packageName);
-									
-									mTorchIntent = intent; break;
-								}
-							}
-							
-							if(Common.debug() && mTorchIntent == null) Log.d(TAG + "$torchLocator()", "No Intents found in the installed applications");
-							
-							if (!mTorchReceiverSet) {
-								mTorchReceiverSet = true;
-						        IntentFilter filter = new IntentFilter();
-						        filter.addAction(Intent.ACTION_PACKAGE_ADDED);
-						        filter.addAction(Intent.ACTION_PACKAGE_REMOVED);
-						        filter.addAction(Intent.ACTION_PACKAGE_CHANGED);
-						        filter.addAction(Intent.ACTION_PACKAGE_REPLACED);
-						        filter.addDataScheme("package");
-						        
-						        ((Context) mContext.getReceiver()).registerReceiver(new BroadcastReceiver() {
-						            @Override
-						            public void onReceive(Context context, Intent intent) {
-						            	if(Common.debug()) Log.d(TAG + "$torchLocator()", "Receiving Application changes. Checking new state of Torch Intents");
-						            	
-						            	Uri uri = intent.getData();
-						            	String packageName = uri != null ? uri.getSchemeSpecificPart() : null;
-						            	String action = intent.getAction();
-						            	
-						            	if (packageName != null && ((mTorchIntent == null && Intent.ACTION_PACKAGE_ADDED.equals(action)) || (mTorchIntent != null && packageName.equals(mTorchIntent.getPackage())))) {
-						            		/*
-						            		 * We can't wrap the whole block below, as the receiver and the locator are executed in different Threads.
-						            		 */
-						            		synchronized (mtorchLocatorLock) {}
-						            		
-						            		PackageManager pm = context.getPackageManager();
-											Intent pkgIntent = new Intent(packageName + ".TOGGLE_FLASHLIGHT");
-											List<ResolveInfo> recievers = pm.queryBroadcastReceivers(pkgIntent, 0);
-											
-						            		if (Intent.ACTION_PACKAGE_ADDED.equals(action)) {
-						            			if (recievers.size() > 0) {
-						            				if(Common.debug()) Log.d(TAG + "$torchLocator()", "Found Application Intent for newly installed " + packageName);
-						            				
-						            				mTorchIntent = pkgIntent;
-						            				mXServiceManager.putBoolean("variable:remap.support.torch", true);
-						            			}
-						            			
-						            		} else {
-						            			if (recievers.size() == 0) {
-						            				if(Common.debug()) Log.d(TAG + "$torchLocator()", "Starting a new search for Torch Intents");
-						            				
-						            				mTorchIntent = null;
-						            				mXServiceManager.putBoolean("variable:remap.support.torch", false);
-						            				torchLocator();
-						            			}
-						            		}
-						            	}
-						            }
-						            
-						        }, filter, null, mHandler);
-							}
-						}
-						
-						mXServiceManager.putBoolean("variable:remap.support.torch", mTorchIntent != null);
-					}
-				}
+		try {
+			/*
+			 * If the ROM has CM Torch capabilities, then use that instead. 
+			 * 
+			 * Some ROM's who implements some of CM's capabilities, some times changes the name of this util.cm folder to match 
+			 * their name. In these cases we don't care about consistency. If you are going to borrow from others, 
+			 * then make sure to keep compatibility.
+			 */
+			ReflectClass torchConstants = ReflectClass.forName("com.android.internal.util.cm.TorchConstants.remove");
+			mTorchIntent = new Intent((String) torchConstants.findField("ACTION_TOGGLE_STATE").getValue());
+			
+			if(Common.debug()) Log.d(TAG + "$torchLocator()", "Found CyanogenMod Intent");
+			
+		} catch (ReflectException er) {
+			if (SDK.HARDWARE_CAMERA_VERSION > 1) {
+				if(Common.debug()) Log.d(TAG + "$torchLocator()", "Using native Torch service");
+				
+				mTorchIntent = new Intent();
+				mTorchIntent.setClassName(Common.PACKAGE_NAME, Common.PACKAGE_NAME + ".ServiceTorch");
+				mTorchIntent.setAction(Common.TORCH_INTENT_ACTION);
 			}
 			
-		}).start();
+		} finally {
+			if (mTorchIntent != null) {
+				mXServiceManager.putBoolean("variable:remap.support.torch", mTorchIntent != null);
+			}
+		}
 	}
 	
 	/*
@@ -912,7 +841,16 @@ public final class Mediator {
 	
 	protected void toggleFlashLight() {
 		if (mTorchIntent != null) {
-			sendBroadcast(mTorchIntent);
+			if (Common.TORCH_INTENT_ACTION.equals(mTorchIntent.getAction())) {
+				if(Common.debug()) Log.d(TAG, "Toggling native Torch service");
+				
+				((Context) mContext.getReceiver()).startService(mTorchIntent);
+				
+			} else {
+				if(Common.debug()) Log.d(TAG, "Sending Torch Intent");
+				
+				sendBroadcast(mTorchIntent);
+			}
 		}
 	}
 	

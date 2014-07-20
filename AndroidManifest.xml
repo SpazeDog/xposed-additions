@@ -8,6 +8,9 @@
         android:targetSdkVersion="19" />
     
     <uses-permission android:name="net.dinglisch.android.tasker.PERMISSION_RUN_TASKS"/>
+    <uses-permission android:name="android.permission.CAMERA" />
+    
+    <uses-feature android:name="android.hardware.camera" />
 
     <application
         android:icon="@drawable/ic_launcher"
@@ -17,6 +20,12 @@
         <meta-data android:value="true" android:name="xposedmodule" />
         <meta-data android:value="30+" android:name="xposedminversion" />
         <meta-data android:value="Additional Settings for Gingerbread and up" android:name="xposeddescription" />
+        
+        <service android:name=".ServiceTorch">
+            <intent-filter>
+                <action android:name="com.spazedog.xposed.additionsgb.TOGGLE_FLASHLIGHT" />
+            </intent-filter>
+        </service>
         
         <activity
             android:name=".ActivityMain"

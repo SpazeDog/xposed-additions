@@ -65,6 +65,8 @@ public final class Common {
 	public static final String XSERVICE_NAME = PACKAGE_NAME + ".service.XSERVICE";
 	public static final String XSERVICE_PERMISSIONS = PACKAGE_NAME + ".permissions.XSERVICE";
 	
+	public static final String TORCH_INTENT_ACTION = PACKAGE_NAME + ".TOGGLE_FLASHLIGHT";
+	
 	public static final String PREFERENCE_FILE = "config";
 	
 	public static final File LOG_FILE = new File(Environment.getDataDirectory(), "data/" + PACKAGE_NAME + "/cache/error.log");
