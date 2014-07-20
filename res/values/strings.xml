@@ -14,7 +14,7 @@
          Strings for delay_names array
     ================================================ -->
     <string name='array_delay_short'>Short</string>
-    <string name='array_delay_normal'>Normal</string>
+    <string name='array_delay_medium'>Medium</string>
     <string name='array_delay_long'>Long</string>
     
     <!-- ================================================

@@ -23,20 +23,20 @@
     ================================================ -->
 	<string-array name="delay_names">
 		<item>@string/array_delay_short</item>
-		<item>@string/array_delay_normal</item>
+		<item>@string/array_delay_medium</item>
 		<item>@string/array_delay_long</item>
 	</string-array>
 	
 	<string-array name="delay_tap_values">
 		<item>75</item>
 		<item>100</item>
-		<item>150</item>
+		<item>125</item>
 	</string-array>
 	
 	<string-array name="delay_press_values">
-		<item>200</item>
+		<item>250</item>
+		<item>375</item>
 		<item>500</item>
-		<item>1000</item>
 	</string-array>
     
 </resources>
