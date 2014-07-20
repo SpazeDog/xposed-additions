@@ -278,7 +278,13 @@ public final class PhoneWindowManager {
 					
 					param.setResult(Mediator.ORIGINAL.QUEUEING_REJECT);
 					
-				} else {					
+				} else {
+					/*
+					 * Most ROM reboots after holding Power for 8-12s.
+					 * For those missing (like Omate TrueSmart) this is kind of a replacement.
+					 */
+					mMediator.powerHardResetTimer(keyCode, down);
+					
 					if (mEventManager.registerKey(keyCode, down, mMediator.fixPolicyFlags(keyCode, policyFlags))) {
 						if(Common.debug()) Log.d(tag, "Starting a new event");
 						

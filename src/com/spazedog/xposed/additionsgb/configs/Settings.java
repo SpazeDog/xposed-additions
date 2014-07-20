@@ -9,6 +9,7 @@ public class Settings {
 	 */
 	public static final String REMAP_TIMEOUT_LONGPRESS = "remap_press_delay";
 	public static final String REMAP_TIMEOUT_DOUBLECLICK = "remap_tap_delay";
+	public static final String REMAP_TIMEOUT_HARD_RESET = "remap_timeout_hard_reset";
 	
 	public static final String USB_CONNECTION_PLUG = "usb_plug_action";
 	public static final String USB_CONNECTION_UNPLUG = "usb_unplug_action";

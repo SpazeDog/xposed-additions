@@ -16,5 +16,6 @@
     
     <integer name="remap_tap_delay">100</integer>
     <integer name="remap_press_delay">500</integer>
+    <integer name="remap_timeout_hard_reset">8000</integer>
     
 </resources>

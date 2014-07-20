@@ -1,12 +1,10 @@
 package com.spazedog.xposed.additionsgb.backend.pwm;
 
-import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import net.dinglisch.android.tasker.TaskerIntent;
-
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.ActivityManager;
@@ -24,6 +22,7 @@ import android.os.Handler;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.os.SystemClock;
+import android.os.Vibrator;
 import android.util.Log;
 import android.view.HapticFeedbackConstants;
 import android.view.InputDevice;
@@ -194,6 +193,18 @@ public final class Mediator {
 	private Map<String, ReflectConstructor> mConstructors = new HashMap<String, ReflectConstructor>();
 	private Map<String, ReflectMethod> mMethods = new HashMap<String, ReflectMethod>();
 	private Map<String, ReflectField> mFields = new HashMap<String, ReflectField>();
+	
+	private Runnable mPowerHardResetRunnable = new Runnable(){
+		@Override
+		public void run() {
+			long[] pattern = {50l, 100l, 50l, 50l};
+			
+			Vibrator vibrator = (Vibrator) (((Context) mContext.getReceiver()).getSystemService(Context.VIBRATOR_SERVICE));
+			vibrator.vibrate(pattern, -1);
+			
+			((PowerManager) mPowerManager.getReceiver()).reboot(null);
+		}
+	};
 	
 	protected Mediator(ReflectClass pwm, XServiceManager xManager) {
 		mXServiceManager = xManager;
@@ -693,6 +704,19 @@ public final class Mediator {
 			
 		} else {
 			((PowerManager) mPowerManager.getReceiver()).goToSleep(time);
+		}
+	}
+	
+	protected void powerHardResetTimer(Integer keyCode, Boolean isKeyDown) {
+		if (keyCode.equals(KeyEvent.KEYCODE_POWER)) {
+			Integer delay = mXServiceManager.getInt(Settings.REMAP_TIMEOUT_HARD_RESET, 8000);
+			
+			if (isKeyDown && delay > 0) {
+				mHandler.postDelayed(mPowerHardResetRunnable, delay);
+				
+			} else if (delay > 0) {
+				mHandler.removeCallbacks(mPowerHardResetRunnable);
+			}
 		}
 	}
 	
