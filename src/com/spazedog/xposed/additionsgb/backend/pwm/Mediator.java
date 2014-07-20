@@ -152,7 +152,6 @@ public final class Mediator {
 	public static final class ORIGINAL {
 		public static Integer FLAG_INJECTED;
 		public static Integer FLAG_VIRTUAL;
-		public static Integer FLAG_WAKE;
 		public static Integer FLAG_WAKE_DROPPED;
 		
 		public static Integer QUEUEING_ALLOW;
@@ -225,7 +224,6 @@ public final class Mediator {
 		
 		ORIGINAL.FLAG_INJECTED = (Integer) wmp.findField("FLAG_INJECTED").getValue();
 		ORIGINAL.FLAG_VIRTUAL = (Integer) wmp.findField("FLAG_VIRTUAL").getValue();
-		ORIGINAL.FLAG_WAKE = (Integer) ((wmp.findField("FLAG_WAKE").getValue()));
 		ORIGINAL.FLAG_WAKE_DROPPED = (Integer) ((wmp.findField("FLAG_WAKE_DROPPED").getValue()));
 		
 		ORIGINAL.QUEUEING_ALLOW = (Integer) wmp.findFieldDeep("ACTION_PASS_TO_USER").getValue();
@@ -1039,12 +1037,14 @@ public final class Mediator {
 	}
 	
 	public Integer fixPolicyFlags(Integer keyCode, Integer policyFlags) {
-		if (!isWakeKeyWhenScreenOff(keyCode)) {
-			if ((policyFlags & ORIGINAL.FLAG_WAKE) != 0) 
-				policyFlags &= ~ORIGINAL.FLAG_WAKE;
+		if (!keyCode.equals(KeyEvent.KEYCODE_POWER) 
+				&& !isWakeKeyWhenScreenOff(keyCode)
+				&& (policyFlags & ORIGINAL.FLAG_WAKE_DROPPED) != 0) {
+					
+					policyFlags &= ~ORIGINAL.FLAG_WAKE_DROPPED;
 			
-			if ((policyFlags & ORIGINAL.FLAG_WAKE_DROPPED) != 0) 
-				policyFlags &= ~ORIGINAL.FLAG_WAKE_DROPPED;
+		} else if (keyCode.equals(KeyEvent.KEYCODE_POWER) && (policyFlags & ORIGINAL.FLAG_WAKE_DROPPED) == 0) {
+			policyFlags |= ORIGINAL.FLAG_WAKE_DROPPED;
 		}
 		
 		return policyFlags;
@@ -1057,10 +1057,10 @@ public final class Mediator {
 		
 		/*
 		 * We handle display on here, because some devices has issues
-		 * when executing handlers while in deep sleep. 
-		 * Some times they will need a few key presses before reacting. 
+		 * when executing handlers while in deep sleep.
+		 * Some times they will need a few key presses before reacting.
 		 */
-		if (!isScreenOn && ((action != null && action.equals("" + KeyEvent.KEYCODE_POWER)) || (action == null && (policyFlags & (ORIGINAL.FLAG_WAKE | ORIGINAL.FLAG_WAKE_DROPPED)) != 0))) {
+		if (!isScreenOn && ((action != null && action.equals("" + KeyEvent.KEYCODE_POWER)) || (action == null && (policyFlags & ORIGINAL.FLAG_WAKE_DROPPED) != 0))) {
 			changeDisplayState(eventDownTime, true); return true;
 			
 		} else if (invokeCallbutton && invokeCallButton()) {
