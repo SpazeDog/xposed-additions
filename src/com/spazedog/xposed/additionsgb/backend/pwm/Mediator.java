@@ -443,7 +443,7 @@ public final class Mediator {
 			 * their name. In these cases we don't care about consistency. If you are going to borrow from others, 
 			 * then make sure to keep compatibility.
 			 */
-			ReflectClass torchConstants = ReflectClass.forName("com.android.internal.util.cm.TorchConstants.remove");
+			ReflectClass torchConstants = ReflectClass.forName("com.android.internal.util.cm.TorchConstants");
 			mTorchIntent = new Intent((String) torchConstants.findField("ACTION_TOGGLE_STATE").getValue());
 			
 			if(Common.debug()) Log.d(TAG + "$torchLocator()", "Found CyanogenMod Intent");
