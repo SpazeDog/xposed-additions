@@ -17,26 +17,5 @@
 		<item>usb</item>
 		<item>off</item>
 	</string-array>
-	
-    <!-- ================================================
-         Arrays for ActivityScreenRemap
-    ================================================ -->
-	<string-array name="delay_names">
-		<item>@string/array_delay_short</item>
-		<item>@string/array_delay_medium</item>
-		<item>@string/array_delay_long</item>
-	</string-array>
-	
-	<string-array name="delay_tap_values">
-		<item>75</item>
-		<item>100</item>
-		<item>125</item>
-	</string-array>
-	
-	<string-array name="delay_press_values">
-		<item>250</item>
-		<item>375</item>
-		<item>500</item>
-	</string-array>
     
 </resources>

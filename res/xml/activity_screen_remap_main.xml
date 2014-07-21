@@ -1,23 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" xmlns:robobunny="http://robobunny.com" >
     
     <PreferenceCategory
         android:key="settings_group"
         android:title="@string/category_settings">
         
-        <com.spazedog.xposed.additionsgb.tools.views.WidgetListPreference
+        <com.spazedog.xposed.additionsgb.tools.views.SeekBarPreference
             android:key="delay_key_tap_preference"
             android:title="@string/preference_title_delay_key_tap"
             android:persistent="false"
-            android:entries="@array/delay_names"
-            android:entryValues="@array/delay_tap_values" />
+            android:max="200"
+            robobunny:min="50"
+            robobunny:unitsRight="ms" />
         
-        <com.spazedog.xposed.additionsgb.tools.views.WidgetListPreference
+        <com.spazedog.xposed.additionsgb.tools.views.SeekBarPreference
             android:key="delay_key_press_preference"
             android:title="@string/preference_title_delay_key_press"
             android:persistent="false"
-            android:entries="@array/delay_names"
-            android:entryValues="@array/delay_press_values" />
+            android:max="500"
+            robobunny:min="100"
+            robobunny:unitsRight="ms" />
         
         <CheckBoxPreference
             android:key="allow_externals_preference"

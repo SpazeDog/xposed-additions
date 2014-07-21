@@ -21,6 +21,7 @@ import com.spazedog.xposed.additionsgb.configs.Settings;
 import com.spazedog.xposed.additionsgb.tools.DialogBroadcastReceiver;
 import com.spazedog.xposed.additionsgb.tools.views.IWidgetPreference;
 import com.spazedog.xposed.additionsgb.tools.views.IWidgetPreference.OnWidgetClickListener;
+import com.spazedog.xposed.additionsgb.tools.views.SeekBarPreference;
 import com.spazedog.xposed.additionsgb.tools.views.WidgetListPreference;
 import com.spazedog.xposed.additionsgb.tools.views.WidgetPreference;
 
@@ -85,19 +86,17 @@ public class ActivityScreenRemapMain extends PreferenceActivity implements OnPre
     private void setup() {
     	if (mSetup != (mSetup = true)) {
 			if (mPreferences.isPackageUnlocked()) {
-    			WidgetListPreference tapDelayPreference = (WidgetListPreference) findPreference("delay_key_tap_preference");
-    			tapDelayPreference.setValue( "" + mPreferences.getInt(Settings.REMAP_TIMEOUT_DOUBLECLICK, ViewConfiguration.getDoubleTapTimeout()) );
+				SeekBarPreference tapDelayPreference = (SeekBarPreference) findPreference("delay_key_tap_preference");
+    			tapDelayPreference.setValue(mPreferences.getInt(Settings.REMAP_TIMEOUT_DOUBLECLICK, ViewConfiguration.getDoubleTapTimeout()) );
     			tapDelayPreference.setOnPreferenceChangeListener(this);
-    			tapDelayPreference.loadSummary();
     			
 			} else {
 				((PreferenceCategory) findPreference("settings_group")).removePreference(findPreference("delay_key_tap_preference"));
 			}
 			
-			WidgetListPreference pressDelayPreference = (WidgetListPreference) findPreference("delay_key_press_preference");
-			pressDelayPreference.setValue( "" + mPreferences.getInt(Settings.REMAP_TIMEOUT_LONGPRESS, ViewConfiguration.getLongPressTimeout()) );
+			SeekBarPreference pressDelayPreference = (SeekBarPreference) findPreference("delay_key_press_preference");
+			pressDelayPreference.setValue(mPreferences.getInt(Settings.REMAP_TIMEOUT_LONGPRESS, ViewConfiguration.getLongPressTimeout()) );
 			pressDelayPreference.setOnPreferenceChangeListener(this);
-			pressDelayPreference.loadSummary();
 			
 			WidgetPreference addKeyPreference = (WidgetPreference) findPreference("add_key_preference");
 			addKeyPreference.setOnPreferenceClickListener(this);
@@ -127,15 +126,13 @@ public class ActivityScreenRemapMain extends PreferenceActivity implements OnPre
     
 	@Override
 	public boolean onPreferenceChange(Preference preference, Object newValue) {
-		if (preference instanceof WidgetListPreference) {
-			WidgetListPreference listPreference = (WidgetListPreference) preference;
-			listPreference.setValue((String) newValue);
-			listPreference.loadSummary();
+		if (preference instanceof SeekBarPreference) {
+			SeekBarPreference listPreference = (SeekBarPreference) preference;
 			
 			String configKey = listPreference.getKey().equals("delay_key_tap_preference") ? 
 					Settings.REMAP_TIMEOUT_DOUBLECLICK : Settings.REMAP_TIMEOUT_LONGPRESS;
 			
-			mPreferences.putInt(configKey, Integer.parseInt( (String) newValue ), true);
+			mPreferences.putInt(configKey, (Integer) newValue, true);
 			
 			return true;
 		}
