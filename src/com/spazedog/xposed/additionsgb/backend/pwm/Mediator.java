@@ -8,11 +8,8 @@ import net.dinglisch.android.tasker.TaskerIntent;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.ActivityManager;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.media.AudioManager;
@@ -194,6 +191,8 @@ public final class Mediator {
 	private Map<String, ReflectConstructor> mConstructors = new HashMap<String, ReflectConstructor>();
 	private Map<String, ReflectMethod> mMethods = new HashMap<String, ReflectMethod>();
 	private Map<String, ReflectField> mFields = new HashMap<String, ReflectField>();
+	
+	private Map<Integer, Boolean> mDeviceIds = new HashMap<Integer, Boolean>();
 	
 	private Runnable mPowerHardResetRunnable = new Runnable(){
 		@Override
@@ -475,47 +474,68 @@ public final class Mediator {
 		KeyEvent keyEvent = event instanceof KeyEvent ? (KeyEvent) event : null;
 		Integer keyCode = event instanceof KeyEvent ? keyEvent.getKeyCode() : (Integer) event;
 		
-		if (keyEvent != null && keyEvent.getDeviceId() != -1) {
-			Integer source = keyEvent.getSource();
-			InputDevice device = keyEvent.getDevice();
-			
-			/*
-			 * We do not want to handle regular Keyboards or gaming devices. 
-			 * Do not trust KeyCharacterMap.getKeyboardType() as it can easily display anything
-			 * as a FULL PC Keyboard. InputDevice.getKeyboardType() should be safer. 
-			 */
-			if ((device != null && device.getKeyboardType() == InputDevice.KEYBOARD_TYPE_ALPHABETIC) || 
-					(source & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD ||
-					(source & InputDevice.SOURCE_DPAD) == InputDevice.SOURCE_DPAD || 
-					(source & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK) {
-				
-				return false;
-			}
-		}
+		/*
+		 * Older Android version does not parse the KeyEvent object to the PhoneWindowManager class.
+		 * For these we validate individual key codes instead. Not as exact, but is does the job in most cases. 
+		 */
+		Integer deviceId = keyEvent != null ? keyEvent.getDeviceId() : keyCode;
+		Integer allowExternals = -2;
 		
 		/*
-		 * Now that we know that the device type is supported, let's see if we should handle external once.
+		 * If the settings change, we have to re-validate the keys
 		 */
-		if (!mXServiceManager.getBoolean(Settings.REMAP_ALLOW_EXTERNALS)) {
-			if (SDK.INPUT_DEVICESTORAGE_VERSION > 1) {
-				InputDevice device = keyEvent.getDevice();
-				
-				try {
-					/*
-					 * @Google get a grip, this method should be publicly accessible. Makes no sense to hide it.
-					 */
-					return device == null || (Boolean) mMethods.get("isDeviceExternal").invokeReceiver(device);
-					
-				} catch (ReflectException e) { 
-					Log.e(TAG, e.getMessage(), e);
-				}
-				
-			} else {
-				return KeyCharacterMap.deviceHasKey(keyCode);
-			}
+		if (!mDeviceIds.containsKey(allowExternals) || !mDeviceIds.get(allowExternals).equals(mXServiceManager.getBoolean(Settings.REMAP_ALLOW_EXTERNALS))) {
+			mDeviceIds.clear();
+			mDeviceIds.put(allowExternals, mXServiceManager.getBoolean(Settings.REMAP_ALLOW_EXTERNALS));
 		}
 		
-		return true;
+		if (!mDeviceIds.containsKey(deviceId)) {
+			Boolean validated = true;
+			
+			if (keyEvent != null && keyEvent.getDeviceId() != -1) {
+				Integer source = keyEvent.getSource();
+				InputDevice device = keyEvent.getDevice();
+				
+				/*
+				 * We do not want to handle regular Keyboards or gaming devices. 
+				 * Do not trust KeyCharacterMap.getKeyboardType() as it can easily display anything
+				 * as a FULL PC Keyboard. InputDevice.getKeyboardType() should be safer. 
+				 */
+				if ((device != null && device.getKeyboardType() == InputDevice.KEYBOARD_TYPE_ALPHABETIC) || 
+						(source & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD ||
+						(source & InputDevice.SOURCE_DPAD) == InputDevice.SOURCE_DPAD || 
+						(source & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK) {
+					
+					validated = false;
+				}
+			}
+			
+			/*
+			 * Now that we know that the device type is supported, let's see if we should handle external once.
+			 */
+			if (validated && !mDeviceIds.get(allowExternals)) {
+				if (SDK.INPUT_DEVICESTORAGE_VERSION > 1) {
+					InputDevice device = keyEvent.getDevice();
+					
+					try {
+						/*
+						 * @Google get a grip, this method should be publicly accessible. Makes no sense to hide it.
+						 */
+						validated = device == null || (Boolean) mMethods.get("isDeviceExternal").invokeReceiver(device);
+						
+					} catch (ReflectException e) { 
+						Log.e(TAG, e.getMessage(), e);
+					}
+					
+				} else {
+					validated = KeyCharacterMap.deviceHasKey(keyCode);
+				}
+			}
+			
+			mDeviceIds.put(deviceId, validated);
+		}
+		
+		return mDeviceIds.get(deviceId);
 	}
 	
 	@SuppressLint("NewApi")
