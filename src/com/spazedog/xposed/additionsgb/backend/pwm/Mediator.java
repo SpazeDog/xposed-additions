@@ -613,17 +613,22 @@ public final class Mediator {
 		}
 	}
 
-	protected void performHapticFeedback(KeyEvent keyEvent, Integer type, Integer policyFlags) {
+	protected void performHapticFeedback(Object keyEvent, Integer type, Integer policyFlags) {
 		try {
 			if (type == HapticFeedbackConstants.VIRTUAL_KEY) {
-				if (SDK.SAMSUNG_FEEDBACK_VERSION == 1) {
-					mMethods.get("samsung.performSystemKeyFeedback").invokeOriginal(keyEvent); return;
-					
-				} else if (SDK.SAMSUNG_FEEDBACK_VERSION == 2) {
-					mMethods.get("samsung.performSystemKeyFeedback").invokeOriginal(keyEvent, false, true); return;
-					
-				} else if ((policyFlags & ORIGINAL.FLAG_VIRTUAL) == 0) {
-					return;
+				List<String> forcedKeys = (List<String>) mXServiceManager.getStringArray(Settings.REMAP_LIST_FORCED_HAPTIC, null);
+				Integer keyCode = keyEvent instanceof KeyEvent ? ((KeyEvent) keyEvent).getKeyCode() : (Integer) keyEvent;
+				
+				if (forcedKeys == null || !forcedKeys.contains(""+keyCode)) {
+					if (SDK.SAMSUNG_FEEDBACK_VERSION == 1) {
+						mMethods.get("samsung.performSystemKeyFeedback").invokeOriginal(keyEvent); return;
+						
+					} else if (SDK.SAMSUNG_FEEDBACK_VERSION == 2) {
+						mMethods.get("samsung.performSystemKeyFeedback").invokeOriginal(keyEvent, false, true); return;
+						
+					} else if ((policyFlags & ORIGINAL.FLAG_VIRTUAL) == 0) {
+						return;
+					}
 				}
 			}
 			

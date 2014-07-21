@@ -333,7 +333,7 @@ public final class PhoneWindowManager {
 					}
 					
 					if (down) {
-						mMediator.performHapticFeedback(keyEvent, HapticFeedbackConstants.VIRTUAL_KEY, policyFlags);
+						mMediator.performHapticFeedback(keyEvent == null ? keyCode : keyEvent, HapticFeedbackConstants.VIRTUAL_KEY, policyFlags);
 					}
 					
 					if (mEventManager.getState() != State.CANCELED && mEventManager.getEventKey(keyCode) != null) {
