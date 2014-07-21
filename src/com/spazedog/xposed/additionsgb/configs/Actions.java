@@ -32,6 +32,11 @@ public class Actions {
 		COLLECTION.add(new RemapAction(KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, 0, 0, 0, 0, R.string.selector_notice_media_buttons)); 
 		COLLECTION.add(new RemapAction(KeyEvent.KEYCODE_MEDIA_NEXT, 0, 0, 0, 0, R.string.selector_notice_media_buttons));
 		COLLECTION.add(new RemapAction(KeyEvent.KEYCODE_MEDIA_PREVIOUS, 0, 0, 0, 0, R.string.selector_notice_media_buttons));
+		COLLECTION.add(new RemapAction(KeyEvent.KEYCODE_DPAD_UP, 0, 0, 0, 0, 0, "off", "guard")); 
+		COLLECTION.add(new RemapAction(KeyEvent.KEYCODE_DPAD_DOWN, 0, 0, 0, 0, 0, "off", "guard")); 
+		COLLECTION.add(new RemapAction(KeyEvent.KEYCODE_DPAD_LEFT, 0, 0, 0, 0, 0, "off", "guard")); 
+		COLLECTION.add(new RemapAction(KeyEvent.KEYCODE_DPAD_RIGHT, 0, 0, 0, 0, 0, "off", "guard")); 
+		COLLECTION.add(new RemapAction(KeyEvent.KEYCODE_DPAD_CENTER, 0, 0, 0, 0, 0, "off", "guard")); 
 		COLLECTION.add(new RemapAction(KeyEvent.KEYCODE_PAGE_UP, 0, 0, 0, 0, 0, "off", "guard")); 
 		COLLECTION.add(new RemapAction(KeyEvent.KEYCODE_PAGE_DOWN, 0, 0, 0, 0, 0, "off", "guard")); 
 		COLLECTION.add(new RemapAction(KeyEvent.KEYCODE_HEADSETHOOK, 0, 0, 0, 0, 0));
