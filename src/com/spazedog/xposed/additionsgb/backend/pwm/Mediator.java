@@ -10,6 +10,7 @@ import android.annotation.TargetApi;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.media.AudioManager;
@@ -456,10 +457,29 @@ public final class Mediator {
 				mTorchIntent.setAction(Common.TORCH_INTENT_ACTION);
 			}
 			
+			new Thread() {
+				@Override
+				public void run() {
+					PackageManager pm = ((Context) mContext.getReceiver()).getPackageManager();
+					List<PackageInfo> packages = pm.getInstalledPackages(0);
+					
+					for (PackageInfo pkg : packages) {
+						Intent intent = new Intent(pkg.packageName + ".TOGGLE_FLASHLIGHT");
+						List<ResolveInfo> recievers = pm.queryBroadcastReceivers(intent, 0);
+						
+						if (recievers.size() > 0) {
+							mTorchIntent = intent; 
+							mXServiceManager.putBoolean("variable:remap.support.torch", true);
+							
+							break;
+						}
+					}
+				}
+				
+			}.start();
+			
 		} finally {
-			if (mTorchIntent != null) {
-				mXServiceManager.putBoolean("variable:remap.support.torch", mTorchIntent != null);
-			}
+			mXServiceManager.putBoolean("variable:remap.support.torch", mTorchIntent != null);
 		}
 	}
 	
