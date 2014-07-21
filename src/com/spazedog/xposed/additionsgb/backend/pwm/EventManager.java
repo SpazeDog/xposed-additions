@@ -99,11 +99,11 @@ public class EventManager {
 			Boolean newEvent = false;
 			
 			if (isKeyDown) {
-				if ((time - mEventTime) > 1000) {
+				if ((time - mEventTime) > (1000 + (mPressTimeout * 2))) {
 					mState = State.PENDING;
 				}
 				
-				if (mState == State.ONGOING && (keyCode.equals(mPrimaryKey.mKeyCode) || keyCode.equals(mSecondaryKey.mKeyCode))) {
+				if (mState == State.ONGOING && ((!mIsCombiEvent && keyCode.equals(mPrimaryKey.mKeyCode)) || (mIsCombiEvent && keyCode.equals(mSecondaryKey.mKeyCode)))) {
 					mTapCount += 1;
 					
 					if (keyCode.equals(mSecondaryKey.mKeyCode)) {
@@ -113,7 +113,11 @@ public class EventManager {
 						mPrimaryKey.mIsKeyDown = true;
 					}
 					
-				} else if (mState != State.CANCELED && mState != State.PENDING && mPrimaryKey.isKeyDown() && keyCode != mPrimaryKey.mKeyCode && (mSecondaryKey.mKeyCode.equals(0) || keyCode.equals(mSecondaryKey.mKeyCode))) {
+				} else if (mState != State.CANCELED && mState != State.PENDING && mPrimaryKey.isKeyDown() && !keyCode.equals(mPrimaryKey.mKeyCode) && (mSecondaryKey.mKeyCode.equals(0) || keyCode.equals(mSecondaryKey.mKeyCode))) {
+					if (!keyCode.equals(mSecondaryKey.mKeyCode)) {
+						newEvent = true;
+					}
+					
 					mState = State.ONGOING;
 					mTapCount = 0;
 					mIsCombiEvent = true;
@@ -121,8 +125,6 @@ public class EventManager {
 					mSecondaryKey.mKeyCode = keyCode;
 					mSecondaryKey.mPolicyFlags = policyFlags;
 					mSecondaryKey.mIsKeyDown = true;
-					
-					newEvent = true;
 					
 				} else {
 					mState = State.ONGOING != mState ? State.ONGOING : State.CANCELED;
@@ -147,9 +149,12 @@ public class EventManager {
 					}
 				}
 				
-				mIsDownEvent = true;
-				mIsCallButton = false;
+				if (newEvent) {
+					mIsCallButton = false;
+				}
 				
+				mIsDownEvent = true;
+
 				mPrimaryKey.mRepeatCount = 0;
 				mSecondaryKey.mRepeatCount = 0;
 				
