@@ -120,50 +120,52 @@ public final class XposedInjector implements IXposedHookZygoteInit {
 		};
 		
 		protected synchronized void writeLog(Integer priority, String tag, String message, Integer count) {
-			FileChannel channel = null;
-			FileLock lock = null;
-			BufferedWriter fileWriter = null;
-			Long bytes = Common.LOG_FILE.length();
-			Boolean append = bytes > 0 && bytes <= Common.LOG_SIZE;
-			
-			try{
-				channel = new RandomAccessFile(Common.LOG_FILE, "rw").getChannel();
-				lock = channel.lock();
-				fileWriter = new BufferedWriter(new FileWriter(Common.LOG_FILE, append));
+			if (!tag.endsWith("#NoLoop")) {
+				FileChannel channel = null;
+				FileLock lock = null;
+				BufferedWriter fileWriter = null;
+				Long bytes = Common.LOG_FILE.length();
+				Boolean append = bytes > 0 && bytes <= Common.LOG_SIZE;
 				
-				if (append) {
-					fileWriter.append("------------------------\r\n");
-				}
-				
-				fileWriter.append(priority == WARNING ? "W/" : "E/");
-				fileWriter.append(tag);
-				fileWriter.append("\r\n\t");
-				fileWriter.append(message.replace("\n", "\r\n\t\t"));
-				fileWriter.append("\r\n");
-				
-			} catch(Throwable e) {
-				if (count < 5) {
-					try {
-						Thread.sleep(200);
+				try{
+					channel = new RandomAccessFile(Common.LOG_FILE, "rw").getChannel();
+					lock = channel.lock();
+					fileWriter = new BufferedWriter(new FileWriter(Common.LOG_FILE, append));
+					
+					if (append) {
+						fileWriter.append("------------------------\r\n");
+					}
+					
+					fileWriter.append(priority == WARNING ? "W/" : "E/");
+					fileWriter.append(tag);
+					fileWriter.append("\r\n\t");
+					fileWriter.append(message.replace("\n", "\r\n\t\t"));
+					fileWriter.append("\r\n");
+					
+				} catch(Throwable e) {
+					if (count < 5) {
+						try {
+							Thread.sleep(200);
+							
+							writeLog(priority, tag, message, count+1);
+							
+						} catch (Throwable ei) {
+							Log.e(Common.PACKAGE_NAME + "#NoLoop", e.getMessage(), e);
+						}
 						
-						writeLog(priority, tag, message, count+1);
-						
-					} catch (Throwable ei) {
+					} else {
 						Log.e(Common.PACKAGE_NAME + "#NoLoop", e.getMessage(), e);
 					}
 					
-				} else {
-					Log.e(Common.PACKAGE_NAME + "#NoLoop", e.getMessage(), e);
-				}
-				
-			} finally {
-				try {
-					if (fileWriter != null) fileWriter.close();
-					if (lock != null) lock.release();
-					if (channel != null) channel.close();
-					
-				} catch (IOException e) {
-					Log.e(Common.PACKAGE_NAME + "#NoLoop", e.getMessage(), e);
+				} finally {
+					try {
+						if (fileWriter != null) fileWriter.close();
+						if (lock != null) lock.release();
+						if (channel != null) channel.close();
+						
+					} catch (IOException e) {
+						Log.e(Common.PACKAGE_NAME + "#NoLoop", e.getMessage(), e);
+					}
 				}
 			}
 		}
