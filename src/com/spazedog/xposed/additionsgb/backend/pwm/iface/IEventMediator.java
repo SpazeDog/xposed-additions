@@ -8,6 +8,7 @@ import net.dinglisch.android.tasker.TaskerIntent;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.ActivityManager;
+import android.app.ActivityManager.RunningTaskInfo;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ResolveInfo;
@@ -312,11 +313,12 @@ public abstract class IEventMediator extends IMediatorSetup {
 		String currentHome = action != StackAction.EXLUDE_HOME ? getHomePackage() : null;
 		
 		for (int i=stack; i < packages.size(); i++) {
-			String packageName = packages.get(i).baseActivity.getPackageName();
+			RunningTaskInfo taskInfo = packages.get(i);
+			String packageName = taskInfo.topActivity.getPackageName();
 			
-			if (!packageName.equals("com.android.systemui") && packages.get(i).id != 0) {
+			if (!packageName.equals("com.android.systemui") && taskInfo.id != 0) {
 				if (action == StackAction.INCLUDE_HOME || !packageName.equals(currentHome)) {
-					return packages.get(i);
+					return taskInfo;
 					
 				} else if (action == StackAction.JUMP_HOME) {
 					continue;
@@ -332,7 +334,7 @@ public abstract class IEventMediator extends IMediatorSetup {
 	public String getPackageNameFromStack(Integer stack, StackAction action) {
 		ActivityManager.RunningTaskInfo pkg = getPackageFromStack(stack, action);
 		
-		return pkg != null ? pkg.baseActivity.getPackageName() : null;
+		return pkg != null ? pkg.topActivity.getPackageName() : null;
 	}
 	
 	public Integer getPackageIdFromStack(Integer stack, StackAction action) {
