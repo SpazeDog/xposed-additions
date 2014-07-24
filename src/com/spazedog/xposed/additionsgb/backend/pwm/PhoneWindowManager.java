@@ -223,7 +223,7 @@ public final class PhoneWindowManager {
 				String tag = TAG + "#Queueing/" + (down ? "Down " : "Up ") + keyCode + "(" + mEventManager.getTapCount() + "," + repeatCount+ "):";
 				
 				Long downTime = methodVersion == 1 ? (((Long) param.args[0]) / 1000) / 1000 : keyEvent.getDownTime();
-				Long eventTime = down ? downTime : (methodVersion == 1 ? android.os.SystemClock.uptimeMillis() : keyEvent.getEventTime());
+				Long eventTime = android.os.SystemClock.uptimeMillis();
 				
 				// android.os.SystemClock.uptimeMillis
 				
@@ -369,7 +369,7 @@ public final class PhoneWindowManager {
 					Boolean continueEvent = mEventManager.waitForChange(curTimeout);
 					
 					synchronized(mQueueLock) {
-						if (continueEvent) {
+						if (continueEvent && key.isPressed()) {
 							key.invoke();
 						}
 					}
@@ -390,7 +390,7 @@ public final class PhoneWindowManager {
 						Boolean continueEvent = mEventManager.waitForChange(mEventManager.getPressTimeout());
 						
 						synchronized(mQueueLock) {
-							if (continueEvent) {
+							if (continueEvent && key.isLastQueued() && key.isPressed()) {
 								String eventAction = mEventManager.getAction(ActionType.PRESS);
 								mEventManager.setState(State.INVOKED);
 								
@@ -428,7 +428,7 @@ public final class PhoneWindowManager {
 						}
 
 						synchronized(mQueueLock) {
-							if (continueEvent) {
+							if (continueEvent && key.isLastQueued() && !key.isPressed()) {
 								if(Common.debug()) Log.d(tag, "Invoking Click Event");
 								
 								mEventManager.setState(State.INVOKED);
