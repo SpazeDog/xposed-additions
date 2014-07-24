@@ -2,6 +2,10 @@
     
     <string name='preference_load_apps'>Load Application List</string>
     
+    <string name='array_externals_keyboard'>Keyboard</string>
+    <string name='array_externals_controller'>Gamepad/Joystick</string>
+    <string name='array_externals_misc'>Miscellaneous</string>
+    
     <!-- ================================================
          Strings for wakeplug_names array
     ================================================ -->

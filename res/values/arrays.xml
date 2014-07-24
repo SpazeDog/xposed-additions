@@ -17,5 +17,17 @@
 		<item>usb</item>
 		<item>off</item>
 	</string-array>
+	
+	<string-array name="externals_names">
+		<item>@string/array_externals_keyboard</item>
+		<item>@string/array_externals_controller</item>
+		<item>@string/array_externals_misc</item>
+	</string-array>
+	
+	<string-array name="externals_values">
+		<item>keyboard</item>
+		<item>controller</item>
+		<item>misc</item>
+	</string-array>
     
 </resources>

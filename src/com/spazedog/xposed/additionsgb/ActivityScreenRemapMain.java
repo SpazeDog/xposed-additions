@@ -1,11 +1,17 @@
 package com.spazedog.xposed.additionsgb;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
+import android.annotation.TargetApi;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
+import android.preference.MultiSelectListPreference;
 import android.preference.Preference;
 import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.Preference.OnPreferenceClickListener;
@@ -22,7 +28,6 @@ import com.spazedog.xposed.additionsgb.tools.DialogBroadcastReceiver;
 import com.spazedog.xposed.additionsgb.tools.views.IWidgetPreference;
 import com.spazedog.xposed.additionsgb.tools.views.IWidgetPreference.OnWidgetClickListener;
 import com.spazedog.xposed.additionsgb.tools.views.SeekBarPreference;
-import com.spazedog.xposed.additionsgb.tools.views.WidgetListPreference;
 import com.spazedog.xposed.additionsgb.tools.views.WidgetPreference;
 
 public class ActivityScreenRemapMain extends PreferenceActivity implements OnPreferenceChangeListener, OnPreferenceClickListener, OnWidgetClickListener {
@@ -83,7 +88,8 @@ public class ActivityScreenRemapMain extends PreferenceActivity implements OnPre
     	mPreferences = null;
     }
     
-    private void setup() {
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+	private void setup() {
     	if (mSetup != (mSetup = true)) {
 			if (mPreferences.isPackageUnlocked()) {
 				SeekBarPreference tapDelayPreference = (SeekBarPreference) findPreference("delay_key_tap_preference");
@@ -101,9 +107,28 @@ public class ActivityScreenRemapMain extends PreferenceActivity implements OnPre
 			WidgetPreference addKeyPreference = (WidgetPreference) findPreference("add_key_preference");
 			addKeyPreference.setOnPreferenceClickListener(this);
 			
-			CheckBoxPreference allowExternalsPreference = (CheckBoxPreference) findPreference("allow_externals_preference");
-			allowExternalsPreference.setOnPreferenceClickListener(this);
-			allowExternalsPreference.setChecked(mPreferences.getBoolean(Settings.REMAP_ALLOW_EXTERNALS));
+			if (android.os.Build.VERSION.SDK_INT >= 11) {
+				MultiSelectListPreference multiSelectPref = new MultiSelectListPreference(this);
+				multiSelectPref.setKey("externals_list_preference");
+				multiSelectPref.setTitle(R.string.preference_title_allow_externals);
+				multiSelectPref.setSummary(R.string.preference_summary_allow_externals);
+				multiSelectPref.setEntries(R.array.externals_names);
+				multiSelectPref.setEntryValues(R.array.externals_values);
+				multiSelectPref.setPersistent(false);
+				multiSelectPref.setOnPreferenceChangeListener(this);
+				
+				List<String> values = mPreferences.getStringArray(Settings.REMAP_EXTERNALS_LIST, new ArrayList<String>());
+				multiSelectPref.setValues(new HashSet<String>(values));
+				
+				PreferenceCategory category = (PreferenceCategory) findPreference("settings_group");
+				category.removePreference(findPreference("allow_externals_preference"));
+				category.addPreference(multiSelectPref);
+				
+			} else {
+				CheckBoxPreference allowExternalsPreference = (CheckBoxPreference) findPreference("allow_externals_preference");
+				allowExternalsPreference.setOnPreferenceClickListener(this);
+				allowExternalsPreference.setChecked(mPreferences.getBoolean(Settings.REMAP_ALLOW_EXTERNALS));
+			}
 			
 			mKeyList = (ArrayList<String>) mPreferences.getStringArray(Settings.REMAP_LIST_KEYS, new ArrayList<String>());
 			for (String key : mKeyList) {
@@ -124,6 +149,7 @@ public class ActivityScreenRemapMain extends PreferenceActivity implements OnPre
 		}
     }
     
+	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
 	@Override
 	public boolean onPreferenceChange(Preference preference, Object newValue) {
 		if (preference instanceof SeekBarPreference) {
@@ -133,6 +159,11 @@ public class ActivityScreenRemapMain extends PreferenceActivity implements OnPre
 					Settings.REMAP_TIMEOUT_DOUBLECLICK : Settings.REMAP_TIMEOUT_LONGPRESS;
 			
 			mPreferences.putInt(configKey, (Integer) newValue, true);
+			
+			return true;
+			
+		} else if (preference.getKey().equals("externals_list_preference")) {
+			mPreferences.putStringArray(Settings.REMAP_EXTERNALS_LIST, new ArrayList<String>( (Set<String>) newValue ), true);
 			
 			return true;
 		}
