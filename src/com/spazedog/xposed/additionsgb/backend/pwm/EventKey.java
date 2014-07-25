@@ -7,6 +7,7 @@ public class EventKey {
 	private Long mDownTime;
 	private Integer mKeyCode;
 	private Integer mFlags;
+	private Integer mMetaState;
 	private Integer mRepeatCount;
 	private Boolean mIsPressed;
 	private Boolean mIsOnGoing;
@@ -17,11 +18,12 @@ public class EventKey {
 		mManager = manager;
 	}
 	
-	protected void initiateInstance(Integer keyCode, Integer flags, Long downTime) {
+	protected void initiateInstance(Integer keyCode, Integer flags, Integer metaState, Long downTime) {
 		mIsOnGoing = false;
 		mRepeatCount = 0;
 		mKeyCode = keyCode;
 		mFlags = flags;
+		mMetaState = metaState;
 		mDownTime = downTime;
 	}
 	
@@ -43,6 +45,10 @@ public class EventKey {
 
 	public Integer getFlags() {
 		return mFlags;
+	}
+	
+	public Integer getMetaState() {
+		return mMetaState;
 	}
 
 	public Integer getRepeatCount() {
@@ -68,11 +74,11 @@ public class EventKey {
 				
 				if (combo != null && !combo.mKeyCode.equals(mKeyCode) && !combo.mIsOnGoing) {
 					combo.mIsOnGoing = true;
-					mManager.injectInputEvent(combo.mKeyCode, KeyEvent.ACTION_DOWN, 0L, 0L, 0, combo.mFlags);
+					mManager.injectInputEvent(combo.mKeyCode, KeyEvent.ACTION_DOWN, 0L, 0L, 0, combo.mFlags, combo.mMetaState);
 				}
 			}
 			
-			mManager.injectInputEvent(mKeyCode, KeyEvent.ACTION_MULTIPLE, 0L, 0L, 0, mFlags);
+			mManager.injectInputEvent(mKeyCode, KeyEvent.ACTION_MULTIPLE, 0L, 0L, 0, mFlags, mMetaState);
 			
 		} else {
 			release();
@@ -87,7 +93,7 @@ public class EventKey {
 					
 					if (combo != null && !combo.mKeyCode.equals(mKeyCode) && !combo.mIsOnGoing) {
 						combo.mIsOnGoing = true;
-						mManager.injectInputEvent(combo.mKeyCode, KeyEvent.ACTION_DOWN, 0L, 0L, 0, combo.mFlags);
+						mManager.injectInputEvent(combo.mKeyCode, KeyEvent.ACTION_DOWN, 0L, 0L, 0, combo.mFlags, combo.mMetaState);
 					}
 				}
 
@@ -95,7 +101,7 @@ public class EventKey {
 			}
 
 			mRepeatCount += 1;
-			mManager.injectInputEvent(mKeyCode, KeyEvent.ACTION_DOWN, 0L, 0L, mRepeatCount-1, mFlags);
+			mManager.injectInputEvent(mKeyCode, KeyEvent.ACTION_DOWN, 0L, 0L, mRepeatCount-1, mFlags, mMetaState);
 		}
 	}
 	
@@ -105,7 +111,7 @@ public class EventKey {
 			
 			mRepeatCount = 0;
 			mIsOnGoing = false;
-			mManager.injectInputEvent(mKeyCode, KeyEvent.ACTION_UP, 0L, 0L, wasRepeat ? 1 : 0, getFlags());
+			mManager.injectInputEvent(mKeyCode, KeyEvent.ACTION_UP, 0L, 0L, wasRepeat ? 1 : 0, mFlags, mMetaState);
 		}
 	}
 }

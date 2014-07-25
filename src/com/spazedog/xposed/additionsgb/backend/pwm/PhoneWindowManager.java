@@ -215,6 +215,7 @@ public final class PhoneWindowManager {
 			Integer policyFlags = (Integer) (methodVersion == 1 ? param.args[5] : param.args[1]);
 			Integer policyFlagsPos = methodVersion == 1 ? 5 : 1;
 			Integer repeatCount = (Integer) (methodVersion == 1 ? 0 : keyEvent.getRepeatCount());
+			Integer metaState = (Integer) (methodVersion == 1 ? 0 : keyEvent.getMetaState());
 			Boolean isScreenOn = (Boolean) (methodVersion == 1 ? param.args[6] : param.args[2]);
 			Boolean down = action == KeyEvent.ACTION_DOWN;
 			String tag = TAG + "#Queueing/" + (down ? "Down " : "Up ") + keyCode + "(" + mEventManager.getTapCount() + "," + repeatCount+ "):";
@@ -291,7 +292,7 @@ public final class PhoneWindowManager {
 					 */
 					mEventManager.powerHardResetTimer(keyCode, down);
 					
-					if (mEventManager.registerKey(keyCode, down, isScreenOn, policyFlags, downTime, eventTime)) {
+					if (mEventManager.registerKey(keyCode, down, isScreenOn, policyFlags, metaState, downTime, eventTime)) {
 						if(Common.debug()) Log.d(tag, "Starting a new event");
 						
 						/*

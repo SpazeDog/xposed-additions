@@ -40,7 +40,7 @@ public final class EventManager extends IEventMediator {
 		super(pwm, xServiceManager);
 	}
 	
-	private EventKey initiateEventKey(Integer keyCode, Boolean isKeyDown, Integer policyFlags, Long downTime) {
+	private EventKey initiateEventKey(Integer keyCode, Boolean isKeyDown, Integer policyFlags, Integer metaState, Long downTime) {
 		synchronized(mEventLock) {
 			EventKey eventKey = mEventKeys.get(keyCode);
 			
@@ -51,7 +51,7 @@ public final class EventManager extends IEventMediator {
 			}
 			
 			if (isKeyDown) {
-				eventKey.initiateInstance(keyCode, fixPolicyFlags(keyCode, policyFlags), downTime);
+				eventKey.initiateInstance(keyCode, fixPolicyFlags(keyCode, policyFlags), metaState, downTime);
 			}
 			
 			eventKey.updateInstance(isKeyDown);
@@ -70,7 +70,7 @@ public final class EventManager extends IEventMediator {
 		}
 	}
 	
-	public Boolean registerKey(Integer keyCode, Boolean isKeyDown, Boolean isScreenOn, Integer policyFlags, Long downTime, Long eventTime) {
+	public Boolean registerKey(Integer keyCode, Boolean isKeyDown, Boolean isScreenOn, Integer policyFlags, Integer metaState, Long downTime, Long eventTime) {
 		synchronized(mEventLock) {
 			if (isKeyDown && (eventTime - mEventTime) > 1500) { // 1000 + Default Android Long Press timeout
 				releaseAllKeys();
@@ -82,7 +82,7 @@ public final class EventManager extends IEventMediator {
 			Boolean newEvent = false;
 			Boolean newKey = !mEventKeys.containsKey(keyCode);
 			
-			initiateEventKey(keyCode, isKeyDown, policyFlags, downTime);
+			initiateEventKey(keyCode, isKeyDown, policyFlags, metaState, downTime);
 			
 			if (isKeyDown) {
 				if (mState == State.ONGOING && !newKey) {
@@ -101,7 +101,7 @@ public final class EventManager extends IEventMediator {
 					
 					if (getKeyCount() > 1) {
 						recycleEventKeys();
-						initiateEventKey(keyCode, isKeyDown, policyFlags, downTime);
+						initiateEventKey(keyCode, isKeyDown, policyFlags, metaState, downTime);
 					}
 					
 					mTapCount = 0;

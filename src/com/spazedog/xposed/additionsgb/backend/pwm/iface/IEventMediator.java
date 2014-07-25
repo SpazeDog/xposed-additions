@@ -143,7 +143,7 @@ public abstract class IEventMediator extends IMediatorSetup {
 	}
 	
 	@SuppressLint("NewApi")
-	public void injectInputEvent(Object event, Integer action, Long downTime, Long eventTime, Integer repeatCount, Integer flags) {
+	public void injectInputEvent(Object event, Integer action, Long downTime, Long eventTime, Integer repeatCount, Integer flags, Integer metaState) {
 		synchronized(PhoneWindowManager.class) {
 			KeyEvent keyEvent = null;
 			Integer[] actions = action == KeyEvent.ACTION_MULTIPLE ? new Integer[]{KeyEvent.ACTION_DOWN, KeyEvent.ACTION_UP} : new Integer[]{action};
@@ -171,7 +171,7 @@ public abstract class IEventMediator extends IMediatorSetup {
 				keyEvent = KeyEvent.changeTimeRepeat((KeyEvent) event, time, repeatCount, flags);
 				
 			} else {
-				keyEvent = new KeyEvent(downTime, eventTime, actions[0], (Integer) event, repeatCount, 0, (SDK.INPUT_CHARACTERMAP_VERSION > 1 ? KeyCharacterMap.VIRTUAL_KEYBOARD : 0), 0, flags, InputDevice.SOURCE_KEYBOARD);
+				keyEvent = new KeyEvent(downTime, eventTime, actions[0], (Integer) event, repeatCount, metaState, (SDK.INPUT_CHARACTERMAP_VERSION > 1 ? KeyCharacterMap.VIRTUAL_KEYBOARD : 0), 0, flags, InputDevice.SOURCE_KEYBOARD);
 			}
 			
 			for (int i=0; i < actions.length; i++) {
@@ -369,7 +369,7 @@ public abstract class IEventMediator extends IMediatorSetup {
 		}
 		
 		if (callCode > 0) {
-			injectInputEvent(callCode, KeyEvent.ACTION_MULTIPLE, 0L, 0L, 0, 0); return true;
+			injectInputEvent(callCode, KeyEvent.ACTION_MULTIPLE, 0L, 0L, 0, 0, 0); return true;
 		}
 		
 		return false;
@@ -697,7 +697,7 @@ public abstract class IEventMediator extends IMediatorSetup {
 					sendBroadcast(new TaskerIntent(action.replace("tasker:", "")));
 				
 				} else {
-					injectInputEvent(Integer.parseInt(action), KeyEvent.ACTION_MULTIPLE, eventDownTime, 0L, 0, policyFlags);
+					injectInputEvent(Integer.parseInt(action), KeyEvent.ACTION_MULTIPLE, eventDownTime, 0L, 0, policyFlags, 0);
 				}
 			}
 		});
