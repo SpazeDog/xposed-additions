@@ -207,23 +207,30 @@ public final class PhoneWindowManager {
 	protected final XC_MethodHook hook_interceptKeyBeforeQueueing = new XC_MethodHook() {
 		@Override
 		protected final void beforeHookedMethod(final MethodHookParam param) {
+			Integer methodVersion = SDK.METHOD_INTERCEPT_VERSION;
+			KeyEvent keyEvent = methodVersion == 1 ? null : (KeyEvent) param.args[0];
+			Integer keyCode = (Integer) (methodVersion == 1 ? param.args[3] : keyEvent.getKeyCode());
+			Object keyObject = keyEvent == null ? keyCode : keyEvent;
+			Integer action = (Integer) (methodVersion == 1 ? param.args[1] : keyEvent.getAction());
+			Integer policyFlags = (Integer) (methodVersion == 1 ? param.args[5] : param.args[1]);
+			Integer policyFlagsPos = methodVersion == 1 ? 5 : 1;
+			Integer repeatCount = (Integer) (methodVersion == 1 ? 0 : keyEvent.getRepeatCount());
+			Boolean isScreenOn = (Boolean) (methodVersion == 1 ? param.args[6] : param.args[2]);
+			Boolean down = action == KeyEvent.ACTION_DOWN;
+			String tag = TAG + "#Queueing/" + (down ? "Down " : "Up ") + keyCode + "(" + mEventManager.getTapCount() + "," + repeatCount+ "):";
+			
+			Long downTime = methodVersion == 1 ? (((Long) param.args[0]) / 1000) / 1000 : keyEvent.getDownTime();
+			Long eventTime = android.os.SystemClock.uptimeMillis();
+			
+			if (down && mEventManager.getKeyCount() > 0) {
+				try {
+					Thread.sleep(1);
+					
+				} catch (InterruptedException e) {}
+			}
+			
 			synchronized(mQueueLock) {
 				mActiveQueueing = true;
-
-				Integer methodVersion = SDK.METHOD_INTERCEPT_VERSION;
-				KeyEvent keyEvent = methodVersion == 1 ? null : (KeyEvent) param.args[0];
-				Integer keyCode = (Integer) (methodVersion == 1 ? param.args[3] : keyEvent.getKeyCode());
-				Object keyObject = keyEvent == null ? keyCode : keyEvent;
-				Integer action = (Integer) (methodVersion == 1 ? param.args[1] : keyEvent.getAction());
-				Integer policyFlags = (Integer) (methodVersion == 1 ? param.args[5] : param.args[1]);
-				Integer policyFlagsPos = methodVersion == 1 ? 5 : 1;
-				Integer repeatCount = (Integer) (methodVersion == 1 ? 0 : keyEvent.getRepeatCount());
-				Boolean isScreenOn = (Boolean) (methodVersion == 1 ? param.args[6] : param.args[2]);
-				Boolean down = action == KeyEvent.ACTION_DOWN;
-				String tag = TAG + "#Queueing/" + (down ? "Down " : "Up ") + keyCode + "(" + mEventManager.getTapCount() + "," + repeatCount+ "):";
-				
-				Long downTime = methodVersion == 1 ? (((Long) param.args[0]) / 1000) / 1000 : keyEvent.getDownTime();
-				Long eventTime = android.os.SystemClock.uptimeMillis();
 				
 				// android.os.SystemClock.uptimeMillis
 				
