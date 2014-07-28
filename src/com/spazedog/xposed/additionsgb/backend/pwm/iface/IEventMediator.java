@@ -324,14 +324,14 @@ public abstract class IEventMediator extends IMediatorSetup {
 	
 	public ActivityManager.RunningTaskInfo getPackageFromStack(Integer stack, StackAction action) {
 		List<ActivityManager.RunningTaskInfo> packages = ((ActivityManager) mActivityManager.getReceiver()).getRunningTasks(5);
-		String currentHome = action != StackAction.EXLUDE_HOME ? getHomePackage() : null;
+		String currentHome = action != StackAction.INCLUDE_HOME ? getHomePackage() : null;
 		
 		for (int i=stack; i < packages.size(); i++) {
 			RunningTaskInfo taskInfo = packages.get(i);
-			String packageName = taskInfo.topActivity.getPackageName();
+			String baseName = taskInfo.baseActivity.getPackageName();
 			
-			if (!packageName.equals("com.android.systemui") && taskInfo.id != 0) {
-				if (action == StackAction.INCLUDE_HOME || !packageName.equals(currentHome)) {
+			if (!baseName.equals("com.android.systemui") && taskInfo.id != 0) {
+				if (action == StackAction.INCLUDE_HOME || !baseName.equals(currentHome)) {
 					return taskInfo;
 					
 				} else if (action == StackAction.JUMP_HOME) {
