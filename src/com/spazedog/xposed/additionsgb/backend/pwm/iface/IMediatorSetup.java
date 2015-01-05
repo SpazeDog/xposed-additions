@@ -94,7 +94,8 @@ public abstract class IMediatorSetup {
 		 * New tools to turn on the screen was added to the documented part in API 17.
 		 * In older versions it can only be done using forceUserActivityLocked() from the PowerManagerService using reflection.
 		 */
-		public static final Integer MANAGER_POWER_VERSION = android.os.Build.VERSION.SDK_INT >= 17 ? 2 : 1;
+		public static final Integer MANAGER_POWER_VERSION = android.os.Build.VERSION.SDK_INT < 17 ? 1 : 
+			(android.os.Build.VERSION.SDK_INT < 18 ? 2 : (android.os.Build.VERSION.SDK_INT < 21 ? 3 : 4));
 		
 		/*
 		 * Some of the character map values are missing in API below 11, such as VirtualKey for an example.
@@ -261,8 +262,27 @@ public abstract class IMediatorSetup {
 		mPowerManagerService = mPowerManager.findField("mService").getValueToInstance();
 		mWakelock = ((PowerManager) mPowerManager.getReceiver()).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "HookedPhoneWindowManager");
 		
+		/*
+		 * Get Power Manager Tools
+		 */
+		
+		if (SDK.MANAGER_POWER_VERSION > 3) {
+			mMethods.put("goToSleep", mPowerManagerService.findMethodDeep("goToSleep", Match.DEFAULT, Long.TYPE, Integer.TYPE, Integer.TYPE));
+			
+		} else if (SDK.MANAGER_POWER_VERSION == 3) { 
+			mMethods.put("goToSleep", mPowerManagerService.findMethodDeep("goToSleep", Match.DEFAULT, Long.TYPE, Integer.TYPE));
+			
+		} else {
+			mMethods.put("goToSleep", mPowerManagerService.findMethodDeep("goToSleep", Match.DEFAULT, Long.TYPE));
+		}
+		
 		if (SDK.MANAGER_POWER_VERSION == 1) {
+			mMethods.put("userActivity", mPowerManagerService.findMethodDeep("userActivity", Match.DEFAULT, Long.TYPE, Boolean.TYPE));
 			mMethods.put("forceUserActivityLocked", mPowerManagerService.findMethodDeep("forceUserActivityLocked"));
+			
+		} else {
+			mMethods.put("userActivity", mPowerManagerService.findMethodDeep("userActivity", Match.DEFAULT, Long.TYPE, Integer.TYPE, Integer.TYPE));
+			mMethods.put("wakeUp", mPowerManagerService.findMethodDeep("wakeUp", Match.DEFAULT, Long.TYPE));
 		}
 		
 		/*

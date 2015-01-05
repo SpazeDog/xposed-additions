@@ -29,8 +29,10 @@ import android.widget.Toast;
 
 import com.spazedog.lib.reflecttools.ReflectClass;
 import com.spazedog.lib.reflecttools.utils.ReflectException;
+import com.spazedog.lib.reflecttools.utils.ReflectConstants.Match;
 import com.spazedog.xposed.additionsgb.Common;
 import com.spazedog.xposed.additionsgb.backend.pwm.PhoneWindowManager;
+import com.spazedog.xposed.additionsgb.backend.pwm.iface.IMediatorSetup.SDK;
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
 import com.spazedog.xposed.additionsgb.configs.Settings;
 
@@ -227,7 +229,7 @@ public abstract class IEventMediator extends IMediatorSetup {
 	public void pokeUserActivity(Long time, Boolean forced) {
 		if (forced) {
 			if (SDK.MANAGER_POWER_VERSION > 1) {
-				((PowerManager) mPowerManager.getReceiver()).wakeUp(time);
+				mMethods.get("wakeUp").invoke(time);
 				
 			} else {
 				/*
@@ -249,7 +251,12 @@ public abstract class IEventMediator extends IMediatorSetup {
 				mWakelock.acquire(3000);
 			}
 			
-			((PowerManager) mPowerManager.getReceiver()).userActivity(time, true);
+			if (SDK.MANAGER_POWER_VERSION == 1) {
+				mMethods.get("userActivity").invoke(time, true);
+				
+			} else {
+				mMethods.get("userActivity").invoke(time, 0, 1 << 0);
+			}
 		}
 	}
 	
@@ -259,7 +266,15 @@ public abstract class IEventMediator extends IMediatorSetup {
 			pokeUserActivity(time, true);
 			
 		} else {
-			((PowerManager) mPowerManager.getReceiver()).goToSleep(time);
+			if (SDK.MANAGER_POWER_VERSION > 3) {
+				mMethods.get("goToSleep").invoke(time, 4, 0);
+				
+			} else if (SDK.MANAGER_POWER_VERSION == 3) { 
+				mMethods.get("goToSleep").invoke(time, 0);
+				
+			} else {
+				mMethods.get("goToSleep").invoke(time);
+			}
 		}
 	}
 	
