@@ -1,7 +1,10 @@
 package com.spazedog.xposed.additionsgb;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 
 import android.app.Activity;
@@ -24,29 +27,33 @@ public class ActivityViewerLog extends Activity {
 		
 		setContentView(R.layout.error_log_view);
 		
-		if (Common.LOG_FILE.exists()) {
-			BufferedReader reader = null;
-			
-			try {
-				TextView view = (TextView) findViewById(R.id.content);
-				reader = new BufferedReader(new FileReader(Common.LOG_FILE));
-				StringBuilder builder = new StringBuilder();
-				String line;
-				
-				while ((line = reader.readLine()) != null) {
-					builder.append(line);
-					builder.append("\n");
-				}
-				
-				view.setText( builder.toString() );
-				
-			}  catch (IOException e) {} finally {
+		File[] files = new File[]{Common.LogFile.STORED, Common.LogFile.MAIN};
+		StringBuilder builder = new StringBuilder();
+		
+		for (File file : files) {
+			if (file.exists()) {
+				BufferedReader reader = null;
+
 				try {
-					reader.close();
+					reader = new BufferedReader(new FileReader(file));
+					String line;
 					
-				} catch (IOException e) {}
+					while ((line = reader.readLine()) != null) {
+						builder.append(line);
+						builder.append("\n");
+					}
+					
+				}  catch (IOException e) {} finally {
+					try {
+						reader.close();
+						
+					} catch (Throwable e) {}
+				}
 			}
 		}
+		
+		TextView view = (TextView) findViewById(R.id.content);
+		view.setText( builder.toString() );
 	}
 	
 	@Override
@@ -59,13 +66,22 @@ public class ActivityViewerLog extends Activity {
 	
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
+		File file = new File(getCacheDir(), "error.log");
+		
+		try {
+			TextView view = (TextView) findViewById(R.id.content);
+			BufferedWriter fileWriter = new BufferedWriter(new FileWriter(file, false));
+			fileWriter.write( (String) view.getText() );
+			fileWriter.close();
+			
+		} catch (IOException e) {}
+		
 		switch (item.getItemId()) {
 			case R.id.menu_edit: 
-
-				if (Common.LOG_FILE.exists()) {
+				if (file.exists()) {
 					try {
 						Intent intent = new Intent(Intent.ACTION_VIEW);
-						intent.setDataAndType(Uri.parse("file://" + Common.LOG_FILE.getCanonicalPath()), "text/plain");
+						intent.setDataAndType(Uri.parse("file://" + file.getCanonicalPath()), "text/plain");
 						
 						startActivity(Intent.createChooser(intent, getResources().getString(R.string.menu_title_edit)));
 						
@@ -75,14 +91,14 @@ public class ActivityViewerLog extends Activity {
 				return true;
 				
 			case R.id.menu_send: 
-				if (Common.LOG_FILE.exists()) {
+				if (file.exists()) {
 					try {
 						Intent intent = new Intent(Intent.ACTION_SEND);
 						intent.putExtra(Intent.EXTRA_EMAIL, new String[] {"d.bergloev@gmail.com"});
 						intent.putExtra(Intent.EXTRA_SUBJECT, "XposedAdditions: Error Log");
 						intent.putExtra(Intent.EXTRA_TEXT, getDeviceInfo());
 						intent.setType("text/plain");
-						intent.putExtra(Intent.EXTRA_STREAM, Uri.parse("file://" + Common.LOG_FILE.getCanonicalPath()));
+						intent.putExtra(Intent.EXTRA_STREAM, Uri.parse("file://" + file.getCanonicalPath()));
 						
 						startActivity(Intent.createChooser(intent, getResources().getString(R.string.menu_title_send)));
 					
