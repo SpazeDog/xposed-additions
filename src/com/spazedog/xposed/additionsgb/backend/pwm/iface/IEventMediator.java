@@ -432,6 +432,19 @@ public abstract class IEventMediator extends IMediatorSetup {
 		launchIntent(intent);
 	}
 	
+	public void launchUri(String uri) {
+		try {
+			Intent intent = new Intent();
+			intent = Intent.parseUri(uri, Intent.URI_INTENT_SCHEME);
+			intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+			
+			launchIntent(intent);
+			
+		} catch (Throwable e) {
+			Log.e(TAG, e.getMessage(), e);
+		}
+	}
+	
 	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
 	public void togglePreviousApplication() {
 		if (SDK.MANAGER_ACTIVITY_VERSION > 1) {
@@ -710,6 +723,9 @@ public abstract class IEventMediator extends IMediatorSetup {
 					
 				} else if ("tasker".equals(type)) { 
 					sendBroadcast(new TaskerIntent(action.replace("tasker:", "")));
+					
+				} else if ("shortcut".equals(type)) { 
+					launchUri(action.substring(action.indexOf(':', "shortcut".length()+1)+1));
 				
 				} else {
 					injectInputEvent(Integer.parseInt(action), KeyEvent.ACTION_MULTIPLE, eventDownTime, 0L, 0, policyFlags, 0);

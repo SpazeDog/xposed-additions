@@ -134,6 +134,9 @@
     <string name='preference_title_select_tasker'>Tasker</string>
     <string name='preference_summary_select_tasker'>Select a task from Tasker</string>
     
+    <string name='preference_title_select_shortcut'>Shortcut</string>
+    <string name='preference_summary_select_shortcut'>Select an app shortcut</string>
+    
     <string name='text_key'>Key: %1$s</string>
     
     <!-- ================================================

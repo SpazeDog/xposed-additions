@@ -80,6 +80,7 @@ public final class Common {
 		return action == null ? null : 
 			action.matches("^[0-9]+$") ? "dispatch" : 
 				action.startsWith("tasker:") ? "tasker" : 
+				action.startsWith("shortcut:") ? "shortcut" : 
 				action.contains(".") ? "launcher" : "custom";
 	}
 	
@@ -104,7 +105,13 @@ public final class Common {
 				
 			} catch (Throwable e) {}
 			
-		} else {
+		} else if ("shortcut".equals(type)) {
+			try {
+				return action.substring(0, action.indexOf(":", "shortcut".length()+1)).replace("shortcut:", "Shortcut: ");
+				
+			} catch (Throwable e) {}
+			
+		}  else {
 			try {
 				for (RemapAction current : Actions.COLLECTION) {
 					if (current.getAction().equals(action)) {

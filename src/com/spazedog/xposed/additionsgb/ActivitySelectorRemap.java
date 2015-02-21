@@ -50,6 +50,10 @@ import com.spazedog.xposed.additionsgb.tools.views.WidgetPreference;
 
 public class ActivitySelectorRemap extends PreferenceActivity implements OnPreferenceClickListener {
 	
+	final static int REQUEST_SELECT_TASKER = 1;
+	final static int REQUEST_SELECT_APPSHORTCUT = 2;
+	final static int REQUEST_CREATE_APPSHORTCUT = 3;
+	
 	private XServiceManager mPreferences;
 	
 	private Boolean mSetup = false;
@@ -57,6 +61,14 @@ public class ActivitySelectorRemap extends PreferenceActivity implements OnPrefe
 	private String mAction;
 	
 	private AppBuilder mAppBuilder;
+	
+	private Intent getShortcutSelectIntent() {
+		Intent intent = new Intent(Intent.ACTION_PICK_ACTIVITY);
+		intent.putExtra(Intent.EXTRA_INTENT, new Intent(Intent.ACTION_CREATE_SHORTCUT));
+		intent.putExtra(Intent.EXTRA_TITLE, R.string.preference_title_select_shortcut);
+		
+		return intent;
+	}
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -180,25 +192,26 @@ public class ActivitySelectorRemap extends PreferenceActivity implements OnPrefe
     			}
     		}
     		
-			if (mPreferences.isPackageUnlocked() && !("add_action".equals(mAction) && "off".equals(getIntent().getStringExtra("condition")))) {
-				findPreference("load_apps_preference").setOnPreferenceClickListener(this);
-				
+    		if (mPreferences.isPackageUnlocked()) {
+    			findPreference("load_apps_preference").setOnPreferenceClickListener(this);
+    			
+    			if ("add_action".equals(mAction)) {
+    				findPreference("select_shortcut_preference").setOnPreferenceClickListener(this);
+    				
+    			} else {
+    				((PreferenceGroup) findPreference("application_group")).removePreference(findPreference("select_shortcut_preference"));
+    			}
+    			
 				if ("add_action".equals(mAction) && TaskerIntent.testStatus(this).equals(TaskerIntent.Status.OK)) {
 					findPreference("select_tasker_preference").setOnPreferenceClickListener(this);
 				
 				} else {
 					((PreferenceGroup) findPreference("application_group")).removePreference(findPreference("select_tasker_preference"));
 				}
-				
-			} else {
-				if (mPreferences.isPackageUnlocked() && "add_action".equals(mAction) && TaskerIntent.testStatus(this).equals(TaskerIntent.Status.OK)) {
-					((PreferenceGroup) findPreference("application_group")).removePreference(findPreference("load_apps_preference"));
-					findPreference("select_tasker_preference").setOnPreferenceClickListener(this);
-					
-				} else {
-					preferenceScreen.removePreference(findPreference("application_group"));
-				}
-			}
+    			
+    		} else {
+    			preferenceScreen.removePreference(findPreference("application_group"));
+    		}
     	}
     }
 	
@@ -233,8 +246,11 @@ public class ActivitySelectorRemap extends PreferenceActivity implements OnPrefe
 			});
 			
 		} else if ("select_tasker_preference".equals(preference.getKey())) {
-			startActivityForResult(TaskerIntent.getTaskSelectIntent(), 1);
+			startActivityForResult(TaskerIntent.getTaskSelectIntent(), REQUEST_SELECT_TASKER);
 
+		} else if ("select_shortcut_preference".equals(preference.getKey())) {
+			startActivityForResult(getShortcutSelectIntent(), REQUEST_SELECT_APPSHORTCUT);
+			
 		} else {
 			Intent intent = getIntent();
 			intent.putExtra("result", (String) ((IWidgetPreference) preference).getTag());
@@ -250,12 +266,32 @@ public class ActivitySelectorRemap extends PreferenceActivity implements OnPrefe
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
 		if (intent != null) {
-			Intent returnIntent = getIntent();
-			returnIntent.putExtra("result", "tasker:" + intent.getDataString());
+			Intent returnIntent = null;
 			
-			setResult(RESULT_OK, returnIntent);
+			switch (requestCode) {
+				case REQUEST_SELECT_TASKER:
+					returnIntent = getIntent();
+					returnIntent.putExtra("result", "tasker:" + intent.getDataString());
+					
+					break;
+					
+				case REQUEST_SELECT_APPSHORTCUT:
+					startActivityForResult(intent, REQUEST_CREATE_APPSHORTCUT); break;
+					
+				case REQUEST_CREATE_APPSHORTCUT:
+					String name = intent.getStringExtra(Intent.EXTRA_SHORTCUT_NAME).replace(':', '_');
+					Intent appIntent = intent.getParcelableExtra(Intent.EXTRA_SHORTCUT_INTENT);
+					
+					returnIntent = getIntent();
+					returnIntent.putExtra("result", "shortcut:" + name + ":" + appIntent.toUri(Intent.URI_INTENT_SCHEME));
+					
+					break;
+			}
 			
-			finish();
+			if (returnIntent != null) {
+				setResult(RESULT_OK, returnIntent);
+				finish();
+			}
 		}
 	}
 	
