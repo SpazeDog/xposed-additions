@@ -4,17 +4,21 @@ import java.io.IOException;
 
 import android.annotation.TargetApi;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.hardware.Camera.Parameters;
 import android.os.Build;
 import android.os.IBinder;
+import android.os.PowerManager;
+import android.os.PowerManager.WakeLock;
 
 @TargetApi(Build.VERSION_CODES.HONEYCOMB) // API 11
 public class ServiceTorch extends Service {
 	
 	private Camera mCamera;
+	private WakeLock mWakeLock;
 	
 	@Override
 	public IBinder onBind(Intent intent) {
@@ -55,6 +59,10 @@ public class ServiceTorch extends Service {
 		mCamera = Camera.open();
 		
 		try {
+			PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+			mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "TorchLock");
+			mWakeLock.acquire();
+			
 			Parameters params = mCamera.getParameters();
 			params.setFlashMode(Parameters.FLASH_MODE_TORCH);
 			
@@ -75,6 +83,10 @@ public class ServiceTorch extends Service {
 		mCamera.stopPreview();
 		mCamera.release();
 		mCamera = null;
+		
+		if (mWakeLock != null && mWakeLock.isHeld()) {
+			mWakeLock.release();
+		}
 		
 		stopSelf();
 	}
