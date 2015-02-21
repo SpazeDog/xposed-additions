@@ -70,6 +70,7 @@ public class XServiceManager {
 					case INTEGER: mData.put(key, mService.getInt(key, -1)); break;
 					case BOOLEAN: mData.put(key, mService.getBoolean(key, false)); break;
 					case ARRAY: mData.put(key, mService.getStringArray(key, new ArrayList<String>())); 
+					case EMPTY: mData.remove(key);
 				}
 				
 			} catch (RemoteException e) { handleRemoteException(e); }

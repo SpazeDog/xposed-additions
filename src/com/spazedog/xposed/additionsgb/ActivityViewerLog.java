@@ -14,9 +14,12 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.v7.widget.Toolbar;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 public class ActivityViewerLog extends Activity {
@@ -54,6 +57,11 @@ public class ActivityViewerLog extends Activity {
 		
 		TextView view = (TextView) findViewById(R.id.content);
 		view.setText( builder.toString() );
+		
+		if (Build.VERSION.SDK_INT >= 14) {
+			Toolbar bar = (Toolbar) findViewById(R.id.toolbar);
+			bar.setTitle(R.string.category_title_logviewer);
+		}
 	}
 	
 	@Override

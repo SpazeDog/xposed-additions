@@ -25,11 +25,15 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
 import android.preference.Preference;
 import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceActivity;
+import android.support.v7.widget.Toolbar;
+import android.view.LayoutInflater;
+import android.widget.LinearLayout;
 
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
 import com.spazedog.xposed.additionsgb.configs.Settings;
@@ -45,6 +49,19 @@ public class ActivityMain extends PreferenceActivity implements OnPreferenceClic
 		super.onCreate(savedInstanceState);
 		
 		addPreferencesFromResource(R.xml.activity_main);
+	}
+	
+	@Override
+	protected void onPostCreate(Bundle savedInstanceState) {
+		super.onPostCreate(savedInstanceState);
+		
+		if (Build.VERSION.SDK_INT >= 14) {
+			LinearLayout root = (LinearLayout)findViewById(android.R.id.list).getParent().getParent().getParent();
+			Toolbar bar = (Toolbar) LayoutInflater.from(this).inflate(R.layout.actionbar_v14_layout, root, false);
+			bar.setTitle("Xposed Additions");
+			
+			root.addView(bar, 0);
+		}
 	}
 	
     @Override

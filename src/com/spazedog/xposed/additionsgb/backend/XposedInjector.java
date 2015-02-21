@@ -31,6 +31,7 @@ import java.nio.channels.FileLock;
 import java.util.HashMap;
 import java.util.Map;
 
+import android.os.Build;
 import android.util.Log;
 
 import com.spazedog.lib.reflecttools.ReflectClass;
@@ -40,31 +41,36 @@ import com.spazedog.xposed.additionsgb.Common;
 import com.spazedog.xposed.additionsgb.backend.pwm.PhoneWindowManager;
 import com.spazedog.xposed.additionsgb.backend.service.XService;
 
+import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.IXposedHookZygoteInit;
 import de.robv.android.xposed.XC_MethodHook;
+import de.robv.android.xposed.XposedHelpers;
+import de.robv.android.xposed.XC_MethodHook.MethodHookParam;
+import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
 
-public final class XposedInjector implements IXposedHookZygoteInit {
+public final class XposedInjector implements IXposedHookZygoteInit, IXposedHookLoadPackage {
 	@Override
 	public void initZygote(IXposedHookZygoteInit.StartupParam startupParam) throws Throwable {
-		/*
-		 * Register our logcat monitor. 
-		 * This should be the first to be activated so that
-		 * logging is on before anything else starts.
-		 */
 		LogcatMonitor.init();
-		
-		/*
-		 * Register our custom system service
-		 */
+
 		XService.init();
-		
-		/*
-		 * Register Hooks
-		 */
-		PowerManager.init();
 		ApplicationLayout.init();
-		PhoneWindowManager.init();
-		InputManager.init();
+	}
+
+	@Override
+	public void handleLoadPackage(LoadPackageParam lpparam) throws Throwable {
+		if (lpparam.packageName.equals("android")) {
+			/*
+			 * In API 21, the boot class loader no longer has access to internal services.
+			 */
+			if (Build.VERSION.SDK_INT >= 21) {
+				ReflectClass.setClassLoader(lpparam.classLoader);
+			}
+			
+			PowerManager.init();
+			PhoneWindowManager.init();
+			InputManager.init();
+		}
 	}
 	
 	public static class LogcatMonitor {

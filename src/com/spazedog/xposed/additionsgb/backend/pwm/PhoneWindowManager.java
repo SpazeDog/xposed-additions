@@ -203,6 +203,7 @@ public final class PhoneWindowManager {
 	 * Original Arguments
 	 * 		- Gingerbread: PhoneWindowManager.interceptKeyBeforeQueueing(Long whenNanos, Integer action, Integer flags, Integer keyCode, Integer scanCode, Integer policyFlags, Boolean isScreenOn)
 	 * 		- ICS & Above: PhoneWindowManager.interceptKeyBeforeQueueing(KeyEvent event, Integer policyFlags, Boolean isScreenOn)
+	 * 		- Lollipop & Above PhoneWindowManager.interceptKeyBeforeQueueing(KeyEvent event, Integer policyFlags)
 	 */
 	protected final XC_MethodHook hook_interceptKeyBeforeQueueing = new XC_MethodHook() {
 		@Override
@@ -216,12 +217,19 @@ public final class PhoneWindowManager {
 			Integer policyFlagsPos = methodVersion == 1 ? 5 : 1;
 			Integer repeatCount = (Integer) (methodVersion == 1 ? 0 : keyEvent.getRepeatCount());
 			Integer metaState = (Integer) (methodVersion == 1 ? 0 : keyEvent.getMetaState());
-			Boolean isScreenOn = (Boolean) (methodVersion == 1 ? param.args[6] : param.args[2]);
+			Boolean isScreenOn = true;
 			Boolean down = action == KeyEvent.ACTION_DOWN;
 			String tag = TAG + "#Queueing/" + (down ? "Down " : "Up ") + keyCode + "(" + mEventManager.getTapCount() + "," + repeatCount+ "):";
 			
 			Long downTime = methodVersion == 1 ? (((Long) param.args[0]) / 1000) / 1000 : keyEvent.getDownTime();
 			Long eventTime = android.os.SystemClock.uptimeMillis();
+			
+			if (android.os.Build.VERSION.SDK_INT >= 21) {
+				isScreenOn = (policyFlags & ORIGINAL.FLAG_INTERACTIVE) != 0;
+				
+			} else {
+				isScreenOn = (Boolean) (methodVersion == 1 ? param.args[6] : param.args[2]);
+			}
 			
 			if (down && mEventManager.getKeyCount() > 0) {
 				try {
@@ -271,7 +279,13 @@ public final class PhoneWindowManager {
 				 */
 				} else if (mInterceptKeyCode && isScreenOn) {
 					if (down) {
+						/*
+						 * Temp. re-activate our hooked feedback to account for ART XposedBridge being broken and does not
+						 * properly invoke original methods when being asked to. It still executes the hook as well. 
+						 */
+						mActiveQueueing = false;
 						mEventManager.performHapticFeedback(keyObject, HapticFeedbackConstants.VIRTUAL_KEY, policyFlags);
+						mActiveQueueing = true;
 						
 					} else if (mEventManager.validateDeviceType(keyObject)) {
 						Bundle bundle = new Bundle();
@@ -316,7 +330,9 @@ public final class PhoneWindowManager {
 					}
 					
 					if (down) {
+						mActiveQueueing = false;
 						mEventManager.performHapticFeedback(keyObject, HapticFeedbackConstants.VIRTUAL_KEY, policyFlags);
+						mActiveQueueing = true;
 					}
 					
 					if(Common.debug()) Log.d(tag, "Parsing the event to the queue (" + mEventManager.mState.name() + ")");

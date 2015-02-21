@@ -3,12 +3,16 @@ package com.spazedog.xposed.additionsgb;
 import java.util.ArrayList;
 
 import android.content.Intent;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.Preference;
 import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceActivity;
+import android.support.v7.widget.Toolbar;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.CheckBox;
+import android.widget.LinearLayout;
 
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
 import com.spazedog.xposed.additionsgb.configs.Settings;
@@ -39,6 +43,19 @@ public class ActivityScreenRemapCondition extends PreferenceActivity implements 
 		
 		if (mKey == null || mCondition == null) {
 			finish();
+		}
+	}
+	
+	@Override
+	protected void onPostCreate(Bundle savedInstanceState) {
+		super.onPostCreate(savedInstanceState);
+		
+		if (Build.VERSION.SDK_INT >= 14) {
+			LinearLayout root = (LinearLayout)findViewById(android.R.id.list).getParent().getParent().getParent();
+			Toolbar bar = (Toolbar) LayoutInflater.from(this).inflate(R.layout.actionbar_v14_layout, root, false);
+			bar.setTitle( Common.conditionToString(this, mCondition) );
+			
+			root.addView(bar, 0);
 			
 		} else {
 			setTitle( Common.conditionToString(this, mCondition) );

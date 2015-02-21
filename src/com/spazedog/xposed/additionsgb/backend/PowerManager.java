@@ -49,6 +49,7 @@ public final class PowerManager {
 	protected Integer mPlugType;
 	protected Boolean mIsPowered;
 	protected Boolean mInitiated = false;
+	protected Boolean mSystemReady = false;
 	
 	public static void init() {
 		if(Common.DEBUG) Log.d(TAG, "Adding Power Manager Hook");
@@ -58,7 +59,13 @@ public final class PowerManager {
 		try {
 			ReflectClass pms = ReflectClass.forName("com.android.server.power.PowerManagerService");
 			
-			pms.inject("init", hooks.hook_init);
+			if (android.os.Build.VERSION.SDK_INT >= 21) {
+				pms.inject("systemReady", hooks.hook_init);
+				
+			} else {
+				pms.inject("init", hooks.hook_init);
+			}
+			
 			pms.inject("shouldWakeUpWhenPluggedOrUnpluggedLocked", hooks.hook_shouldWakeUpWhenPluggedOrUnpluggedLocked);
 			
 		} catch (ReflectException ignore) {
@@ -80,8 +87,15 @@ public final class PowerManager {
 			try {
 				if(Common.debug()) Log.d(TAG, "Initiating Power Manager Hook");
 				
+				mSystemReady = true;
 				mPowerManager = ReflectClass.forReceiver(param.thisObject);
-				mBatteryService = mPowerManager.findField("mBatteryService").getValueToInstance();
+				
+				if (android.os.Build.VERSION.SDK_INT >= 21) {
+					mBatteryService = mPowerManager.findField("mBatteryManagerInternal").getValueToInstance();
+					
+				} else {
+					mBatteryService = mPowerManager.findField("mBatteryService").getValueToInstance();
+				}
 				
 				mContext = (Context) mPowerManager.findField("mContext").getValue();
 				
@@ -103,66 +117,68 @@ public final class PowerManager {
 		@Override
 		protected final void beforeHookedMethod(final MethodHookParam param) {
 			synchronized (mLock) {
-				try {
-					if(Common.debug()) Log.d(TAG, "Received USB Plug/UnPlug state change");
-	
-					Boolean powered = OLD_SDK ? (Boolean) mBatteryService.findMethod("isPowered").invoke() : (Boolean) mBatteryService.findMethod("isPowered", Match.BEST, Integer.TYPE).invoke(BatteryManager.BATTERY_PLUGGED_AC | BatteryManager.BATTERY_PLUGGED_USB);
-					Integer plugType = (Integer) mBatteryService.findMethod("getPlugType").invoke();
-					Integer oldPlugType = mPlugType;
-					Boolean wasPowered = mIsPowered;
-					
-					if (mInitiated) {
-						Boolean pluggedAC = BatteryManager.BATTERY_PLUGGED_AC == plugType || BatteryManager.BATTERY_PLUGGED_AC == oldPlugType;
-						Boolean pluggedUSB = BatteryManager.BATTERY_PLUGGED_USB == plugType || BatteryManager.BATTERY_PLUGGED_USB == oldPlugType;
+				if (mSystemReady) {
+					try {
+						if(Common.debug()) Log.d(TAG, "Received USB Plug/UnPlug state change");
+		
+						Boolean powered = OLD_SDK ? (Boolean) mBatteryService.findMethod("isPowered").invoke() : (Boolean) mBatteryService.findMethod("isPowered", Match.BEST, Integer.TYPE).invoke(BatteryManager.BATTERY_PLUGGED_AC | BatteryManager.BATTERY_PLUGGED_USB);
+						Integer plugType = (Integer) mBatteryService.findMethod("getPlugType").invoke();
+						Integer oldPlugType = mPlugType;
+						Boolean wasPowered = mIsPowered;
 						
-						if (powered != wasPowered && (pluggedAC || pluggedUSB)) {
-							Boolean moduleStatus = mPreferences.getBoolean(
-									powered ? Settings.USB_CONNECTION_SWITCH_PLUG : Settings.USB_CONNECTION_SWITCH_UNPLUG);
+						if (mInitiated) {
+							Boolean pluggedAC = BatteryManager.BATTERY_PLUGGED_AC == plugType || BatteryManager.BATTERY_PLUGGED_AC == oldPlugType;
+							Boolean pluggedUSB = BatteryManager.BATTERY_PLUGGED_USB == plugType || BatteryManager.BATTERY_PLUGGED_USB == oldPlugType;
 							
-							if (moduleStatus) {
-								String configAction = mPreferences.getString(
-										powered ? Settings.USB_CONNECTION_PLUG : Settings.USB_CONNECTION_UNPLUG);
+							if (powered != wasPowered && (pluggedAC || pluggedUSB)) {
+								Boolean moduleStatus = mPreferences.getBoolean(
+										powered ? Settings.USB_CONNECTION_SWITCH_PLUG : Settings.USB_CONNECTION_SWITCH_UNPLUG);
 								
-								if(Common.debug()) Log.d(TAG, "Handling USB Plug/UnPlug display state");
-								
-								if (OLD_SDK) {
-									mPowerManager.findFieldDeep("mIsPowered").setValue(powered);
-								}
-								
-								if (configAction.equals("on") 
-										|| (pluggedAC && configAction.equals("ac")) 
-											|| (pluggedUSB && configAction.equals("usb"))) {
+								if (moduleStatus) {
+									String configAction = mPreferences.getString(
+											powered ? Settings.USB_CONNECTION_PLUG : Settings.USB_CONNECTION_UNPLUG);
 									
-									if(Common.debug()) Log.d(TAG, "Turning display on");
+									if(Common.debug()) Log.d(TAG, "Handling USB Plug/UnPlug display state");
 									
 									if (OLD_SDK) {
-										mPowerManager.findMethodDeep("forceUserActivityLocked").invoke();
-										param.setResult(false);
-										
-									} else {
-										param.setResult(true);
+										mPowerManager.findFieldDeep("mIsPowered").setValue(powered);
 									}
 									
-								} else {
-									if(Common.debug()) Log.d(TAG, "Disabling default handler");
-									
-									param.setResult(false);
+									if (configAction.equals("on") 
+											|| (pluggedAC && configAction.equals("ac")) 
+												|| (pluggedUSB && configAction.equals("usb"))) {
+										
+										if(Common.debug()) Log.d(TAG, "Turning display on");
+										
+										if (OLD_SDK) {
+											mPowerManager.findMethodDeep("forceUserActivityLocked").invoke();
+											param.setResult(false);
+											
+										} else {
+											param.setResult(true);
+										}
+										
+									} else {
+										if(Common.debug()) Log.d(TAG, "Disabling default handler");
+										
+										param.setResult(false);
+									}
 								}
+								
+							} else if (powered == wasPowered) {
+								param.setResult(false);
 							}
 							
-						} else if (powered == wasPowered) {
-							param.setResult(false);
+						} else {
+							mInitiated = true;
 						}
+		
+						mIsPowered = powered;
+						mPlugType = plugType;
 						
-					} else {
-						mInitiated = true;
+					} catch (ReflectException e) {
+						Log.e(TAG, e.getMessage(), e);
 					}
-	
-					mIsPowered = powered;
-					mPlugType = plugType;
-					
-				} catch (ReflectException e) {
-					Log.e(TAG, e.getMessage(), e);
 				}
 			}
 		}

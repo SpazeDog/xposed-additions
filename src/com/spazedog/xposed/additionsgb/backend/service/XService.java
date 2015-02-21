@@ -44,6 +44,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
 import android.os.Binder;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.IBinder;
@@ -108,11 +109,22 @@ public final class XService extends IXService.Stub {
 		 * Plug in the service into Android's service manager
 		 */
 		XService hooks = new XService();
-		ReflectClass ams = ReflectClass.forName("com.android.server.am.ActivityManagerService");
-		
-		ams.inject("main", hooks.hook_main);
-		ams.inject("systemReady", hooks.hook_systemReady);
-		ams.inject("shutdown", hooks.hook_shutdown);
+		if (Build.VERSION.SDK_INT < 21) {
+			ReflectClass ams = ReflectClass.forName("com.android.server.am.ActivityManagerService");
+			
+			ams.inject("main", hooks.hook_main);
+			ams.inject("systemReady", hooks.hook_systemReady);
+			ams.inject("shutdown", hooks.hook_shutdown);
+			
+		} else {
+			/*
+			 * On API 21 we cannot access certain classes with the boot class loader. 
+			 * So we need to go another way. 
+			 */
+			
+			ReflectClass at = ReflectClass.forName("android.app.ActivityThread");
+			at.inject("systemMain", hooks.hook_main);
+		}
 		
 		/*
 		 * This service is all about the module's shared preferences. So we need to make sure that this
@@ -179,13 +191,26 @@ public final class XService extends IXService.Stub {
 	protected XC_MethodHook hook_main = new XC_MethodHook() {
 		@Override
 		protected final void afterHookedMethod(final MethodHookParam param) {
-			mContextSystem = (Context) param.getResult();
+			if (Build.VERSION.SDK_INT < 21) {
+				/*
+				 * The original com.android.server.am.ActivityManagerService.main() method
+				 * will return the system context, which XposedBridge will have stored in param.getResult().
+				 * This is why we inject this as an After Hook.
+				 */
+				mContextSystem = (Context) param.getResult();
+				
+			} else {
+				/*
+				 * The original android.app.ActivityThread method will return a new instance of itself. 
+				 * This instance contains the system context.
+				 */
+				mContextSystem = (Context) ReflectClass.forReceiver(param.getResult()).findMethod("getSystemContext").invoke();
+				
+				ReflectClass ams = ReflectClass.forName("com.android.server.am.ActivityManagerService", Thread.currentThread().getContextClassLoader());
+				ams.inject("systemReady", hook_systemReady);
+				ams.inject("shutdown", hook_shutdown);
+			}
 			
-			/*
-			 * The original com.android.server.am.ActivityManagerService.main() method
-			 * will return the system context, which XposedBridge will have stored in param.getResult().
-			 * This is why we inject this as an After Hook.
-			 */
 			ReflectClass.forName("android.os.ServiceManager")
 				.findMethod("addService", Match.BEST, String.class, XService.class)
 				.invoke(Common.XSERVICE_NAME, XService.this);

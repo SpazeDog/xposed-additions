@@ -35,6 +35,9 @@ import android.preference.PreferenceActivity;
 import android.preference.PreferenceCategory;
 import android.preference.PreferenceGroup;
 import android.preference.PreferenceScreen;
+import android.support.v7.widget.Toolbar;
+import android.view.LayoutInflater;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 
 import com.spazedog.xposed.additionsgb.Common.AppBuilder;
@@ -63,12 +66,32 @@ public class ActivitySelectorRemap extends PreferenceActivity implements OnPrefe
 		
 		mAction = getIntent().getStringExtra("action");
 		mAppBuilder = new AppBuilder( getListView() );
+	}
+	
+	@Override
+	protected void onPostCreate(Bundle savedInstanceState) {
+		super.onPostCreate(savedInstanceState);
 		
-		if ("add_condition".equals(mAction)) {
-			setTitle(R.string.preference_add_condition);
+		if (Build.VERSION.SDK_INT >= 14) {
+			LinearLayout root = (LinearLayout)findViewById(android.R.id.list).getParent().getParent().getParent();
+			Toolbar bar = (Toolbar) LayoutInflater.from(this).inflate(R.layout.actionbar_v14_layout, root, false);
+
+			if ("add_condition".equals(mAction)) {
+				bar.setTitle(R.string.preference_add_condition);
+				
+			} else if ("add_action".equals(mAction)) {
+				bar.setTitle(R.string.preference_add_action);
+			}
 			
-		} else if ("add_action".equals(mAction)) {
-			setTitle(R.string.preference_add_action);
+			root.addView(bar, 0);
+			
+		} else {
+			if ("add_condition".equals(mAction)) {
+				setTitle(R.string.preference_add_condition);
+				
+			} else if ("add_action".equals(mAction)) {
+				setTitle(R.string.preference_add_action);
+			}
 		}
 	}
 	

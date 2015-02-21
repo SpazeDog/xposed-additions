@@ -88,7 +88,8 @@ public abstract class IMediatorSetup {
 		/*
 		 * In API 19 Android switched from the KeyguardMediator class to a new KeyguardDelegate class.
 		 */
-		public static final Integer MANAGER_KEYGUARD_VERSION = android.os.Build.VERSION.SDK_INT >= 19 ? 2 : 1;
+		public static final Integer MANAGER_KEYGUARD_VERSION = android.os.Build.VERSION.SDK_INT < 19 ? 1 : 
+			android.os.Build.VERSION.SDK_INT < 21 ? 2 : 3;
 		
 		/*
 		 * New tools to turn on the screen was added to the documented part in API 17.
@@ -140,6 +141,8 @@ public abstract class IMediatorSetup {
 		public static Integer FLAG_INJECTED;
 		public static Integer FLAG_VIRTUAL;
 		public static Integer FLAG_WAKE_DROPPED;
+		
+		public static Integer FLAG_INTERACTIVE;
 		
 		public static Integer QUEUEING_ALLOW;
 		public static Integer QUEUEING_REJECT;
@@ -196,7 +199,11 @@ public abstract class IMediatorSetup {
 		
 		ORIGINAL.FLAG_INJECTED = (Integer) wmp.findField("FLAG_INJECTED").getValue();
 		ORIGINAL.FLAG_VIRTUAL = (Integer) wmp.findField("FLAG_VIRTUAL").getValue();
-		ORIGINAL.FLAG_WAKE_DROPPED = (Integer) ((wmp.findField("FLAG_WAKE_DROPPED").getValue()));
+		ORIGINAL.FLAG_WAKE_DROPPED = (Integer) ((wmp.findField("FLAG_WAKE").getValue()));
+		
+		if (android.os.Build.VERSION.SDK_INT >= 21) {
+			ORIGINAL.FLAG_INTERACTIVE = (Integer) ((wmp.findField("FLAG_INTERACTIVE").getValue()));
+		}
 		
 		ORIGINAL.QUEUEING_ALLOW = (Integer) wmp.findFieldDeep("ACTION_PASS_TO_USER").getValue();
 		ORIGINAL.QUEUEING_REJECT = 0;
@@ -244,7 +251,13 @@ public abstract class IMediatorSetup {
 			}
 		});
 		
-		mMethods.put("KeyguardMediator.isShowing", mKeyguardMediator.findMethodDeep("isShowingAndNotHidden"));
+		if (SDK.MANAGER_KEYGUARD_VERSION > 2) {
+			mMethods.put("KeyguardMediator.isShowing", mKeyguardMediator.findMethodDeep("isShowingAndNotOccluded"));
+		
+		} else {
+			mMethods.put("KeyguardMediator.isShowing", mKeyguardMediator.findMethodDeep("isShowingAndNotHidden"));
+		}
+		
 		mMethods.put("KeyguardMediator.isLocked", mKeyguardMediator.findMethodDeep("isShowing"));
 		mMethods.put("KeyguardMediator.isRestricted", mKeyguardMediator.findMethodDeep("isInputRestricted"));
 		mMethods.put("KeyguardMediator.dismiss", mKeyguardMediator.findMethodDeep("keyguardDone", Match.DEFAULT, Boolean.TYPE, Boolean.TYPE));
@@ -327,7 +340,13 @@ public abstract class IMediatorSetup {
 			mMethods.put("closeSystemDialogs", mActivityManagerService.findMethodDeep("closeSystemDialogs", Match.BEST, String.class));
 			
 			try {
-				mMethods.put("showGlobalActionsDialog", mPhoneWindowManager.findMethodDeep("showGlobalActionsDialog"));
+				if (android.os.Build.VERSION.SDK_INT >= 21) {
+					mMethods.put("showGlobalActionsDialog", mPhoneWindowManager.findMethodDeep("showGlobalActions"));
+					
+				} else {
+					mMethods.put("showGlobalActionsDialog", mPhoneWindowManager.findMethodDeep("showGlobalActionsDialog"));
+				}
+				
 				mXServiceManager.putBoolean("variable:remap.support.global_actions", true);
 				
 			} catch (ReflectException e) {
