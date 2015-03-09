@@ -104,22 +104,29 @@ public class XServiceManager {
 				instance = new XServiceManager();
 			}
 			
-			try {
-				instance.mService = (IXService) ReflectClass.forClass(IXService.class).bindInterface(Common.XSERVICE_NAME).getReceiver();
-			
-				if (instance.mService != null) {
-					instance.mService.setOnChangeListener(instance.mInternalListener);
+			for (String serviceName : new String[]{Common.XSERVICE_NAME, Common.XSERVICE_NAME_COMBAT}) {
+				try {
+					ReflectClass service = ReflectClass.forClass(IXService.class).bindInterface(serviceName);
 					
-					oInstance = new WeakReference<XServiceManager>(instance);
+					if (service != null) {
+						instance.mService = (IXService) service.getReceiver();
+						
+						if (instance.mService != null) {
+							instance.mService.setOnChangeListener(instance.mInternalListener);
+							
+							oInstance = new WeakReference<XServiceManager>(instance);
+							
+							break;
+						}
+					}
 					
-				} else {
-					instance = null;
+				} catch (Throwable e) {
+					Log.e(TAG, e.getMessage(), e);
 				}
-				
-			} catch (Throwable e) {
+			}
+			
+			if (instance.mService == null) {
 				instance = null;
-				
-				Log.e(TAG, e.getMessage(), e);
 			}
 		}
 		
@@ -127,12 +134,23 @@ public class XServiceManager {
 	}
 	
 	private synchronized void handleRemoteException(RemoteException e) {
-		try {
-			mService = (IXService) ReflectClass.forClass(IXService.class).bindInterface(Common.XSERVICE_NAME).getReceiver();
-			mService.setOnChangeListener(mInternalListener);
-			
-		} catch (Throwable ei) {
-			Log.e(TAG, ei.getMessage(), ei);
+		for (String serviceName : new String[]{Common.XSERVICE_NAME, Common.XSERVICE_NAME_COMBAT}) {
+			try {
+				ReflectClass service = ReflectClass.forClass(IXService.class).bindInterface(serviceName);
+				
+				if (service != null) {
+					mService = (IXService) service.getReceiver();
+					
+					if (mService != null) {
+						mService.setOnChangeListener(mInternalListener);
+						
+						break;
+					}
+				}
+				
+			} catch (Throwable ei) {
+				Log.e(TAG, ei.getMessage(), ei);
+			}
 		}
 	}
 	
