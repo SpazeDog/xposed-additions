@@ -61,8 +61,8 @@ public final class Common {
 	
 	public static final String PACKAGE_NAME = Common.class.getPackage().getName();
 	public static final String PACKAGE_NAME_PRO = PACKAGE_NAME + ".pro";
-	
-	public static final String XSERVICE_NAME = PACKAGE_NAME + ".service.XSERVICE";
+
+	public static final String XSERVICE_NAME = "user.additionsgb.service";
 	public static final String XSERVICE_PERMISSIONS = PACKAGE_NAME + ".permissions.XSERVICE";
 	
 	public static final String TORCH_INTENT_ACTION = PACKAGE_NAME + ".TOGGLE_FLASHLIGHT";

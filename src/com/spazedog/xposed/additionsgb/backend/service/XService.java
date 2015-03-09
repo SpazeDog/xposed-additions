@@ -103,13 +103,15 @@ public final class XService extends IXService.Stub {
 	}
 	
 	public static void init() {
-		if(Common.DEBUG) Log.d(TAG, "Adding Service Hooks");
+		Log.d(TAG, "Adding Service Hooks on SDK version " + Build.VERSION.SDK_INT);
 		
 		/*
 		 * Plug in the service into Android's service manager
 		 */
-		XService hooks = new XService();
 		if (Build.VERSION.SDK_INT < 21) {
+			Log.d(TAG, "Attaching hook to ActivityManagerService");
+			
+			XService hooks = new XService();
 			ReflectClass ams = ReflectClass.forName("com.android.server.am.ActivityManagerService");
 			
 			ams.inject("main", hooks.hook_main);
@@ -117,13 +119,28 @@ public final class XService extends IXService.Stub {
 			ams.inject("shutdown", hooks.hook_shutdown);
 			
 		} else {
+			Log.d(TAG, "Attaching hook to ActivityThread to get a proper ClassLoader");
+			
 			/*
 			 * On API 21 we cannot access certain classes with the boot class loader. 
 			 * So we need to go another way. 
 			 */
 			
 			ReflectClass at = ReflectClass.forName("android.app.ActivityThread");
-			at.inject("systemMain", hooks.hook_main);
+			at.inject("systemMain", new XC_MethodHook() {
+				@Override
+				protected final void afterHookedMethod(final MethodHookParam param) {
+					Log.d(TAG, "Attaching hook to ActivityManagerService and SystemServer");
+					
+					XService hooks = new XService();
+					ReflectClass ams = ReflectClass.forName("com.android.server.am.ActivityManagerService", Thread.currentThread().getContextClassLoader());
+					ReflectClass ss = ReflectClass.forName("com.android.server.SystemServer", Thread.currentThread().getContextClassLoader());
+					
+					ss.inject("startBootstrapServices", hooks.hook_main);
+					ams.inject("systemReady", hooks.hook_systemReady);
+					ams.inject("shutdown", hooks.hook_shutdown);
+				}
+			});
 		}
 		
 		/*
@@ -191,6 +208,8 @@ public final class XService extends IXService.Stub {
 	protected XC_MethodHook hook_main = new XC_MethodHook() {
 		@Override
 		protected final void afterHookedMethod(final MethodHookParam param) {
+			Log.d(TAG, "Entering Service Main hook");
+			
 			if (Build.VERSION.SDK_INT < 21) {
 				/*
 				 * The original com.android.server.am.ActivityManagerService.main() method
@@ -199,21 +218,28 @@ public final class XService extends IXService.Stub {
 				 */
 				mContextSystem = (Context) param.getResult();
 				
+				ReflectClass.forName("android.os.ServiceManager")
+				.findMethod("addService", Match.BEST, String.class, IBinder.class)
+				.invoke(Common.XSERVICE_NAME, XService.this);
+				
 			} else {
 				/*
 				 * The original android.app.ActivityThread method will return a new instance of itself. 
 				 * This instance contains the system context.
 				 */
-				mContextSystem = (Context) ReflectClass.forReceiver(param.getResult()).findMethod("getSystemContext").invoke();
+				mContextSystem = (Context) ReflectClass.forReceiver(param.thisObject).findField("mSystemContext").getValue();
 				
-				ReflectClass ams = ReflectClass.forName("com.android.server.am.ActivityManagerService", Thread.currentThread().getContextClassLoader());
-				ams.inject("systemReady", hook_systemReady);
-				ams.inject("shutdown", hook_shutdown);
+				/*
+				 * Set the class loader for the server process. 
+				 * 
+				 * TODO: Maybe this should just be added as standard to ReflectTools
+				 */
+				ReflectClass.setClassLoader(Thread.currentThread().getContextClassLoader());
+				
+				ReflectClass.forName("android.os.ServiceManager")
+				.findMethod("addService", Match.BEST, String.class, IBinder.class, Boolean.TYPE)
+				.invoke(Common.XSERVICE_NAME, XService.this, true);
 			}
-			
-			ReflectClass.forName("android.os.ServiceManager")
-				.findMethod("addService", Match.BEST, String.class, XService.class)
-				.invoke(Common.XSERVICE_NAME, XService.this);
 		}
 	};
 	
