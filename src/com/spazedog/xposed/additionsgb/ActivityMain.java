@@ -19,6 +19,8 @@
 
 package com.spazedog.xposed.additionsgb;
 
+import java.util.ArrayList;
+
 import net.dinglisch.android.tasker.TaskerIntent;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -37,6 +39,8 @@ import android.widget.LinearLayout;
 
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
 import com.spazedog.xposed.additionsgb.configs.Settings;
+import com.spazedog.xposed.additionsgb.utils.SettingsHelper;
+import com.spazedog.xposed.additionsgb.utils.SettingsHelper.SettingsData;
 
 public class ActivityMain extends PreferenceActivity implements OnPreferenceClickListener {
 	
@@ -86,10 +90,7 @@ public class ActivityMain extends PreferenceActivity implements OnPreferenceClic
     @Override
     protected void onStop() {
     	super.onStop();
-    	
-    	if (mPreferences != null)
-    		mPreferences.commit();
-    	
+
     	mPreferences = null;
     }
     

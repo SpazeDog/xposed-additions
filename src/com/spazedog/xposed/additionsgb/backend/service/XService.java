@@ -20,22 +20,17 @@
 package com.spazedog.xposed.additionsgb.backend.service;
 
 import java.io.BufferedInputStream;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
+import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -55,38 +50,25 @@ import com.spazedog.lib.reflecttools.ReflectClass;
 import com.spazedog.lib.reflecttools.ReflectMethod;
 import com.spazedog.lib.reflecttools.utils.ReflectConstants.Match;
 import com.spazedog.xposed.additionsgb.Common;
+import com.spazedog.xposed.additionsgb.utils.SettingsHelper;
+import com.spazedog.xposed.additionsgb.utils.SettingsHelper.SettingsData;
+import com.spazedog.xposed.additionsgb.utils.SettingsHelper.Type;
+import com.spazedog.xposed.additionsgb.utils.android.ContextHelper;
+import com.spazedog.xposed.additionsgb.utils.android.XmlUtilsHelper;
 
 import de.robv.android.xposed.XC_MethodHook;
 
 public final class XService extends IXService.Stub {
 	public static final String TAG = XService.class.getName();
 	
-	public static enum DataType { 
-		EMPTY("empty"), STRING("string"), INTEGER("integer"), BOOLEAN("bool"), ARRAY("array");
-		
-		private final String mType;
-		
-		private DataType(String type) {
-			mType = type;
-		}
-		
-		public String getType() {
-			return mType;
-		}
-	}
-	
 	private Context mContextSystem;
 	private Context mContextModule;
 	
-	private Map<String, Object> mCachedData = new HashMap<String, Object>();
-	private Map<String, Boolean> mCachedPreserve = new HashMap<String, Boolean>();
-	private Boolean mCachedUpdated = false;
+	private SettingsData mData = new SettingsData();
 	
 	private Boolean mIsReady = false;
 	
 	private Integer mVersion = 0;
-	
-	private ExecutorService mThreadExecuter = Executors.newSingleThreadExecutor();
 	
 	private Set<IBinder> mListeners = new HashSet<IBinder>();
 	
@@ -96,10 +78,6 @@ public final class XService extends IXService.Stub {
 		private static File FILE = new File(DIR.getPath(), Common.PREFERENCE_FILE + ".xml");
 		private static int UID = 1000;
 		private static int GID = 1000;
-	}
-	
-	private static class PlaceHolder<T> {
-		public T value;
 	}
 	
 	public static void init() {
@@ -142,51 +120,12 @@ public final class XService extends IXService.Stub {
 				}
 			});
 		}
-		
+	
 		/*
-		 * This service is all about the module's shared preferences. So we need to make sure that this
-		 * service has access to handle the associated file.
+		 * If we have a configuration file, make sure that the system user can read it.
+		 * Write access does not mater, from Android 5.0 and up, SELinux will block this regardless of the permissions.
 		 */
-		if (PREFERENCE.ROOT.exists() && (PREFERENCE.DIR.exists() || PREFERENCE.DIR.mkdir())) {
-			File packageList = new File(Environment.getDataDirectory(), "system/packages.list");
-			
-			if (packageList.exists()) {
-				try {
-					BufferedReader buffer = new BufferedReader(new FileReader(packageList));
-					String line;
-					
-					while ((line = buffer.readLine()) != null) {
-						if (line.startsWith(Common.PACKAGE_NAME + " ")) {
-							String[] parts = line.trim().split(" ");
-							
-							PREFERENCE.UID = Integer.parseInt(parts[1]);
-							
-							break;
-						}
-					}
-					
-					buffer.close();
-					
-				} catch (Throwable e) { e.printStackTrace(); }
-			}
-			
-			if (!PREFERENCE.FILE.exists()) {
-				try {
-					FileOutputStream stream = new FileOutputStream(PREFERENCE.FILE);
-					ReflectClass xmlUtils = ReflectClass.forName("com.android.internal.util.XmlUtils");
-					ReflectClass fileUtils = ReflectClass.forName("android.os.FileUtils");
-					
-					xmlUtils.findMethod("writeMapXml", Match.BEST, HashMap.class, stream.getClass()).invoke(new HashMap<String, Object>(), stream);
-					fileUtils.findMethod("sync", Match.BEST, stream.getClass()).invoke(stream);
-				
-					try {
-						stream.close();
-						
-					} catch (IOException e) {}
-					
-				} catch (FileNotFoundException e) { e.printStackTrace(); }
-			}
-			
+		if (PREFERENCE.FILE.exists()) {
 			/*
 			 * Some Android versions fail when trying to change the ownership. As a fallback we leave the ownership unchanged, and just makes
 			 * sure that the file is globally readable and writable.
@@ -195,12 +134,8 @@ public final class XService extends IXService.Stub {
 			ReflectMethod setPermissions = ReflectClass.forName("android.os.FileUtils")
 					.findMethod("setPermissions", Match.BEST, String.class, Integer.TYPE, Integer.TYPE, Integer.TYPE);
 			
-			if((Integer) setPermissions.invoke(PREFERENCE.DIR.getPath(), 0771, PREFERENCE.UID, PREFERENCE.GID) != 0) {
-				setPermissions.invoke(PREFERENCE.DIR.getPath(), 0777, -1, -1);
-			}
-			
-			if((Integer) setPermissions.invoke(PREFERENCE.FILE.getPath(), 0660, PREFERENCE.UID, PREFERENCE.GID) != 0) {
-				setPermissions.invoke(PREFERENCE.FILE.getPath(), 0666, -1, -1);
+			if((Integer) setPermissions.invoke(PREFERENCE.FILE.getPath(), 0640, -1, PREFERENCE.GID) != 0) {
+				setPermissions.invoke(PREFERENCE.FILE.getPath(), 0644, -1, -1);
 			}
 		}
 	}
@@ -267,66 +202,22 @@ public final class XService extends IXService.Stub {
 			if (PREFERENCE.FILE.exists()) {
 				try {
 					BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(PREFERENCE.FILE), 16*1024);
+					Map<String, Object> data = (Map<String, Object>) XmlUtilsHelper.readMapXml(inputStream);
 					
-					Map<String, Object> data = (Map<String, Object>) ReflectClass.forName("com.android.internal.util.XmlUtils")
-							.findMethod("readMapXml", Match.BEST, inputStream.getClass())
-							.invoke(inputStream);
+					if (data != null) {
+						mData = new SettingsData(data);
+
+						SettingsHelper.unpack(mData);
+					}
 					
 					try {
 						inputStream.close();
 						
 					} catch (IOException e) {}
-					
-					if (data != null) {
-						/*
-						 * TODO:
-						 * 		Find a more elegant way of handling the order of array items.
-						 */
-						Map<String, Map<String, String>> arrays = new HashMap<String, Map<String, String>>();
-						
-						for (String key : data.keySet()) {
-							String indexKey = key;
-							
-							if (key.indexOf("#") == 0) {
-								indexKey = key.substring(key.indexOf(":")+1);
-								String index = key.substring(1, key.indexOf(":"));
-								Map<String, String> map = arrays.containsKey(indexKey) ? arrays.get(indexKey) : new HashMap<String, String>();
 
-								map.put(index, "@null".equals(data.get(key)) ? null : (String) data.get(key));
-								arrays.put(indexKey, map);
-								
-							} else {
-								if(Common.DEBUG) Log.d(TAG, "Caching preference " + key + " = '" + data.get(key) + "'");
-								
-								mCachedData.put(key, "@null".equals(data.get(key)) ? null : data.get(key));
-							}
-							
-							/*
-							 * Mark these keys as 'preserve' so that they are re-written
-							 * to the preference file during shutdown
-							 */
-							if (!mCachedPreserve.containsKey(indexKey)) {
-								mCachedPreserve.put(indexKey, true);
-							}
-						}
-						
-						for (String key : arrays.keySet()) {
-							Map<String, String> arrayMap = arrays.get(key);
-							List<String> arrayList = new ArrayList<String>(arrayMap.size());
-							
-							for (int i=1; i <= arrayMap.size(); i++) {
-								if(Common.DEBUG) Log.d(TAG, "Caching preference " + key + "[" + i + "] = '" + arrayMap.get(""+i) + "'");
-								
-								arrayList.add(i-1, arrayMap.get(""+i));
-							}
-							
-							mCachedData.put(key, arrayList);
-						}
-					}
-					
-					if(Common.DEBUG) Log.d(TAG, "Cached " + (mCachedData == null ? "NULL" : mCachedData.size()) + " indexes from preference file");
-					
-				} catch (FileNotFoundException e) { e.printStackTrace(); }
+				} catch (FileNotFoundException e) {
+					Log.e(TAG, e.getMessage(), e);
+				}
 			}
 			
 			IntentFilter intentFilter = new IntentFilter();
@@ -358,37 +249,32 @@ public final class XService extends IXService.Stub {
 	}
 	
 	private void setCached(String key, Object value, Integer preserve) {
-		synchronized (mCachedData) {
+		synchronized (mData) {
 			if (accessGranted()) {
-				mCachedData.put(key, value);
-				mCachedPreserve.put(key, preserve < 0 ? (mCachedPreserve.get(key) != null && mCachedPreserve.get(key) == true) : (preserve == 1));
-				
-				if (mCachedPreserve.get(key)) {
-					mCachedUpdated = true;
-				}
+				mData.put(key, value, preserve == 1);
 				
 				broadcastChange(key);
 			}
 		}
 	}
 	
-	private Object getCached(String key, Object defaultValue, DataType type) {
-		if (mCachedData.containsKey(key)) {
-			return mCachedData.get(key);
+	private Object getCached(String key, Object defaultValue, Integer type) {
+		if (mData.contains(key)) {
+			return mData.get(key);
 		}
 		
 		PackageManager manager = mContextSystem.getPackageManager();
 		
 		try {
 			Resources resources = manager.getResourcesForApplication(Common.PACKAGE_NAME);
-			Integer resourceId = resources.getIdentifier(key, type.getType(), Common.PACKAGE_NAME);
+			Integer resourceId = resources.getIdentifier(key, Type.getIdentifier(type), Common.PACKAGE_NAME);
 			
 			if (resourceId > 0) {
 				switch (type) {
-					case STRING: 
+					case Type.STRING: 
 						return resources.getString(resourceId);
 						
-					case ARRAY:
+					case Type.LIST:
 						String[] array = resources.getStringArray(resourceId);
 						List<String> list = new ArrayList<String>();
 						
@@ -398,10 +284,10 @@ public final class XService extends IXService.Stub {
 						
 						return list;
 		
-					case BOOLEAN:
+					case Type.BOOLEAN:
 						return resources.getBoolean(resourceId);
 		
-					case INTEGER:
+					case Type.INTEGER:
 						return resources.getInteger(resourceId);
 				}
 			} 
@@ -435,33 +321,29 @@ public final class XService extends IXService.Stub {
 
 	@Override
 	public String getString(String key, String defaultValue) throws RemoteException {
-		return (String) getCached(key, defaultValue, DataType.STRING);
+		return (String) getCached(key, defaultValue, Type.STRING);
 	}
 	
 	@SuppressWarnings("unchecked")
 	@Override
 	public List<String> getStringArray(String key, List<String> defaultValue) throws RemoteException {
-		return (List<String>) getCached(key, defaultValue, DataType.ARRAY);
+		return (List<String>) getCached(key, defaultValue, Type.LIST);
 	}
 
 	@Override
 	public int getInt(String key, int defaultValue) throws RemoteException {
-		return (Integer) getCached(key, defaultValue, DataType.INTEGER);
+		return (Integer) getCached(key, defaultValue, Type.INTEGER);
 	}
 
 	@Override
 	public boolean getBoolean(String key, boolean defaultValue) throws RemoteException {
-		return (Boolean) getCached(key, defaultValue, DataType.BOOLEAN);
+		return (Boolean) getCached(key, defaultValue, Type.BOOLEAN);
 	}
 	
 	@Override
 	public boolean remove(String key) {
-		if (mCachedData.containsKey(key)) {
-			Object value = mCachedData.get(key);
-			Boolean preserved = mCachedPreserve.get(key);
-			
-			mCachedData.remove(key);
-			mCachedPreserve.remove(key);
+		if (mData.contains(key)) {
+			mData.remove(key);
 			
 			broadcastChange(key);
 			
@@ -472,28 +354,19 @@ public final class XService extends IXService.Stub {
 	}
 	
 	@Override
-	public String getType(String key) {
-		if (mCachedData.containsKey(key)) {
-			Object object = mCachedData.get(key);
-			
-			if (object instanceof Integer) 
-				return DataType.INTEGER.name();
-			else if (object instanceof Boolean) 
-				return DataType.BOOLEAN.name();
-			else if (object instanceof List) 
-				return DataType.ARRAY.name();
-			else
-				return DataType.STRING.name();
+	public int getType(String key) {
+		if (mData.contains(key)) {
+			mData.type(key);
 		}
 		
-		return DataType.EMPTY.name();
+		return Type.UNKNOWN;
 	}
 	
 	@Override
 	public List<String> getKeys() {
 		ArrayList<String> list = new ArrayList<String>();
 		
-		for (String key : mCachedData.keySet()) {
+		for (String key : mData.keySet()) {
 			list.add(key);
 		}
 		
@@ -504,10 +377,8 @@ public final class XService extends IXService.Stub {
 	public List<String> getPreservedKeys() {
 		ArrayList<String> list = new ArrayList<String>();
 		
-		for (String key : mCachedData.keySet()) {
-			Boolean check = mCachedPreserve.get(key);
-			
-			if (check != null && check == true) {
+		for (String key : mData.keySet()) {
+			if (mData.persistent(key)) {
 				list.add(key);
 			}
 		}
@@ -516,84 +387,39 @@ public final class XService extends IXService.Stub {
 	}
 	
 	@Override
-	public boolean apply() {
-		return write(false);
+	public void apply() {
+		write();
 	}
 	
-	@Override
-	public void commit() {
-		write(true);
-	}
+	@SuppressLint("NewApi")
+	private void write() {
+		synchronized (mData) {
+			if(Common.DEBUG) Log.d(TAG, "Preparing configuratino file for writing");
+
+			if (mData.changed()) {
+				Intent intent = new Intent( Common.XSERVICE_BROADCAST_SETTINGS );
+				Bundle bundle = new Bundle();
+				SettingsData data = new SettingsData();
+				
+				/*
+				 * pack all data into the extras bundle
+				 */
+				for (String key : mData.keySet()) {
+					if (mData.persistent(key)) {
+						data.put(key, mData.get(key));
+					}
+				}
 	
-	@SuppressWarnings("unchecked")
-	private Boolean write(Boolean async) {
-		synchronized (mCachedData) {
-			if (mCachedUpdated) {
-				if(Common.DEBUG) Log.d(TAG, "Writing preferences to file");
+				SettingsHelper.pack(data);
+				bundle.putParcelable("data", data);
+				intent.putExtras(bundle);
 				
-				mCachedUpdated = false;
+				/*
+				 * send the data to the application so that it can write it to disk
+				 */
 				
-				final PlaceHolder<Boolean> status = new PlaceHolder<Boolean>();
-				final Map<String, Object> data = new HashMap<String, Object>();
-				final Runnable writeRunnable = new Runnable() {
-					@Override
-					public void run() {
-						synchronized (XService.this) {
-							try {
-								if(Common.DEBUG) Log.d(TAG, "Writing " + data.size() + " settings to the preference file");
-								
-								FileOutputStream stream = new FileOutputStream(PREFERENCE.FILE);
-								ReflectClass xmlUtils = ReflectClass.forName("com.android.internal.util.XmlUtils");
-								ReflectClass fileUtils = ReflectClass.forName("android.os.FileUtils");
-								
-								xmlUtils.findMethod("writeMapXml", Match.BEST, HashMap.class, stream.getClass()).invoke(data, stream);
-								fileUtils.findMethod("sync", Match.BEST, stream.getClass()).invoke(stream);
-								
-								try {
-									stream.close();
-									
-								} catch (IOException e) {}
-								
-								status.value = true;
-								
-							} catch (Throwable e) { 
-								if(Common.DEBUG) Log.d(TAG, "Failed to write preferences to file");
-								
-								status.value = false; 
-								e.printStackTrace(); 
-							}
-						}
-					}
-				};
-				
-				for (String key : mCachedPreserve.keySet()) {
-					if (mCachedPreserve.get(key) == true) {
-						Object content = mCachedData.get(key);
-						
-						if (content instanceof List) {
-							int i = 0;
-							
-							for (String value : ((ArrayList<String>) content)) {
-								data.put("#" + (i += 1) + ":" + key, value == null ? "@null" : value);
-							}
-							
-						} else {
-							data.put(key.indexOf("#") == 0 ? key.substring(1) : key, content == null ? "@null" : content);
-						}
-					}
-				}
-				
-				if (async) {
-					mThreadExecuter.execute(writeRunnable);
-					
-				} else {
-					writeRunnable.run();
-					
-					return status.value;
-				}
+				ContextHelper.sendBroadcast(mContextSystem, intent);
 			}
-			
-			return true;
 		}
 	}
 	
@@ -666,17 +492,17 @@ public final class XService extends IXService.Stub {
 	};
 	
 	private void broadcastChange(String key) {
-		DataType type = DataType.valueOf(getType(key));
+		Integer type = mData.contains(key) ? mData.type(key) : Type.UNKNOWN;
 		
 		synchronized(mListeners) {
 			for (IBinder listener : mListeners) {
 				if (listener != null && listener.pingBinder()) {
 					try {
-						if (type == DataType.EMPTY) {
+						if (type == Type.UNKNOWN) {
 							IXServiceChangeListener.Stub.asInterface(listener).onPreferenceRemoved(key);
 							
 						} else {
-							IXServiceChangeListener.Stub.asInterface(listener).onPreferenceChanged(key, type.name());
+							IXServiceChangeListener.Stub.asInterface(listener).onPreferenceChanged(key, type);
 						}
 						
 					} catch (RemoteException e) {}

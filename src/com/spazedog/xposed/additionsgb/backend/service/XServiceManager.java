@@ -29,11 +29,12 @@ import java.util.Set;
 
 import android.os.Bundle;
 import android.os.RemoteException;
+import android.renderscript.Element.DataType;
 import android.util.Log;
 
 import com.spazedog.lib.reflecttools.ReflectClass;
 import com.spazedog.xposed.additionsgb.Common;
-import com.spazedog.xposed.additionsgb.backend.service.XService.DataType;
+import com.spazedog.xposed.additionsgb.utils.SettingsHelper.Type;
 
 /*
  * This manager makes it easier to work with the XService. 
@@ -63,14 +64,14 @@ public class XServiceManager {
 	
 	private IXServiceChangeListener mInternalListener = new IXServiceChangeListener.Stub(){
 		@Override
-		public void onPreferenceChanged(String key, String type) {
+		public void onPreferenceChanged(String key, int type) {
 			try {
-				switch(DataType.valueOf(type)) {
-					case STRING: mData.put(key, mService.getString(key, "")); break;
-					case INTEGER: mData.put(key, mService.getInt(key, -1)); break;
-					case BOOLEAN: mData.put(key, mService.getBoolean(key, false)); break;
-					case ARRAY: mData.put(key, mService.getStringArray(key, new ArrayList<String>())); 
-					case EMPTY: mData.remove(key);
+				switch(type) {
+					case Type.STRING: mData.put(key, mService.getString(key, "")); break;
+					case Type.INTEGER: mData.put(key, mService.getInt(key, -1)); break;
+					case Type.BOOLEAN: mData.put(key, mService.getBoolean(key, false)); break;
+					case Type.LIST: mData.put(key, mService.getStringArray(key, new ArrayList<String>())); 
+					case Type.UNKNOWN: mData.remove(key);
 				}
 				
 			} catch (RemoteException e) { handleRemoteException(e); }
@@ -416,13 +417,13 @@ public class XServiceManager {
 		return null;
 	}
 	
-	public DataType getType(String key) {
+	public Integer getType(String key) {
 		try {
-			return DataType.valueOf(mService.getType(key));
+			return mService.getType(key);
 			
 		} catch (RemoteException e) { handleRemoteException(e); }
 		
-		return DataType.EMPTY;
+		return Type.UNKNOWN;
 	}
 	
 	public List<String> getKeys() {
@@ -434,18 +435,9 @@ public class XServiceManager {
 		return null;
 	}
 	
-	public boolean apply() {
+	public void apply() {
 		try {
-			return mService.apply();
-			
-		} catch (RemoteException e) { handleRemoteException(e); }
-		
-		return false;
-	}
-	
-	public void commit() {
-		try {
-			mService.commit();
+			mService.apply();
 			
 		} catch (RemoteException e) { handleRemoteException(e); }
 	}

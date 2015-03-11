@@ -35,13 +35,12 @@ interface IXService {
 	
 	boolean remove(String key);
 	
-	String getType(String key);
+	int getType(String key);
 	
 	List<String> getKeys();
 	List<String> getPreservedKeys();
 	
-	boolean apply();
-	void commit();
+	void apply();
 	
 	boolean isUnlocked();
 	

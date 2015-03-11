@@ -22,6 +22,12 @@
         <meta-data android:value="30+" android:name="xposedminversion" />
         <meta-data android:value="Additional Settings for Gingerbread and up" android:name="xposeddescription" />
         
+        <receiver android:name=".SettingsReceiver">
+            <intent-filter>
+                <action android:name="user.additionsgb.service.broadcast.settings" />
+            </intent-filter>
+        </receiver>
+        
         <service android:name=".ServiceTorch">
             <intent-filter>
                 <action android:name="com.spazedog.xposed.additionsgb.TOGGLE_FLASHLIGHT" />
