@@ -239,7 +239,11 @@ public final class PhoneWindowManager {
 			}
 			
 			synchronized(mQueueLock) {
-				mActiveQueueing = true;
+				/*
+				 * Only disable default haptic feedback on 
+				 * our own injected events
+				 */
+				mActiveQueueing = (((KeyEvent) param.args[0]).getFlags() & EventKey.FLAG_CUSTOM) != 0;
 				
 				// android.os.SystemClock.uptimeMillis
 				
@@ -359,8 +363,6 @@ public final class PhoneWindowManager {
 		@TargetApi(Build.VERSION_CODES.HONEYCOMB_MR1)
 		@Override
 		protected final void beforeHookedMethod(final MethodHookParam param) {
-			mActiveDispatching = true;
-			
 			Integer methodVersion = SDK.METHOD_INTERCEPT_VERSION;
 			KeyEvent keyEvent = methodVersion == 1 ? null : (KeyEvent) param.args[1];
 			Integer keyCode = (Integer) (methodVersion == 1 ? param.args[3] : keyEvent.getKeyCode());
@@ -371,6 +373,12 @@ public final class PhoneWindowManager {
 			Boolean down = action == KeyEvent.ACTION_DOWN;
 			EventKey key = mEventManager.getKey(keyCode);
 			String tag = TAG + "#Dispatching/" + (down ? "Down " : "Up ") + keyCode + "(" + mEventManager.getTapCount() + "," + repeatCount+ "):";
+			
+			/*
+			 * Only disable default haptic feedback on 
+			 * our own injected events
+			 */
+			mActiveDispatching = (((KeyEvent) param.args[1]).getFlags() & EventKey.FLAG_CUSTOM) != 0;
 			
 			/*
 			 * Using KitKat work-around from the InputManager Hook
