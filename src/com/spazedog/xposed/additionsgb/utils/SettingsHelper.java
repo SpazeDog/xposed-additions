@@ -363,6 +363,8 @@ public class SettingsHelper {
 						stringList.set(listItemLoc, listItemType == Type.NULL ? null : (String) value);
 						data.put(listName, stringList);
 						
+						break;
+						
 					default:
 						return null;
 				}

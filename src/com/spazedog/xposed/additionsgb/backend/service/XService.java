@@ -495,13 +495,6 @@ public final class XService extends IXService.Stub {
 		Integer type = mData.contains(key) ? mData.type(key) : Type.UNKNOWN;
 		
 		synchronized(mListeners) {
-			/*
-			 * Temp. solution to Lollipop issues where config is not written during shutdown.
-			 * 
-			 * TODO: Look into the possibility of handling config using URI's (FileProvider) 
-			 */
-			write();
-			
 			for (IBinder listener : mListeners) {
 				if (listener != null && listener.pingBinder()) {
 					try {
