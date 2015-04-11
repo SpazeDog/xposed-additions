@@ -1,0 +1,187 @@
+<resources>
+
+    <string name='app_name'>Експоз додаци</string>
+    
+    <string name='preference_load_apps'>Учитај списак апликација</string>
+    
+    <string name='array_externals_keyboard'>Тастатура</string>
+    <string name='array_externals_controller'>Гејмпед/џојстик</string>
+    <string name='array_externals_misc'>Разно</string>
+    
+    <!-- ================================================
+         Strings for wakeplug_names array
+    ================================================ -->
+    <string name='array_wakeplug_on'>Увек</string>
+    <string name='array_wakeplug_ac'>Пуњач</string>
+    <string name='array_wakeplug_usb'>УСБ веза</string>
+    <string name='array_wakeplug_off'>Никад</string>
+    
+    <!-- ================================================
+         Strings for delay_names array
+    ================================================ -->
+    <string name='array_delay_short'>Кратак</string>
+    <string name='array_delay_medium'>Средњи</string>
+    <string name='array_delay_long'>Дуг</string>
+    
+    <!-- ================================================
+         Strings for AsyncTask Loader
+    ================================================ -->
+    <string name='task_applocation_list'>Градим списак апликација</string>
+    
+    <!-- ================================================
+         Strings for ActivityMain
+    ================================================ -->
+    <string name='group_options'>Опције</string>
+    
+    <string name='alert_title_module_disabled'>Недостаје системски сервис</string>
+	<string name='alert_text_module_disabled'>Системски сервис Експоз додатака тренутно није омогућен. Ако сте управо надоградили овај модул, поново покрените уређај да бисте га активирали. У супротном, проверите да ли је Експоз-бриџ инсталиран и да ли је овај модул омогућен.</string>
+    
+	    <string name='alert_title_module_update'>Потребно поновно покретање</string>
+	<string name='alert_text_module_update'>Ова апликација је надограђена. Поново покрените уређај да би функције новог модула имале ефекта.</string>
+	
+	<string name='category_title_logviewer'>Дневник грешака</string>
+	
+    <string name='category_title_pro'>Комерцијално проширење</string>
+	<string name='category_summary_pro'>Додајте још функција помоћу Про проширења</string>
+	
+	<string name='category_title_usbplug'>УСБ укљ/искљ</string>
+	<string name='category_summary_usbplug'>Промена понашања при укључењу/искључењу УСБ кабла</string>
+    
+    <string name='category_title_layout'>Распоред</string>
+    <string name='category_summary_layout'>Промена поставки распореда као што су опције ротирања</string>
+    
+    <string name='category_title_buttons'>Тастери</string>
+    <string name='category_summary_buttons'>Поставке тастера</string>
+    
+    <string name='preference_title_debug'>Исправљање грешака</string>
+    <string name='preference_summary_debug'>Генерисање записа о догађајима модула (захтева поновно покретање).</string>
+    
+    <!-- ================================================
+         Strings for ActivityViewerLog
+    ================================================ -->
+    <string name='menu_title_edit'>Отвори уређивач текста</string>
+    <string name='menu_title_send'>Пошаљи дневник</string>
+    
+    <!-- ================================================
+         Strings for ActivityScreenUSB
+    ================================================ -->
+	<string name='preference_title_plug_wake'>Пробуди по укљ</string>
+	<string name='preference_title_unplug_wake'>Пробуди по искљ</string>
+	
+    <!-- ================================================
+         Strings for ActivityScreenLayout
+    ================================================ -->
+    <string name='category_app_blacklist'>Црна листа</string>
+    <string name='preference_title_rotation'>Општа поставка ротирања</string>
+    <string name='preference_summary_rotation'>Дозволи свим апликацијама да ротирају (захтева поновно покретање)</string>
+    
+    
+    <!-- ================================================
+         Strings for ActivityScreenRemap
+    ================================================ -->
+    <string name='category_settings'>Поставке</string>
+    
+    <string name='preference_title_allow_externals'>Дозволи спољашње уређаје</string>
+    <string name='preference_summary_allow_externals'>Напомена: неће радите са свим типовима</string>
+    
+    <string name='preference_title_delay_key_tap'>Застој двоклика</string>
+    <string name='preference_title_delay_key_press'>Застој дугог притиска</string>
+    
+    <string name='preference_title_haptic_forced'>Присили хаптички одговор</string>
+    <string name='preference_summary_haptic_forced'>Омогућите ако ваш уређај има проблем са откривањем овог као виртуелног тастера при коришћењу модула</string>
+    
+    <string name='preference_title_call_button'>Дугме за позив</string>
+    <string name='preference_summary_call_button'>Користите ово за дугме за позив кад год телефон звони или током одлазних позива</string>
+    
+    <string name='category_conditions'>Услови</string>
+    <string name='preference_add_condition'>Додај нови услов</string>
+    
+    <string name='category_action'>Радње</string>
+    <string name='preference_add_action'>Додај нову радњу</string>
+    
+    <string name='category_keys'>Тастери</string>
+    <string name='category_keys_secondary'>Секундарни тастери</string>
+    <string name='preference_add_key'>Додај нови тастер</string>
+
+    <string name='category_button_single_states'>Једноструке радње</string>
+    <string name='category_button_double_states'>Двоструке радње</string>
+    <string name='category_button_triple_states'>Троструке радње</string>
+    <string name="preference_state_click">Клик</string>
+    <string name="preference_state_press">Дуги притисак</string>
+
+    <string name="preference_condition_count_$0">Нема услова</string>
+    <string name="preference_condition_count_$1">%1$d услов</string>
+    <string name="preference_condition_count">%1$d услова</string>
+    
+    <string name="preference_action_count_$0">Нема активних радњи</string>
+    <string name="preference_action_count_$1">%1$d активна радња</string>
+    <string name="preference_action_count">%1$d активних радњи</string>
+    
+    <string name='alert_dialog_name_intercept_key'>Кôд тастера</string>
+	<string name='alert_dialog_title_intercept_key'>Пресретање кôда тастера</string>
+	<string name='alert_dialog_summary_intercept_key'>Притисните тастер који желите да додате</string>
+	<string name='alert_dialog_summary_intercept_key_second'>Притисните други да бисте додали секундарни тастер</string>
+	<string name='alert_dialog_title_key_exists'>Тастер већ постоји у збирци</string>
+	
+	<string name="condition_type_$on">Екран укљ</string>
+	<string name="condition_type_$off">Екран искљ</string>
+	<string name="condition_type_$guard">Екран закљ</string>
+    
+    <!-- ================================================
+         Strings for ActivitySelectorRemap
+    ================================================ -->
+    <string name='category_applications'>Апликације</string>
+    <string name='category_custom_actions'>Посебне радње</string>
+    
+    <string name='preference_title_select_tasker'>Таскер</string>
+    <string name='preference_summary_select_tasker'>Одредите из Таскера</string>
+    
+    <string name='preference_title_select_shortcut'>Пречица</string>
+    <string name='preference_summary_select_shortcut'>Одредите пречицу за апликацију</string>
+    
+    <string name='text_key'>Тастер: %1$s</string>
+    
+    <!-- ================================================
+         Strings for Common
+    ================================================ -->
+    <string name='remap_title_disabled'>Онемогућено</string>
+    <string name='remap_summary_disabled'>Не извршава ниједну радњу</string>
+    
+    <string name='remap_title_dismissguard'>Откључавање уређаја</string>
+    <string name='remap_summary_dismissguard'>Откључавање уређаја на екрану закључавања</string>
+    
+    <string name='remap_title_recentapps'>Недавне апликације</string>
+    <string name='remap_summary_recentapps'>Списак недавно коришћених апликација</string>
+    
+    <string name='remap_title_powermenu'>Мени гашења</string>
+    <string name='remap_summary_powermenu'>Мени гашења</string>
+    
+    <string name='remap_title_fliptoggle'>Мењај оријентацију</string>
+    <string name='remap_summary_fliptoggle'>Укљ/искљ поставке оријентације</string>
+    
+    <string name='remap_title_flipleft'>Оријентација лево</string>
+    <string name='remap_summary_flipleft'>Ротирање екрана једном улево</string>
+    
+    <string name='remap_title_flipright'>Оријентација десно</string>
+    <string name='remap_summary_flipright'>Ротирање екрана једном удесно</string>
+    
+    <string name='remap_title_killapp'>Убиј апликацију</string>
+    <string name='remap_summary_killapp'>Убијање тренутно активне апликације</string>
+    
+    <string name='remap_title_screenshot'>Снимак екрана</string>
+    <string name='remap_summary_screenshot'>Хватање снимка екрана</string>
+    
+    <string name='remap_title_torch'>Бакља</string>
+    <string name='remap_summary_torch'>Укључивање/искључивање бакље</string>
+    
+    <string name='remap_title_previous_app'>Претходна апликација</string>
+    <string name='remap_summary_previous_app'>Пребацивање између активне и претходне апликације</string>
+    
+    <!-- ================================================
+         Strings for Common used by Remap Selector
+    ================================================ -->
+    <string name='selector_alert_missing_torch'>Да бисте користили ову радњу морате да инсталирате Бакљу (апликација са Плеј продавнице) која подржава Намере!</string>
+    <string name='selector_notice_media_buttons'>Имајте на уму да ће ова радња имати ефекта само ако ваш медија плејер подржава догађаје тастера</string>
+    <string name='selector_notice_camera_buttons'>Имајте на уму да ће ова радња имати ефекта само ако ваша апликација за камеру подржава догађаје тастера</string>
+	
+</resources>
