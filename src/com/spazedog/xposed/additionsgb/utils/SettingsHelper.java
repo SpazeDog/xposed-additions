@@ -26,7 +26,6 @@ import java.util.Set;
 
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.util.Log;
 
 /*
  * This class defines a common structure for data while traveling across IPC. 
@@ -244,70 +243,74 @@ public class SettingsHelper {
 		public ArrayList<String> getStringList(String key) {
 			return (ArrayList<String>) mData.get(key);
 		}
-	}
-	
-	public static void pack(SettingsData in) {
-		Map<String, Object> oldData = in.mData;
-		Map<String, Object> newData = new HashMap<String, Object>();
 		
-		for (String key : oldData.keySet()) {
-			Object value = oldData.get(key);
-			Integer type = Type.getType(value);
-			String packKey = "@" + SCHEMA_VERSION + "|" + type + "|";
+		public SettingsData pack() {
+			Map<String, Object> oldData = mData;
+			Map<String, Object> newData = new HashMap<String, Object>();
 			
-			switch (type) {
-				case Type.LIST: 
-					for (int i=0; i < ((ArrayList<?>) value).size(); i++) {
-						Object listValue = ((ArrayList<?>) value).get(i);
-						Integer listType = Type.getType(listValue);
-						String listKey = listType + "#" + i + "," + ((ArrayList<?>) value).size() + "|" + key;
-						
-						switch (listType) {
-							case Type.INTEGER:
-								newData.put(packKey + listKey, ((Integer) listValue).toString()); break;
-								
-							case Type.STRING:
-							case Type.NULL:
-								newData.put(packKey + listKey, listType == Type.STRING ? listValue : "");
-						}
-					}
-					
-					break;
-					
-				case Type.BOOLEAN: 
-					newData.put(packKey + key, (Boolean) value ? "1" : "0"); break;
-					
-				case Type.INTEGER:
-					newData.put(packKey + key, ((Integer) value).toString()); break;
-					
-				case Type.STRING:
-				case Type.NULL:
-					newData.put(packKey + key, type == Type.STRING ? value : "");
-			}
-		}
-		
-		in.mData = newData;
-	}
-	
-	public static void unpack(SettingsData in) {
-		Map<String, Object> oldData = in.mData;
-		Map<String, Object> newData = new HashMap<String, Object>();
-		String persistent = null;
-		
-		for (String metaData : oldData.keySet()) {
-			if (metaData.indexOf("@") == 0) {
-				persistent = unpackItem(newData, metaData, oldData.get(metaData));
+			for (String key : oldData.keySet()) {
+				Object value = oldData.get(key);
+				Integer type = Type.getType(value);
+				String packKey = "@" + SCHEMA_VERSION + "|" + type + "|";
 				
-			} else {
-				persistent = unpackItemCombatV1(newData, metaData, oldData.get(metaData));
+				switch (type) {
+					case Type.LIST: 
+						for (int i=0; i < ((ArrayList<?>) value).size(); i++) {
+							Object listValue = ((ArrayList<?>) value).get(i);
+							Integer listType = Type.getType(listValue);
+							String listKey = listType + "#" + i + "," + ((ArrayList<?>) value).size() + "|" + key;
+							
+							switch (listType) {
+								case Type.INTEGER:
+									newData.put(packKey + listKey, ((Integer) listValue).toString()); break;
+									
+								case Type.STRING:
+								case Type.NULL:
+									newData.put(packKey + listKey, listType == Type.STRING ? listValue : "");
+							}
+						}
+						
+						break;
+						
+					case Type.BOOLEAN: 
+						newData.put(packKey + key, (Boolean) value ? "1" : "0"); break;
+						
+					case Type.INTEGER:
+						newData.put(packKey + key, ((Integer) value).toString()); break;
+						
+					case Type.STRING:
+					case Type.NULL:
+						newData.put(packKey + key, type == Type.STRING ? value : "");
+				}
 			}
 			
-			if (persistent != null) {
-				in.mPersistent.add(persistent);
-			}
+			mData = newData;
+			
+			return this;
 		}
 		
-		in.mData = newData;
+		public SettingsData unpack() {
+			Map<String, Object> oldData = mData;
+			Map<String, Object> newData = new HashMap<String, Object>();
+			String persistent = null;
+			
+			for (String metaData : oldData.keySet()) {
+				if (metaData.indexOf("@") == 0) {
+					persistent = unpackItem(newData, metaData, oldData.get(metaData));
+					
+				} else {
+					persistent = unpackItemCombatV1(newData, metaData, oldData.get(metaData));
+				}
+				
+				if (persistent != null) {
+					mPersistent.add(persistent);
+				}
+			}
+			
+			mData = newData;
+			
+			return this;
+		}
 	}
 	
 	/*

@@ -29,11 +29,11 @@ import java.util.Set;
 
 import android.os.Bundle;
 import android.os.RemoteException;
-import android.renderscript.Element.DataType;
 import android.util.Log;
 
 import com.spazedog.lib.reflecttools.ReflectClass;
 import com.spazedog.xposed.additionsgb.Common;
+import com.spazedog.xposed.additionsgb.utils.SettingsHelper.SettingsData;
 import com.spazedog.xposed.additionsgb.utils.SettingsHelper.Type;
 
 /*
@@ -63,6 +63,11 @@ public class XServiceManager {
 	}
 	
 	private IXServiceChangeListener mInternalListener = new IXServiceChangeListener.Stub(){
+		@Override
+		public void onPreferenceDataSetChanged() {
+			mData.clear();
+		}
+		
 		@Override
 		public void onPreferenceChanged(String key, int type) {
 			try {
@@ -488,5 +493,25 @@ public class XServiceManager {
 		} catch (RemoteException e) {
 			handleRemoteException(e);
 		}
+	}
+	
+	public void setSettingsData(SettingsData data) {
+		try {
+			mService.setSettingsData(data);
+		
+		} catch (RemoteException e) {
+			handleRemoteException(e);
+		}
+	}
+	
+	public SettingsData getSettingsData() {
+		try {
+			return mService.getSettingsData();
+		
+		} catch (RemoteException e) {
+			handleRemoteException(e);
+		}
+		
+		return null;
 	}
 }

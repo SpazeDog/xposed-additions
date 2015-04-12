@@ -20,6 +20,7 @@
 package com.spazedog.xposed.additionsgb.backend.service;
 
 import com.spazedog.xposed.additionsgb.backend.service.IXServiceChangeListener;
+import com.spazedog.xposed.additionsgb.utils.SettingsHelper;
 
 /** {@hide} */
 interface IXService {
@@ -51,4 +52,7 @@ interface IXService {
 	void setOnChangeListener(IXServiceChangeListener listener);
 	
 	void sendBroadcast(String action, in Bundle data);
+	
+	void setSettingsData(in SettingsHelper.SettingsData data);
+	SettingsHelper.SettingsData getSettingsData();
 }

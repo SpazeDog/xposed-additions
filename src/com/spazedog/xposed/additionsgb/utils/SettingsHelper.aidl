@@ -17,15 +17,6 @@
  * along with Xposed Additions. If not, see <http://www.gnu.org/licenses/>
  */
 
-package com.spazedog.xposed.additionsgb.backend.service;
+package com.spazedog.xposed.additionsgb.utils;
 
-
-
-/** {@hide} */
-oneway interface IXServiceChangeListener {
-	void onPreferenceDataSetChanged();
-	void onPreferenceChanged(String key, int type);
-	void onPreferenceRemoved(String key);
-	void onPackageChanged();
-	void onBroadcastReceive(String action, in Bundle data);
-}
+parcelable SettingsHelper.SettingsData;

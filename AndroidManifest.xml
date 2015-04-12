@@ -22,9 +22,10 @@
         <meta-data android:value="30+" android:name="xposedminversion" />
         <meta-data android:value="Additional Settings for Gingerbread and up" android:name="xposeddescription" />
         
-        <receiver android:name=".SettingsReceiver">
+        <receiver android:name=".SettingsReceiver"> 
             <intent-filter>
-                <action android:name="user.additionsgb.service.broadcast.settings" />
+                <action android:name="com.spazedog.xposed.additionsgb.ACTION_XSERVICE_SHUTDOWN" />
+                <action android:name="com.spazedog.xposed.additionsgb.ACTION_XSERVICE_READY" />
             </intent-filter>
         </receiver>
         

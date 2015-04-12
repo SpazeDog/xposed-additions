@@ -17,35 +17,90 @@
 
 package com.spazedog.xposed.additionsgb;
 
+import java.util.Map;
+
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.spazedog.xposed.additionsgb.backend.service.XService;
+import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
+import com.spazedog.xposed.additionsgb.utils.Constants;
 import com.spazedog.xposed.additionsgb.utils.SettingsHelper.SettingsData;
 
 public class SettingsReceiver extends BroadcastReceiver {
-	public static final String TAG = XService.class.getName();
+	public static final String TAG = SettingsReceiver.class.getName();
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void onReceive(Context context, Intent intent) {
-		if(Common.DEBUG) Log.d(TAG, "Writing preferences to file");
+		if(Common.DEBUG) Log.d(TAG, "Starting settings broadcast receiver");
 		
-		SettingsData data = intent.getParcelableExtra("data");
+		String action = intent.getAction();
+		SharedPreferences preferences = context.getSharedPreferences(Common.PREFERENCE_FILE, Context.MODE_PRIVATE);
 		
-		if (data != null) {
-			SharedPreferences preferences = context.getSharedPreferences(Common.PREFERENCE_FILE, Context.MODE_WORLD_READABLE);
-			SharedPreferences.Editor editor = preferences.edit();
+		if (actionSaveSettings(action)) {
+			SettingsData data = null;
+			XServiceManager manager = XServiceManager.getInstance();
 			
-			editor.clear();
-			
-			for (String key : data.keySet()) {
-				editor.putString(key, data.getString(key));
+			if (manager.isServiceReady()) {
+				data = manager.getSettingsData();
+				
+				if (data != null) {
+					data.pack();
+				}
 			}
 			
-			editor.commit();
+			if (data != null && data.changed()) {
+				if(Common.DEBUG) Log.d(TAG, "Saving preferences from the service");
+				
+				Toast.makeText(context, "Saving configurations", Toast.LENGTH_LONG).show();
+				
+				SharedPreferences.Editor editor = preferences.edit();
+				
+				editor.clear();
+				
+				for (String key : data.keySet()) {
+					String value = data.getString(key);
+					
+					if (value != null) {
+						editor.putString(key, value);
+					}
+				}
+				
+				editor.commit();
+			}
+			
+		} else if (actionRestoreSettings(action)) {
+			if(Common.DEBUG) Log.d(TAG, "Restoring preferences to the service");
+			
+			Map<String, Object> data = null;
+			
+			try {
+				data = (Map<String, Object>) preferences.getAll();
+				
+			} catch (NullPointerException e) {}
+			
+			if (data != null) {
+				XServiceManager manager = XServiceManager.getInstance();
+				
+				if (manager.isServiceReady()) {
+					Toast.makeText(context, "Restoring configurations", Toast.LENGTH_LONG).show();
+					
+					manager.setSettingsData( new SettingsData(data).unpack() );
+				}
+			}
 		}
+	}
+	
+	private boolean actionRestoreSettings(String action) {
+		return action != null && action.equals( Constants.Intent.ACTION_XSERVICE_READY );
+	}
+	
+	private boolean actionSaveSettings(String action) {
+		return action != null && action.equals( Constants.Intent.ACTION_XSERVICE_SHUTDOWN );
 	}
 }

@@ -19,15 +19,9 @@
 
 package com.spazedog.xposed.additionsgb.backend.service;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import android.annotation.SuppressLint;
@@ -41,20 +35,17 @@ import android.content.res.Resources;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.util.Log;
 
 import com.spazedog.lib.reflecttools.ReflectClass;
-import com.spazedog.lib.reflecttools.ReflectMethod;
 import com.spazedog.lib.reflecttools.utils.ReflectConstants.Match;
 import com.spazedog.xposed.additionsgb.Common;
-import com.spazedog.xposed.additionsgb.utils.SettingsHelper;
+import com.spazedog.xposed.additionsgb.utils.Constants;
 import com.spazedog.xposed.additionsgb.utils.SettingsHelper.SettingsData;
 import com.spazedog.xposed.additionsgb.utils.SettingsHelper.Type;
 import com.spazedog.xposed.additionsgb.utils.android.ContextHelper;
-import com.spazedog.xposed.additionsgb.utils.android.XmlUtilsHelper;
 
 import de.robv.android.xposed.XC_MethodHook;
 
@@ -73,9 +64,6 @@ public final class XService extends IXService.Stub {
 	private Set<IBinder> mListeners = new HashSet<IBinder>();
 	
 	private static class PREFERENCE {
-		private static File ROOT = new File(Environment.getDataDirectory(), "data/" + Common.PACKAGE_NAME);
-		private static File DIR = new File(ROOT.getPath(), "shared_prefs");
-		private static File FILE = new File(DIR.getPath(), Common.PREFERENCE_FILE + ".xml");
 		private static int UID = 1000;
 		private static int GID = 1000;
 	}
@@ -120,24 +108,6 @@ public final class XService extends IXService.Stub {
 				}
 			});
 		}
-	
-		/*
-		 * If we have a configuration file, make sure that the system user can read it.
-		 * Write access does not mater, from Android 5.0 and up, SELinux will block this regardless of the permissions.
-		 */
-		if (PREFERENCE.FILE.exists()) {
-			/*
-			 * Some Android versions fail when trying to change the ownership. As a fallback we leave the ownership unchanged, and just makes
-			 * sure that the file is globally readable and writable.
-			 */
-			
-			ReflectMethod setPermissions = ReflectClass.forName("android.os.FileUtils")
-					.findMethod("setPermissions", Match.BEST, String.class, Integer.TYPE, Integer.TYPE, Integer.TYPE);
-			
-			if((Integer) setPermissions.invoke(PREFERENCE.FILE.getPath(), 0640, -1, PREFERENCE.GID) != 0) {
-				setPermissions.invoke(PREFERENCE.FILE.getPath(), 0644, -1, -1);
-			}
-		}
 	}
 	
 	protected XC_MethodHook hook_main = new XC_MethodHook() {
@@ -180,7 +150,6 @@ public final class XService extends IXService.Stub {
 	
 	protected XC_MethodHook hook_systemReady = new XC_MethodHook() {
 		@Override
-		@SuppressWarnings("unchecked")
 		protected final void afterHookedMethod(final MethodHookParam param) {
 			if(Common.DEBUG) Log.d(TAG, "Starting the service");
 			
@@ -199,27 +168,6 @@ public final class XService extends IXService.Stub {
 				
 			} catch (NameNotFoundException e) { e.printStackTrace(); }
 			
-			if (PREFERENCE.FILE.exists()) {
-				try {
-					BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream(PREFERENCE.FILE), 16*1024);
-					Map<String, Object> data = (Map<String, Object>) XmlUtilsHelper.readMapXml(inputStream);
-					
-					if (data != null) {
-						mData = new SettingsData(data);
-
-						SettingsHelper.unpack(mData);
-					}
-					
-					try {
-						inputStream.close();
-						
-					} catch (IOException e) {}
-
-				} catch (FileNotFoundException e) {
-					Log.e(TAG, e.getMessage(), e);
-				}
-			}
-			
 			IntentFilter intentFilter = new IntentFilter();
 			intentFilter.addAction(Intent.ACTION_PACKAGE_ADDED);
 			intentFilter.addAction(Intent.ACTION_PACKAGE_REMOVED);
@@ -228,6 +176,11 @@ public final class XService extends IXService.Stub {
 			mContextSystem.registerReceiver(applicationNotifier, intentFilter);
 			
 			mIsReady = true;
+			
+			/*
+			 * Alert the app that settings should be restored
+			 */
+			ContextHelper.sendBroadcast(mContextSystem, new Intent( Constants.Intent.ACTION_XSERVICE_READY ));
 		}
 	};
 	
@@ -236,7 +189,10 @@ public final class XService extends IXService.Stub {
 		protected final void beforeHookedMethod(final MethodHookParam param) {
 			if(Common.DEBUG) Log.d(TAG, "Stopping the service");
 			
-			apply();
+			/*
+			 * Alert the app that settings should be saved
+			 */
+			ContextHelper.sendBroadcast(mContextSystem, new Intent( Constants.Intent.ACTION_XSERVICE_SHUTDOWN ));
 		}
 	};
 	
@@ -342,15 +298,17 @@ public final class XService extends IXService.Stub {
 	
 	@Override
 	public boolean remove(String key) {
-		if (mData.contains(key)) {
-			mData.remove(key);
+		synchronized (mData) {
+			if (mData.contains(key) && accessGranted()) {
+				mData.remove(key);
+				
+				broadcastChange(key);
+				
+				return true;
+			}
 			
-			broadcastChange(key);
-			
-			return true;
+			return false;
 		}
-		
-		return false;
 	}
 	
 	@Override
@@ -391,33 +349,20 @@ public final class XService extends IXService.Stub {
 		write();
 	}
 	
-	@SuppressLint("NewApi")
 	private void write() {
 		synchronized (mData) {
 			if(Common.DEBUG) Log.d(TAG, "Preparing configuratino file for writing");
 
 			if (mData.changed()) {
-				Intent intent = new Intent( Common.XSERVICE_BROADCAST_SETTINGS );
-				Bundle bundle = new Bundle();
-				SettingsData data = new SettingsData();
+				/*
+				 * Indicate that this is not a real shutdown, just in case this would be useful to know.
+				 */
+				Intent intent = new Intent( Constants.Intent.ACTION_XSERVICE_SHUTDOWN );
+				intent.putExtra("shutdown", false);
 				
 				/*
-				 * pack all data into the extras bundle
+				 * Trick the app into saving the settings
 				 */
-				for (String key : mData.keySet()) {
-					if (mData.persistent(key)) {
-						data.put(key, mData.get(key));
-					}
-				}
-	
-				SettingsHelper.pack(data);
-				bundle.putParcelable("data", data);
-				intent.putExtras(bundle);
-				
-				/*
-				 * send the data to the application so that it can write it to disk
-				 */
-				
 				ContextHelper.sendBroadcast(mContextSystem, intent);
 			}
 		}
@@ -492,13 +437,16 @@ public final class XService extends IXService.Stub {
 	};
 	
 	private void broadcastChange(String key) {
-		Integer type = mData.contains(key) ? mData.type(key) : Type.UNKNOWN;
+		Integer type = key != null && mData.contains(key) ? mData.type(key) : Type.UNKNOWN;
 		
 		synchronized(mListeners) {
 			for (IBinder listener : mListeners) {
 				if (listener != null && listener.pingBinder()) {
 					try {
-						if (type == Type.UNKNOWN) {
+						if (key == null) {
+							IXServiceChangeListener.Stub.asInterface(listener).onPreferenceDataSetChanged();
+							
+						} else if (type == Type.UNKNOWN) {
 							IXServiceChangeListener.Stub.asInterface(listener).onPreferenceRemoved(key);
 							
 						} else {
@@ -509,5 +457,21 @@ public final class XService extends IXService.Stub {
 				}
 			}
 		}
+	}
+	
+	@Override
+	public void setSettingsData(SettingsData data) {
+		synchronized (mData) {
+			if (accessGranted()) {
+				mData = data;
+				
+				broadcastChange(null);
+			}
+		}
+	}
+	
+	@Override
+	public SettingsData getSettingsData() {
+		return mData;
 	}
 }

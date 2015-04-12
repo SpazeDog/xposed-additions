@@ -30,7 +30,6 @@ import java.util.Locale;
 import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
@@ -65,8 +64,6 @@ public final class Common {
 	public static final String XSERVICE_NAME = "user.additionsgb.service";
 	public static final String XSERVICE_NAME_COMBAT = PACKAGE_NAME + ".service.XSERVICE";
 	public static final String XSERVICE_PERMISSIONS = PACKAGE_NAME + ".permissions.XSERVICE";
-	
-	public static final String XSERVICE_BROADCAST_SETTINGS = "user.additionsgb.service.broadcast.settings";
 	
 	public static final String TORCH_INTENT_ACTION = PACKAGE_NAME + ".TOGGLE_FLASHLIGHT";
 	
@@ -484,7 +481,7 @@ public final class Common {
 			}
 		}
 		
-		return DEBUG || (ENABLE_DEBUG != null && ENABLE_DEBUG);
+		return DEBUG || ENABLE_DEBUG == null || ENABLE_DEBUG;
 	}
 
 	public static class PlaceHolder {
