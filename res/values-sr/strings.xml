@@ -1,7 +1,5 @@
 <resources>
 
-    <string name='app_name'>Експоз додаци</string>
-    
     <string name='preference_load_apps'>Учитај списак апликација</string>
     
     <string name='array_externals_keyboard'>Тастатура</string>
