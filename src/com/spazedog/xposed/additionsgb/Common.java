@@ -60,7 +60,7 @@ public final class Common {
 	
 	public static final String PACKAGE_NAME = Common.class.getPackage().getName();
 	public static final String PACKAGE_NAME_PRO = PACKAGE_NAME + ".pro";
-
+	public static final String SERVICE_APP_PREFERENCES = "app.additionsgb.preferences.service.BIND";
 	public static final String XSERVICE_NAME = "user.additionsgb.service";
 	public static final String XSERVICE_NAME_COMBAT = PACKAGE_NAME + ".service.XSERVICE";
 	public static final String XSERVICE_PERMISSIONS = PACKAGE_NAME + ".permissions.XSERVICE";

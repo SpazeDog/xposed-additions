@@ -24,11 +24,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Resources;
@@ -42,15 +43,16 @@ import android.util.Log;
 import com.spazedog.lib.reflecttools.ReflectClass;
 import com.spazedog.lib.reflecttools.utils.ReflectConstants.Match;
 import com.spazedog.xposed.additionsgb.Common;
-import com.spazedog.xposed.additionsgb.utils.Constants;
+import com.spazedog.xposed.additionsgb.IServicePreferences;
 import com.spazedog.xposed.additionsgb.utils.SettingsHelper.SettingsData;
 import com.spazedog.xposed.additionsgb.utils.SettingsHelper.Type;
-import com.spazedog.xposed.additionsgb.utils.android.ContextHelper;
 
 import de.robv.android.xposed.XC_MethodHook;
 
 public final class XService extends IXService.Stub {
 	public static final String TAG = XService.class.getName();
+	
+	private enum PokeType {SAVE_SETTINGS, RESTORE_SETTINGS}
 	
 	private Context mContextSystem;
 	private Context mContextModule;
@@ -175,12 +177,7 @@ public final class XService extends IXService.Stub {
 			
 			mContextSystem.registerReceiver(applicationNotifier, intentFilter);
 			
-			mIsReady = true;
-			
-			/*
-			 * Alert the app that settings should be restored
-			 */
-			ContextHelper.sendBroadcast(mContextSystem, new Intent( Constants.Intent.ACTION_XSERVICE_READY ));
+			pokeAppPreferenceService(PokeType.RESTORE_SETTINGS);
 		}
 	};
 	
@@ -189,12 +186,51 @@ public final class XService extends IXService.Stub {
 		protected final void beforeHookedMethod(final MethodHookParam param) {
 			if(Common.DEBUG) Log.d(TAG, "Stopping the service");
 			
-			/*
-			 * Alert the app that settings should be saved
-			 */
-			ContextHelper.sendBroadcast(mContextSystem, new Intent( Constants.Intent.ACTION_XSERVICE_SHUTDOWN ));
+			pokeAppPreferenceService(PokeType.SAVE_SETTINGS);
 		}
 	};
+	
+	private boolean pokeAppPreferenceService(final PokeType poke) {
+		/*
+		 * Make sure that our application is the one being called.
+		 */
+		Intent intent = new Intent(Common.SERVICE_APP_PREFERENCES);
+		intent.setPackage(Common.PACKAGE_NAME);
+		
+		ServiceConnection connection = new ServiceConnection() {
+			@Override
+			public void onServiceConnected(ComponentName name, IBinder binder) {
+				if(Common.DEBUG) Log.d(TAG, "Poking the Application preference service using type '" + (poke == PokeType.SAVE_SETTINGS ? "SAVE_SETTINGS" : "RESTORE_SETTINGS") + "'");
+				
+				IServicePreferences service = IServicePreferences.Stub.asInterface(binder);
+				
+				try {
+					if (poke == PokeType.SAVE_SETTINGS) {
+						service.writeSettingsData(mData);
+						
+					} else {
+						mData = service.readSettingsData();
+						
+						/*
+						 * Make sure that managers that has already collected some data 
+						 * makes sure to update it. 
+						 */
+						broadcastChange(null);
+					}
+					
+					mIsReady = true;
+					
+				} catch (RemoteException e) {} finally {
+					mContextSystem.unbindService(this);
+				}
+			}
+
+			@Override
+			public void onServiceDisconnected(ComponentName name) {}
+		};
+		
+		return mContextSystem.bindService(intent, connection, Context.BIND_AUTO_CREATE);
+	}
 	
 	private Boolean accessGranted() {
 		/*
@@ -351,20 +387,7 @@ public final class XService extends IXService.Stub {
 	
 	private void write() {
 		synchronized (mData) {
-			if(Common.DEBUG) Log.d(TAG, "Preparing configuratino file for writing");
-
-			if (mData.changed()) {
-				/*
-				 * Indicate that this is not a real shutdown, just in case this would be useful to know.
-				 */
-				Intent intent = new Intent( Constants.Intent.ACTION_XSERVICE_SHUTDOWN );
-				intent.putExtra("shutdown", false);
-				
-				/*
-				 * Trick the app into saving the settings
-				 */
-				ContextHelper.sendBroadcast(mContextSystem, intent);
-			}
+			pokeAppPreferenceService(PokeType.SAVE_SETTINGS);
 		}
 	}
 	

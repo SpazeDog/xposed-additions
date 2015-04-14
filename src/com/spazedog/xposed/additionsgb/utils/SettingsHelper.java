@@ -131,8 +131,21 @@ public class SettingsHelper {
 		
 		public SettingsData() {}
 		
-		public SettingsData(Map<String, Object> data) {
-			mData = data;
+		public SettingsData(Map<String, ?> data) {
+			String persistent = null;
+			
+			for (String metaData : data.keySet()) {
+				if (metaData.indexOf("@") == 0) {
+					persistent = unpackItem(mData, metaData, data.get(metaData));
+					
+				} else {
+					persistent = unpackItemCombatV1(mData, metaData, data.get(metaData));
+				}
+				
+				if (persistent != null) {
+					mPersistent.add(persistent);
+				}
+			}
 		}
 		
 		public SettingsData(Parcel in) {
@@ -244,12 +257,11 @@ public class SettingsHelper {
 			return (ArrayList<String>) mData.get(key);
 		}
 		
-		public SettingsData pack() {
-			Map<String, Object> oldData = mData;
+		public Map<String, ?> getPreferenceMap() {
 			Map<String, Object> newData = new HashMap<String, Object>();
 			
-			for (String key : oldData.keySet()) {
-				Object value = oldData.get(key);
+			for (String key : mData.keySet()) {
+				Object value = mData.get(key);
 				Integer type = Type.getType(value);
 				String packKey = "@" + SCHEMA_VERSION + "|" + type + "|";
 				
@@ -284,32 +296,7 @@ public class SettingsHelper {
 				}
 			}
 			
-			mData = newData;
-			
-			return this;
-		}
-		
-		public SettingsData unpack() {
-			Map<String, Object> oldData = mData;
-			Map<String, Object> newData = new HashMap<String, Object>();
-			String persistent = null;
-			
-			for (String metaData : oldData.keySet()) {
-				if (metaData.indexOf("@") == 0) {
-					persistent = unpackItem(newData, metaData, oldData.get(metaData));
-					
-				} else {
-					persistent = unpackItemCombatV1(newData, metaData, oldData.get(metaData));
-				}
-				
-				if (persistent != null) {
-					mPersistent.add(persistent);
-				}
-			}
-			
-			mData = newData;
-			
-			return this;
+			return newData;
 		}
 	}
 	
