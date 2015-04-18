@@ -82,6 +82,15 @@ public class ActivityScreenUSB extends PreferenceActivity implements OnPreferenc
     }
     
     @Override
+    protected void onPause() {
+    	super.onPause();
+    	
+    	if (mPreferences != null) {
+    		mPreferences.apply();
+    	}
+    }
+    
+    @Override
     protected void onStop() {
     	super.onStop();
     	

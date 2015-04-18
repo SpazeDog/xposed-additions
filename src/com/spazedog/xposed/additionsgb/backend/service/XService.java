@@ -186,7 +186,7 @@ public final class XService extends IXService.Stub {
 		protected final void beforeHookedMethod(final MethodHookParam param) {
 			if(Common.DEBUG) Log.d(TAG, "Stopping the service");
 			
-			pokeAppPreferenceService(PokeType.SAVE_SETTINGS);
+			//pokeAppPreferenceService(PokeType.SAVE_SETTINGS);
 		}
 	};
 	
@@ -218,6 +218,7 @@ public final class XService extends IXService.Stub {
 						broadcastChange(null);
 					}
 					
+					mData.changed(false);
 					mIsReady = true;
 					
 				} catch (RemoteException e) {} finally {
@@ -229,7 +230,11 @@ public final class XService extends IXService.Stub {
 			public void onServiceDisconnected(ComponentName name) {}
 		};
 		
-		return mContextSystem.bindService(intent, connection, Context.BIND_AUTO_CREATE);
+		if (poke != PokeType.SAVE_SETTINGS || mData.changed()) {
+			return mContextSystem.bindService(intent, connection, Context.BIND_AUTO_CREATE);
+		}
+		
+		return true;
 	}
 	
 	private Boolean accessGranted() {

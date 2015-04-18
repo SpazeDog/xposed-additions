@@ -92,6 +92,10 @@ public class ActivityScreenRemapMain extends PreferenceActivity implements OnPre
 		if (mDialog.isOpen()) {
 			mDialog.unbind();
 		}
+		
+    	if (mPreferences != null) {
+    		mPreferences.apply();
+    	}
     }
     
     @Override

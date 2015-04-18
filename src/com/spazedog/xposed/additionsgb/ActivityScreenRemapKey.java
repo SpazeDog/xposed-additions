@@ -94,6 +94,15 @@ public class ActivityScreenRemapKey extends PreferenceActivity implements OnPref
     }
     
     @Override
+    protected void onPause() {
+    	super.onPause();
+    	
+    	if (mPreferences != null) {
+    		mPreferences.apply();
+    	}
+    }
+    
+    @Override
     protected void onStop() {
     	super.onStop();
 

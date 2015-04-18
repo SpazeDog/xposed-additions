@@ -105,6 +105,7 @@ public class ActivityScreenLayout extends PreferenceActivity implements OnPrefer
     	
     	if (mUpdateBlacklist && mPreferences != null) {
     		mPreferences.putStringArray(Settings.LAYOUT_GLOBAL_ROTATION_BLACKLIST, mBlacklist, true);
+        	mPreferences.apply();
     	}
     }
     

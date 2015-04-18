@@ -81,6 +81,10 @@ public class ActivityMain extends PreferenceActivity implements OnPreferenceClic
 	@Override
 	protected void onPause() {
 		super.onPause();
+		
+    	if (mPreferences != null) {
+    		mPreferences.apply();
+    	}
 	}
 	
     @Override

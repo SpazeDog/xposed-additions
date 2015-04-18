@@ -187,6 +187,10 @@ public class SettingsHelper {
 			return mHasChanges;
 		}
 		
+		public void changed(boolean status) {
+			mHasChanges = status;
+		}
+		
 		public Boolean contains(String key) {
 			return mData.containsKey(key);
 		}
