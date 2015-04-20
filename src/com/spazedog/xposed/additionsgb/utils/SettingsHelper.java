@@ -265,38 +265,40 @@ public class SettingsHelper {
 			Map<String, Object> newData = new HashMap<String, Object>();
 			
 			for (String key : mData.keySet()) {
-				Object value = mData.get(key);
-				Integer type = Type.getType(value);
-				String packKey = "@" + SCHEMA_VERSION + "|" + type + "|";
-				
-				switch (type) {
-					case Type.LIST: 
-						for (int i=0; i < ((ArrayList<?>) value).size(); i++) {
-							Object listValue = ((ArrayList<?>) value).get(i);
-							Integer listType = Type.getType(listValue);
-							String listKey = listType + "#" + i + "," + ((ArrayList<?>) value).size() + "|" + key;
-							
-							switch (listType) {
-								case Type.INTEGER:
-									newData.put(packKey + listKey, ((Integer) listValue).toString()); break;
-									
-								case Type.STRING:
-								case Type.NULL:
-									newData.put(packKey + listKey, listType == Type.STRING ? listValue : "");
+				if (mPersistent.contains(key)) {
+					Object value = mData.get(key);
+					Integer type = Type.getType(value);
+					String packKey = "@" + SCHEMA_VERSION + "|" + type + "|";
+					
+					switch (type) {
+						case Type.LIST: 
+							for (int i=0; i < ((ArrayList<?>) value).size(); i++) {
+								Object listValue = ((ArrayList<?>) value).get(i);
+								Integer listType = Type.getType(listValue);
+								String listKey = listType + "#" + i + "," + ((ArrayList<?>) value).size() + "|" + key;
+								
+								switch (listType) {
+									case Type.INTEGER:
+										newData.put(packKey + listKey, ((Integer) listValue).toString()); break;
+										
+									case Type.STRING:
+									case Type.NULL:
+										newData.put(packKey + listKey, listType == Type.STRING ? listValue : "");
+								}
 							}
-						}
-						
-						break;
-						
-					case Type.BOOLEAN: 
-						newData.put(packKey + key, (Boolean) value ? "1" : "0"); break;
-						
-					case Type.INTEGER:
-						newData.put(packKey + key, ((Integer) value).toString()); break;
-						
-					case Type.STRING:
-					case Type.NULL:
-						newData.put(packKey + key, type == Type.STRING ? value : "");
+							
+							break;
+							
+						case Type.BOOLEAN: 
+							newData.put(packKey + key, (Boolean) value ? "1" : "0"); break;
+							
+						case Type.INTEGER:
+							newData.put(packKey + key, ((Integer) value).toString()); break;
+							
+						case Type.STRING:
+						case Type.NULL:
+							newData.put(packKey + key, type == Type.STRING ? value : "");
+					}
 				}
 			}
 			
