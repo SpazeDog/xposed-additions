@@ -1,0 +1,185 @@
+<resources>
+
+    <string name='preference_load_apps'>アプリリストの読み込み</string>
+
+    <string name='array_externals_keyboard'>キーボード</string>
+    <string name='array_externals_controller'>ゲームパッド/ジョイスティック</string>
+    <string name='array_externals_misc'>その他の機器</string>
+
+    <!-- ================================================
+         Strings for wakeplug_names array
+    ================================================ -->
+    <string name='array_wakeplug_on'>いつもする</string>
+    <string name='array_wakeplug_ac'>AC 接続時にする</string>
+    <string name='array_wakeplug_usb'>USB 接続時にする</string>
+    <string name='array_wakeplug_off'>しない</string>
+
+    <!-- ================================================
+         Strings for delay_names array
+    ================================================ -->
+    <string name='array_delay_short'>短め</string>
+    <string name='array_delay_medium'>普通</string>
+    <string name='array_delay_long'>長め</string>
+
+    <!-- ================================================
+         Strings for AsyncTask Loader
+    ================================================ -->
+    <string name='task_applocation_list'>アプリリストの作成中</string>
+
+    <!-- ================================================
+         Strings for ActivityMain
+    ================================================ -->
+    <string name='group_options'>オプション</string>
+
+    <string name='alert_title_module_disabled'>システムサービスがありません</string>
+    <string name='alert_text_module_disabled'>XposedAdditions のシステムサービスが現在有効になっていません。XposedAdditions をアップデートした直後でしたら、端末を再起動してください。また、XposedBridge がインストール済みで、XposedAdditions が有効化されていることを確認してください</string>
+
+    <string name='alert_title_module_update'>再起動が必要です</string>
+    <string name='alert_text_module_update'>アプリをアップデートしました。モジュールの機能を有効化するには端末を再起動してください</string>
+
+    <string name='category_title_logviewer'>エラーログ</string>
+
+    <string name='category_title_pro'>プロ版の購入</string>
+    <string name='category_summary_pro'>プロ版では、さらに多くの機能が利用できます</string>
+
+    <string name='category_title_usbplug'>USB の着脱</string>
+    <string name='category_summary_usbplug'>USB ケーブル着脱時の動作を変更します</string>
+
+    <string name='category_title_layout'>レイアウト</string>
+    <string name='category_summary_layout'>画面の回転表示等のレイアウトに関する設定を変更します</string>
+
+    <string name='category_title_buttons'>ボタン</string>
+    <string name='category_summary_buttons'>ボタンの再割り当てを設定します</string>
+
+    <string name='preference_title_debug'>デバッグの有効化</string>
+    <string name='preference_summary_debug'>このモジュールのイベントをログに書き出すようにします (要再起動)</string>
+
+    <!-- ================================================
+         Strings for ActivityViewerLog
+    ================================================ -->
+    <string name='menu_title_edit'>テキストエディタで開く</string>
+    <string name='menu_title_send'>ログの送信</string>
+
+    <!-- ================================================
+         Strings for ActivityScreenUSB
+    ================================================ -->
+    <string name='preference_title_plug_wake'>USB を挿したら画面オン</string>
+    <string name='preference_title_unplug_wake'>USB を抜いたら画面オン</string>
+
+    <!-- ================================================
+         Strings for ActivityScreenLayout
+    ================================================ -->
+    <string name='category_app_blacklist'>ブラックリスト</string>
+    <string name='preference_title_rotation'>画面の回転表示</string>
+    <string name='preference_summary_rotation'>すべてのアプリで画面を回転表示できるようにします (要再起動)</string>
+
+
+    <!-- ================================================
+         Strings for ActivityScreenRemap
+    ================================================ -->
+    <string name='category_settings'>設定</string>
+
+    <string name='preference_title_allow_externals'>外部機器</string>
+    <string name='preference_summary_allow_externals'>注意 : 必ず動作するとは限りません</string>
+
+    <string name='preference_title_delay_key_tap'>ダブルクリックの遅延時間</string>
+    <string name='preference_title_delay_key_press'>長押しの遅延時間</string>
+
+    <string name='preference_title_haptic_forced'>バイブの強制</string>
+    <string name='preference_summary_haptic_forced'>モジュールを使用しているときに仮想キーボードとして認識される問題が発生するようでしたら有効にしてください</string>
+
+    <string name='preference_title_call_button'>通話ボタン</string>
+    <string name='preference_summary_call_button'>電話の着信中や発信中に通話ボタンとして動作するようにします</string>
+
+    <string name='category_conditions'>動作条件</string>
+    <string name='preference_add_condition'>動作条件の追加</string>
+
+    <string name='category_action'>アクション</string>
+    <string name='preference_add_action'>アクション設定</string>
+
+    <string name='category_keys'>キー</string>
+    <string name='category_keys_secondary'>2つ目のキー</string>
+    <string name='preference_add_key'>キーの追加</string>
+
+    <string name='category_button_single_states'>シングル アクション</string>
+    <string name='category_button_double_states'>ダブル アクション</string>
+    <string name='category_button_triple_states'>トリプル アクション</string>
+    <string name="preference_state_click">クリック</string>
+    <string name="preference_state_press">長押し</string>
+
+    <string name="preference_condition_count_$0">動作条件 未設定</string>
+    <string name="preference_condition_count_$1">動作条件数 : %1$d</string>
+    <string name="preference_condition_count">動作条件数 : %1$d</string>
+
+    <string name="preference_action_count_$0">アクション 未設定</string>
+    <string name="preference_action_count_$1">アクション数 : %1$d</string>
+    <string name="preference_action_count">アクション数 : %1$d</string>
+
+    <string name='alert_dialog_name_intercept_key'>キーコード</string>
+    <string name='alert_dialog_title_intercept_key'>キーコードの取得</string>
+    <string name='alert_dialog_summary_intercept_key'>追加したいキーを押してください</string>
+    <string name='alert_dialog_summary_intercept_key_second'>必要に応じて2つ目のキーを押してください</string>
+    <string name='alert_dialog_title_key_exists'>このキーはすでに登録されています</string>
+
+    <string name="condition_type_$on">画面オン</string>
+    <string name="condition_type_$off">画面オフ</string>
+    <string name="condition_type_$guard">ロック画面</string>
+
+    <!-- ================================================
+         Strings for ActivitySelectorRemap
+    ================================================ -->
+    <string name='category_applications'>アプリ</string>
+    <string name='category_custom_actions'>カスタム アクション</string>
+
+    <string name='preference_title_select_tasker'>Tasker</string>
+    <string name='preference_summary_select_tasker'>Tasker のタスクを選択します</string>
+
+    <string name='preference_title_select_shortcut'>ショートカット</string>
+    <string name='preference_summary_select_shortcut'>ショートカットを選択します</string>
+
+    <string name='text_key'>キー : %1$s</string>
+
+    <!-- ================================================
+         Strings for Common
+    ================================================ -->
+    <string name='remap_title_disabled'>無効</string>
+    <string name='remap_summary_disabled'>何もしないようにします</string>
+
+    <string name='remap_title_dismissguard'>端末のロック解除</string>
+    <string name='remap_summary_dismissguard'>ロック画面の表示中に端末のロックを解除します</string>
+
+    <string name='remap_title_recentapps'>最近使用したアプリ</string>
+    <string name='remap_summary_recentapps'>最近使用したアプリのリストを表示します</string>
+
+    <string name='remap_title_powermenu'>電源ボタンメニュー</string>
+    <string name='remap_summary_powermenu'>電源ボタンメニューを表示します</string>
+
+    <string name='remap_title_fliptoggle'>画面の回転表示</string>
+    <string name='remap_summary_fliptoggle'>画面の回転表示の有効/無効を切り替えます</string>
+
+    <string name='remap_title_flipleft'>画面の左回転</string>
+    <string name='remap_summary_flipleft'>画面の左回転表示と元の表示を切り替えます</string>
+
+    <string name='remap_title_flipright'>画面の右回転</string>
+    <string name='remap_summary_flipright'>画面の右回転表示と元の表示を切り替えます</string>
+
+    <string name='remap_title_killapp'>アプリの強制終了</string>
+    <string name='remap_summary_killapp'>フォアグラウンドで動作しているアプリを強制終了します</string>
+
+    <string name='remap_title_screenshot'>スクリーンショット</string>
+    <string name='remap_summary_screenshot'>スクリーンショットを撮影します</string>
+
+    <string name='remap_title_torch'>トーチライト</string>
+    <string name='remap_summary_torch'>トーチライトをオン/オフします</string>
+
+    <string name='remap_title_previous_app'>ひとつ前のアプリ</string>
+    <string name='remap_summary_previous_app'>フォアグラウンドで動作中のアプリとひとつ前に動作していたアプリを切り替えます</string>
+
+    <!-- ================================================
+         Strings for Common used by Remap Selector
+    ================================================ -->
+    <string name='selector_alert_missing_torch'>このアクションを使用するにはインテントを受け付けるトーチライトアプリをマーケットからインストールしてください</string>
+    <string name='selector_notice_media_buttons'>このアクションはキーイベントを受け付けるメディアプレーヤーが動作しているときのみ効果があります</string>
+    <string name='selector_notice_camera_buttons'>このアクションはキーイベントを受け付けるカメラアプリが動作しているときのみ効果があります</string>
+
+</resources>
