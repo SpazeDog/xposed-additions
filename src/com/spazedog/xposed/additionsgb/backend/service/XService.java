@@ -209,7 +209,20 @@ public final class XService extends IXService.Stub {
 						service.writeSettingsData(mData);
 						
 					} else {
-						mData = service.readSettingsData();
+						SettingsData data = service.readSettingsData();
+						
+						/*
+						 * Copy all current non-persistent values
+						 */
+						synchronized (mData) {
+							for (String key : mData.keySet()) {
+								if (!mData.persistent(key)) {
+									data.put(key, mData.get(key), false);
+								}
+							}
+							
+							mData = data;
+						}
 						
 						/*
 						 * Make sure that managers that has already collected some data 
