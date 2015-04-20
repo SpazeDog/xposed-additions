@@ -282,7 +282,7 @@ public final class Common {
 		public AppBuilder(ListView listView) {
 			mView = new WeakReference<ListView>(listView);
 
-			mCache = new LruCache<String, Bitmap>( Math.round(0.25f * Runtime.getRuntime().maxMemory() / 1024) ) {
+			mCache = new LruCache<String, Bitmap>( Math.round(0.15f * Runtime.getRuntime().maxMemory() / 1024) ) {
 				@Override
 				protected int sizeOf(String key, Bitmap value) {
 					return (value.getRowBytes() * value.getHeight()) / 1024;
