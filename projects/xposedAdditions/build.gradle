@@ -1,0 +1,51 @@
+apply plugin: 'com.android.application'
+
+buildDir = '../../build/xposedAdditions'
+
+android {
+    compileSdkVersion 22
+    buildToolsVersion "22.0.1"
+
+    defaultConfig {
+        applicationId "com.spazedog.xposed.additionsgb"
+
+        minSdkVersion 9
+        targetSdkVersion 22
+        versionCode 69
+        versionName "3.5.7"
+    }
+
+    sourceSets {
+        main {
+            manifest { srcFile '../../src/AndroidManifest.xml' }
+            res { srcDirs = ['../../src/res'] }
+            resources { srcDirs = ['../../src/java'] }
+            renderscript { srcDirs = ['../../src/java'] }
+            java { srcDirs = ['../../src/java'] }
+            assets { srcDirs = ['../../src/assets'] }
+            aidl { srcDirs = ['../../src/aidl'] }
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_6
+        targetCompatibility JavaVersion.VERSION_1_6
+    }
+
+    lintOptions {
+        abortOnError false
+    }
+}
+
+repositories {
+    flatDir {
+        dirs '../../src/libs'
+    }
+}
+
+dependencies {
+    compile fileTree(dir: '../../src/libs', include: ['*.jar'])
+    compile 'com.android.support:appcompat-v7:22.2.0'
+    compile 'com.android.support:support-v4:22.2.0'
+    provided files('../../XposedBridgeApi-36.jar')
+}
