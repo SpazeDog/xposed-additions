@@ -213,6 +213,7 @@ public final class PhoneWindowManager {
 			Integer keyCode = (Integer) (methodVersion == 1 ? param.args[3] : keyEvent.getKeyCode());
 			Object keyObject = keyEvent == null ? keyCode : keyEvent;
 			Integer action = (Integer) (methodVersion == 1 ? param.args[1] : keyEvent.getAction());
+            Integer keyFlags = keyEvent == null ? (Integer) param.args[2] : keyEvent.getFlags();
 			Integer policyFlags = (Integer) (methodVersion == 1 ? param.args[5] : param.args[1]);
 			Integer policyFlagsPos = methodVersion == 1 ? 5 : 1;
 			Integer repeatCount = (Integer) (methodVersion == 1 ? 0 : keyEvent.getRepeatCount());
@@ -243,7 +244,7 @@ public final class PhoneWindowManager {
 				 * Only disable default haptic feedback on 
 				 * our own injected events
 				 */
-				mActiveQueueing = (((KeyEvent) param.args[0]).getFlags() & EventKey.FLAG_CUSTOM) != 0;
+				mActiveQueueing = (keyFlags & EventKey.FLAG_CUSTOM) != 0;
 				
 				// android.os.SystemClock.uptimeMillis
 				
@@ -367,6 +368,7 @@ public final class PhoneWindowManager {
 			KeyEvent keyEvent = methodVersion == 1 ? null : (KeyEvent) param.args[1];
 			Integer keyCode = (Integer) (methodVersion == 1 ? param.args[3] : keyEvent.getKeyCode());
 			Integer action = (Integer) (methodVersion == 1 ? param.args[1] : keyEvent.getAction());
+            Integer keyFlags = keyEvent == null ? (Integer) param.args[2] : keyEvent.getFlags();
 			Integer policyFlags = (Integer) (methodVersion == 1 ? param.args[7] : param.args[2]);
 			Integer policyFlagsPos = methodVersion == 1 ? 7 : 2;
 			Integer repeatCount = (Integer) (methodVersion == 1 ? param.args[6] : keyEvent.getRepeatCount());
@@ -378,7 +380,7 @@ public final class PhoneWindowManager {
 			 * Only disable default haptic feedback on 
 			 * our own injected events
 			 */
-			mActiveDispatching = (((KeyEvent) param.args[1]).getFlags() & EventKey.FLAG_CUSTOM) != 0;
+			mActiveDispatching = (keyFlags & EventKey.FLAG_CUSTOM) != 0;
 			
 			/*
 			 * Using KitKat work-around from the InputManager Hook
