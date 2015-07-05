@@ -11,8 +11,8 @@ android {
 
         minSdkVersion 9
         targetSdkVersion 22
-        versionCode 69
-        versionName "3.5.7"
+        versionCode 70
+        versionName "3.5.8"
     }
 
     sourceSets {
