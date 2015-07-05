@@ -1,8 +1,5 @@
 package com.spazedog.xposed.additionsgb.backend.pwm;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import android.util.Log;
 import android.view.ViewConfiguration;
 
@@ -12,6 +9,9 @@ import com.spazedog.xposed.additionsgb.backend.pwm.iface.IEventMediator;
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
 import com.spazedog.xposed.additionsgb.configs.Settings;
 import com.spazedog.xposed.additionsgb.tools.MapList;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public final class EventManager extends IEventMediator {
 	
@@ -40,7 +40,7 @@ public final class EventManager extends IEventMediator {
 		super(pwm, xServiceManager);
 	}
 	
-	private EventKey initiateEventKey(Integer keyCode, Boolean isKeyDown, Integer policyFlags, Integer metaState, Long downTime) {
+	private EventKey initiateEventKey(Integer keyCode, Boolean isKeyDown, Integer keyFlags, Integer policyFlags, Integer metaState, Long downTime) {
 		synchronized(mEventLock) {
 			EventKey eventKey = mEventKeys.get(keyCode);
 			
@@ -51,7 +51,7 @@ public final class EventManager extends IEventMediator {
 			}
 			
 			if (isKeyDown) {
-				eventKey.initiateInstance(keyCode, fixPolicyFlags(keyCode, policyFlags), metaState, downTime);
+				eventKey.initiateInstance(keyCode, keyFlags, fixPolicyFlags(keyCode, policyFlags), metaState, downTime);
 			}
 			
 			eventKey.updateInstance(isKeyDown);
@@ -70,7 +70,7 @@ public final class EventManager extends IEventMediator {
 		}
 	}
 	
-	public Boolean registerKey(Integer keyCode, Boolean isKeyDown, Boolean isScreenOn, Integer policyFlags, Integer metaState, Long downTime, Long eventTime) {
+	public Boolean registerKey(Integer keyCode, Boolean isKeyDown, Boolean isScreenOn, Integer keyFlags, Integer policyFlags, Integer metaState, Long downTime, Long eventTime) {
 		synchronized(mEventLock) {
 			if (isKeyDown && (eventTime - mEventTime) > 1500) { // 1000 + Default Android Long Press timeout
 				releaseAllKeys();
@@ -82,7 +82,7 @@ public final class EventManager extends IEventMediator {
 			Boolean newEvent = false;
 			Boolean newKey = !mEventKeys.containsKey(keyCode);
 			
-			initiateEventKey(keyCode, isKeyDown, policyFlags, metaState, downTime);
+			initiateEventKey(keyCode, isKeyDown, keyFlags, policyFlags, metaState, downTime);
 			
 			if (isKeyDown) {
 				if (mState == State.ONGOING && !newKey) {
@@ -101,7 +101,7 @@ public final class EventManager extends IEventMediator {
 					
 					if (getKeyCount() > 1) {
 						recycleEventKeys();
-						initiateEventKey(keyCode, isKeyDown, policyFlags, metaState, downTime);
+						initiateEventKey(keyCode, isKeyDown, keyFlags, policyFlags, metaState, downTime);
 					}
 					
 					mTapCount = 0;

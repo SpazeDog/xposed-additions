@@ -311,7 +311,7 @@ public final class PhoneWindowManager {
 					 */
 					mEventManager.powerHardResetTimer(keyCode, down);
 					
-					if (mEventManager.registerKey(keyCode, down, isScreenOn, policyFlags, metaState, downTime, eventTime)) {
+					if (mEventManager.registerKey(keyCode, down, isScreenOn, keyFlags, policyFlags, metaState, downTime, eventTime)) {
 						if(Common.debug()) Log.d(tag, "Starting a new event");
 						
 						/*
@@ -471,7 +471,7 @@ public final class PhoneWindowManager {
 								
 								if(Common.debug()) Log.d(tag, "Using action '" + (eventAction != null ? eventAction : "") + "'");
 								
-								if (!mEventManager.handleKeyAction(eventAction, ActionType.CLICK, mEventManager.getTapCount(), mEventManager.isScreenOn(), mEventManager.isCallButton(), mEventManager.getEventTime(), mEventManager.getTapCount() == 0 ? key.getFlags() : 0)) {
+								if (!mEventManager.handleKeyAction(eventAction, ActionType.CLICK, mEventManager.getTapCount(), mEventManager.isScreenOn(), mEventManager.isCallButton(), mEventManager.getEventTime(), mEventManager.getTapCount() == 0 ? key.getPolicyFlags() : 0)) {
 									key.invokeAndRelease();
 								}
 							}

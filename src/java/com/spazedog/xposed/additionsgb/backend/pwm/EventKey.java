@@ -9,6 +9,7 @@ public class EventKey {
 	private Long mDownTime;
 	private Integer mKeyCode;
 	private Integer mFlags;
+	private Integer mPolicyFlags;
 	private Integer mMetaState;
 	private Integer mRepeatCount;
 	private Boolean mIsPressed;
@@ -20,11 +21,12 @@ public class EventKey {
 		mManager = manager;
 	}
 	
-	protected void initiateInstance(Integer keyCode, Integer flags, Integer metaState, Long downTime) {
+	protected void initiateInstance(Integer keyCode, Integer keyFlags, Integer policyFlags, Integer metaState, Long downTime) {
 		mIsOnGoing = false;
 		mRepeatCount = 0;
 		mKeyCode = keyCode;
-		mFlags = flags;
+		mFlags = keyFlags;
+		mPolicyFlags = policyFlags;
 		mMetaState = metaState;
 		mDownTime = downTime;
 		
@@ -32,7 +34,7 @@ public class EventKey {
 		 * This will allow us to distinguish between our injected keys and 
 		 * others like from the software navigation bar. 
 		 */
-		if ((flags & FLAG_CUSTOM) == 0) {
+		if ((mFlags & FLAG_CUSTOM) == 0) {
 			mFlags |= FLAG_CUSTOM;
 		}
 	}
@@ -56,6 +58,10 @@ public class EventKey {
 	public Integer getFlags() {
 		return mFlags;
 	}
+
+    public Integer getPolicyFlags() {
+        return mPolicyFlags;
+    }
 	
 	public Integer getMetaState() {
 		return mMetaState;
