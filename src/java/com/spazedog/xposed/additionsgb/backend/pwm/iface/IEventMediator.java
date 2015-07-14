@@ -31,6 +31,7 @@ import com.spazedog.lib.reflecttools.ReflectClass;
 import com.spazedog.lib.reflecttools.utils.ReflectException;
 import com.spazedog.lib.reflecttools.utils.ReflectConstants.Match;
 import com.spazedog.xposed.additionsgb.Common;
+import com.spazedog.xposed.additionsgb.backend.InputManager;
 import com.spazedog.xposed.additionsgb.backend.pwm.PhoneWindowManager;
 import com.spazedog.xposed.additionsgb.backend.pwm.iface.IMediatorSetup.SDK;
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
@@ -160,8 +161,8 @@ public abstract class IEventMediator extends IMediatorSetup {
 			if ((flags & KeyEvent.FLAG_FROM_SYSTEM) == 0) 
 				flags |= KeyEvent.FLAG_FROM_SYSTEM;
 			
-			if ((flags & ORIGINAL.FLAG_INJECTED) == 0) 
-				flags |= ORIGINAL.FLAG_INJECTED;
+			if ((flags & InputManager.FLAG_INJECTED) == 0)
+				flags |= InputManager.FLAG_INJECTED;
 			
 			if ((flags & KeyEvent.FLAG_LONG_PRESS) == 0 && repeatCount == 1) 
 				flags |= KeyEvent.FLAG_LONG_PRESS;

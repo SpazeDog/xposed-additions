@@ -15,6 +15,7 @@ import android.view.ViewConfiguration;
 import com.spazedog.lib.reflecttools.ReflectClass;
 import com.spazedog.lib.reflecttools.utils.ReflectException;
 import com.spazedog.xposed.additionsgb.Common;
+import com.spazedog.xposed.additionsgb.backend.InputManager;
 import com.spazedog.xposed.additionsgb.backend.pwm.EventManager.State;
 import com.spazedog.xposed.additionsgb.backend.pwm.iface.IEventMediator.ActionType;
 import com.spazedog.xposed.additionsgb.backend.pwm.iface.IMediatorSetup.ORIGINAL;
@@ -36,6 +37,8 @@ public final class PhoneWindowManager {
 	private Boolean mActiveDispatching = false;
 	
 	private final Object mQueueLock = new Object();
+
+    private volatile int mForceDispatchPass = 0;
 
 	/**
 	 * This is a static initialization method.
@@ -249,10 +252,21 @@ public final class PhoneWindowManager {
 				// android.os.SystemClock.uptimeMillis
 				
 				/*
-				 * Using KitKat work-around from the InputManager Hook
+				 * Sent from native code and did not pass through our InputManager hook.
+				 * We cannot trust the policy flags in the next method (KitKat+ issue)
 				 */
-				Boolean isInjected = SDK.MANAGER_HARDWAREINPUT_VERSION > 1 ? 
-						(((KeyEvent) param.args[0]).getFlags() & ORIGINAL.FLAG_INJECTED) != 0 : (policyFlags & ORIGINAL.FLAG_INJECTED) != 0;
+                if ((policyFlags & ORIGINAL.FLAG_INJECTED) == ORIGINAL.FLAG_INJECTED
+                        && (keyFlags & InputManager.FLAG_INJECTED) != InputManager.FLAG_INJECTED) {
+
+                    mForceDispatchPass = keyCode;
+
+                    return;
+
+                } else if (mForceDispatchPass == keyCode) {
+                    mForceDispatchPass = 0;
+                }
+
+				Boolean isInjected = (keyFlags & InputManager.FLAG_INJECTED) == InputManager.FLAG_INJECTED;
 				
 				/*
 				 * The module should not handle injected keys. 
@@ -270,10 +284,12 @@ public final class PhoneWindowManager {
 						param.setResult(ORIGINAL.QUEUEING_ALLOW);
 						
 					} else if ((policyFlags & ORIGINAL.FLAG_INJECTED) != 0) {
-						/*
-						 * Some ROM's disables features on injected keys. So let's remove the flag.
-						 */
-						param.args[policyFlagsPos] = policyFlags & ~ORIGINAL.FLAG_INJECTED;
+                        if ((keyFlags & EventKey.FLAG_CUSTOM) == EventKey.FLAG_CUSTOM) {
+                            /*
+                             * Some ROM's disables features on injected keys. So let's remove the flag.
+                             */
+                            param.args[policyFlagsPos] = policyFlags & ~ORIGINAL.FLAG_INJECTED;
+                        }
 					}
 					
 				/*
@@ -375,6 +391,10 @@ public final class PhoneWindowManager {
 			Boolean down = action == KeyEvent.ACTION_DOWN;
 			EventKey key = mEventManager.getKey(keyCode);
 			String tag = TAG + "#Dispatching/" + (down ? "Down " : "Up ") + keyCode + "(" + mEventManager.getTapCount() + "," + repeatCount+ "):";
+
+            if (mForceDispatchPass == keyCode) {
+                return;
+            }
 			
 			/*
 			 * Only disable default haptic feedback on 
@@ -385,8 +405,7 @@ public final class PhoneWindowManager {
 			/*
 			 * Using KitKat work-around from the InputManager Hook
 			 */
-			Boolean isInjected = SDK.MANAGER_HARDWAREINPUT_VERSION > 1 ? 
-					(((KeyEvent) param.args[1]).getFlags() & ORIGINAL.FLAG_INJECTED) != 0 : (policyFlags & ORIGINAL.FLAG_INJECTED) != 0;
+			Boolean isInjected = (keyFlags & InputManager.FLAG_INJECTED) == InputManager.FLAG_INJECTED;
 			
 			if (isInjected) {
 				/*
@@ -409,7 +428,7 @@ public final class PhoneWindowManager {
 					}
 				}
 				
-				if ((policyFlags & ORIGINAL.FLAG_INJECTED) != 0) {
+				if ((policyFlags & ORIGINAL.FLAG_INJECTED) != 0 && (keyFlags & EventKey.FLAG_CUSTOM) != 0) {
 					param.args[policyFlagsPos] = policyFlags & ~ORIGINAL.FLAG_INJECTED;
 				}
 				

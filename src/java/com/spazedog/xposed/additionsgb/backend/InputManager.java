@@ -20,62 +20,81 @@
 package com.spazedog.xposed.additionsgb.backend;
 
 import android.util.Log;
+import android.view.InputEvent;
 import android.view.KeyEvent;
 
 import com.spazedog.lib.reflecttools.ReflectClass;
 import com.spazedog.lib.reflecttools.utils.ReflectException;
 import com.spazedog.xposed.additionsgb.Common;
 
+import java.lang.reflect.Field;
+
 import de.robv.android.xposed.XC_MethodHook;
 
 public class InputManager {
 	public static final String TAG = InputManager.class.getName();
-	
-	protected static int FLAG_INJECTED;
+
+    public static int FLAG_INJECTED = 0x40000000;
+
+    protected static Field mFieldKeyFlags;
+
+    static {
+        try {
+            mFieldKeyFlags = KeyEvent.class.getDeclaredField("mFlags");
+
+        } catch (Throwable e) {
+        }
+    }
 	
 	public static void init() {
 		if(Common.DEBUG) Log.d(TAG, "Adding Input Manager Hook");
 
-		/*
-		 * This class does not exist in older Android Versions.
-		 */
-		if (android.os.Build.VERSION.SDK_INT >= 16) {
-			try {
-				InputManager hook = new InputManager();
-				
-				FLAG_INJECTED = (Integer) ReflectClass.forName("android.view.WindowManagerPolicy").findField("FLAG_INJECTED").getValue();
-				
-				ReflectClass.forName("com.android.server.input.InputManagerService").inject("injectInputEvent", hook.hook_injectInputEvent);
-				
-			} catch (ReflectException e) {
-				Log.e(TAG, e.getMessage(), e);
-			}
-		}
+        InputManager hook = new InputManager();
+
+        try {
+            // Gingerbread
+            ReflectClass.forName("com.android.server.InputManager").inject("nativeInjectInputEvent", hook.hook_injectInputEvent);
+
+        } catch (ReflectException e) {
+            try {
+                // ICS
+                ReflectClass.forName("com.android.server.wm.InputManager").inject("nativeInjectInputEvent", hook.hook_injectInputEvent);
+
+            } catch (ReflectException e2) {
+                try {
+                    // Jellybean+
+                    ReflectClass.forName("com.android.server.input.InputManagerService").inject("nativeInjectInputEvent", hook.hook_injectInputEvent);
+
+                } catch (ReflectException e3) {
+                    Log.e(TAG, e3.getMessage(), e3);
+                }
+            }
+        }
 	}
 
 	protected XC_MethodHook hook_injectInputEvent = new XC_MethodHook() {
 		@Override
 		protected final void beforeHookedMethod(final MethodHookParam param) {
-			if (param.args[0] instanceof KeyEvent) {
-				if ((((KeyEvent) param.args[0]).getFlags() & FLAG_INJECTED) == 0) {
-					if(Common.debug()) Log.d(TAG, "Adding FLAG_INJECTED flag on KeyEvent " + ((KeyEvent) param.args[0]).getKeyCode());
-					
-					/*
-					 * KitKat has an error where PolicyFlags[FLAG_INJECTED] will always show the key as injected in PhoneWindowManager#interceptKeyBeforeDispatching. 
-					 * Since our PhoneWindowManager hook depends on being able to distinguish between button presses 
-					 * and actual injected keys, we have added this small hook that will add the FLAG_INJECTED flag directly to the
-					 * KeyEvent itself whenever it get's parsed though this service method.
-					 */
-					try {
-						ReflectClass.forReceiver(param.args[0]).findField("mFlags").setValue(((KeyEvent) param.args[0]).getFlags() | FLAG_INJECTED);
+            InputEvent event = (InputEvent) (param.args[1] instanceof InputEvent ? param.args[1] : param.args[0]);
 
-					} catch (ReflectException e) {
-						Log.e(TAG, e.getMessage(), e);
-					}
-					
-				} else {
-					if(Common.debug()) Log.d(TAG, "The KeyEvent " + ((KeyEvent) param.args[0]).getKeyCode() + " already contains the FLAG_INJECTED flag");
-				}
+			if (param.args[0] instanceof KeyEvent) {
+                KeyEvent keyEvent = (KeyEvent) event;
+                int keyFlags = keyEvent.getFlags();
+
+                /*
+                 * KitKat has an error where PolicyFlags[FLAG_INJECTED] will always show the key as injected in PhoneWindowManager#interceptKeyBeforeDispatching.
+                 * Since our PhoneWindowManager hook depends on being able to distinguish between button presses
+                 * and actual injected keys, we have added this small hook that will add the FLAG_INJECTED flag directly to the
+                 * KeyEvent itself whenever it get's parsed though this service method.
+                 */
+                if ((keyFlags & FLAG_INJECTED) != FLAG_INJECTED) {
+                    try {
+                        mFieldKeyFlags.set(keyEvent, keyFlags | FLAG_INJECTED);
+
+                    } catch (Throwable e) {
+                        Log.e(TAG, e.getMessage(), e);
+                    }
+                }
 			}
 		}
 	};

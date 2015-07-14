@@ -4,7 +4,7 @@ import android.view.KeyEvent;
 
 public class EventKey {
 	
-	public static final int FLAG_CUSTOM = 4096;
+	public static final int FLAG_CUSTOM = 0x80000000;
 	
 	private Long mDownTime;
 	private Integer mKeyCode;
