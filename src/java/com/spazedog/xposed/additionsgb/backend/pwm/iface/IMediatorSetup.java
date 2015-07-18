@@ -252,7 +252,19 @@ public abstract class IMediatorSetup {
 		});
 		
 		if (SDK.MANAGER_KEYGUARD_VERSION > 2) {
-			mMethods.put("KeyguardMediator.isShowing", mKeyguardMediator.findMethodDeep("isShowingAndNotOccluded"));
+            try {
+                mMethods.put("KeyguardMediator.isShowing", mKeyguardMediator.findMethodDeep("isShowingAndNotOccluded"));
+
+            } catch (ReflectException e) {
+                /*
+                 * TODO: Latest revision of 5.1 removed 'isShowingAndNotOccluded' from the mediator.
+                 *          Only way to check this now, is by running a check on 'isShowing' along with checking some
+                 *          properties in KeyguardServiceDelegate$KeyguardState. The fastest crash fix for now, is to use
+                 *          the method within 'PhoneWindowManager'. We can revisit this ones the 'M' release is published,
+                 *          which might need additional work as well.
+                 */
+                mMethods.put("KeyguardMediator.isShowing", mPhoneWindowManager.findMethodDeep("isKeyguardShowingAndNotOccluded"));
+            }
 		
 		} else {
 			mMethods.put("KeyguardMediator.isShowing", mKeyguardMediator.findMethodDeep("isShowingAndNotHidden"));
