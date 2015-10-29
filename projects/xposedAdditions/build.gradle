@@ -1,6 +1,6 @@
 apply plugin: 'com.android.application'
 
-buildDir = '../../build/xposedAdditions'
+buildDir = '/tmp/studio/xposedAdditions_4.x'
 
 android {
     compileSdkVersion 22
@@ -11,8 +11,8 @@ android {
 
         minSdkVersion 9
         targetSdkVersion 22
-        versionCode 71
-        versionName "3.5.9"
+        versionCode 40000
+        versionName "4.0.0"
     }
 
     sourceSets {
