@@ -18,6 +18,9 @@ public class Injector extends InitBridge {
 
     @Override
     public void onSystemInit(Context systemContext) {
-
+		/*
+		 * Load all modules
+		 */
+        BackendService.init(systemContext);
     }
 }
