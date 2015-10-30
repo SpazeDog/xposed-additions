@@ -32,4 +32,11 @@ public final class Constants {
      * Type codes from sendListenerMsg in the BackendService and Mgr
      */
     public static final int BRC_LOGCAT = 1;
+    public static final int BRC_SL_MEDIA = 2;
+    public static final int BRC_SL_KEYGUARD = 3;
+    public static final int BRC_SL_TELEPHONY = 4;
+    public static final int BRC_SL_USERSWITCH = 5;
+    public static final int BRC_SL_APPFOCUS = 6;
+    public static final int BRC_SL_SOFTKEYBOARD = 7;
+    public static final int BRC_SL_DISPLAY = 8;
 }

@@ -299,7 +299,13 @@ public class BackendService extends BackendProxy.Stub {
     public void sendListenerMsg(int type, HashBundle data) throws RemoteException {
         synchronized (mListeners) {
             switch (type) {
-                case Constants.BRC_LOGCAT: {
+                case Constants.BRC_SL_USERSWITCH: {
+                    if (data.getBoolean("switched", false)) {
+                        mValues.UserId = data.getInt("current_userid", 0);
+                        sendPreferenceRequest(FLAG_PREPARE);
+                    }
+
+                } break; case Constants.BRC_LOGCAT: {
                     synchronized (mLogEntries) {
                         if (mLogEntries.size() > 150) {
                             /*
