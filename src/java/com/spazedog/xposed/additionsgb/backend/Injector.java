@@ -26,5 +26,6 @@ public class Injector extends InitBridge {
 		 */
         BackendService.init(systemContext);
         SystemStateListener.init(systemContext);
+        InputManager.init();
     }
 }

@@ -1,6 +1,6 @@
 /*
  * This file is part of the Xposed Additions Project: https://github.com/spazedog/xposed-additions
- *  
+ *
  * Copyright (c) 2014 Daniel Bergløv
  *
  * Xposed Additions is free software: you can redistribute it and/or modify
@@ -19,23 +19,57 @@
 
 package com.spazedog.xposed.additionsgb.backend;
 
-import android.util.Log;
 import android.view.InputEvent;
 import android.view.KeyEvent;
 
 import com.spazedog.lib.reflecttools.ReflectClass;
-import com.spazedog.lib.reflecttools.utils.ReflectException;
-import com.spazedog.xposed.additionsgb.Common;
+import com.spazedog.lib.reflecttools.ReflectException;
+import com.spazedog.lib.reflecttools.bridge.MethodBridge;
+import com.spazedog.xposed.additionsgb.utils.Utils;
+import com.spazedog.xposed.additionsgb.utils.Utils.Level;
 
 import java.lang.reflect.Field;
 
-import de.robv.android.xposed.XC_MethodHook;
-
+/*
+ * Some changes made to the native Input Manager in KitKat introduced an error in PhoneWindowManager#interceptKeyBeforeDispatching().
+ * For some reason the policy flags always contains the FLAG_INJECTED. Since Android only uses this flag in PhoneWindowManager#interceptKeyBeforeQueueing()
+ * this issue has stayed in all Lollipop releases as well and will possibly stay in even further releases.
+ *
+ * XposedAdditions adds much more advanced key features and needs to know the key type in both these methods.
+ * But since we cannot affect native code, our only option is to add a similar flag directly to a key before injecting it in order to have it persist across it's life time.
+ * Again since we can only affect the Java part of the framework, this will not work on keys injected via native code like Double Tab Screen features, which is mostly invoked
+ * by the kernel itself via native input tools.
+ *
+ * TODO: Find a solution to the above issue
+ */
 public class InputManager {
-	public static final String TAG = InputManager.class.getName();
+    public static final String TAG = InputManager.class.getName();
 
-    public static int FLAG_INJECTED = 0x40000000;
+    /*
+     * Custom key flag values. We use the last two bits in a
+     * 32bit integer so not to conflict with Android's flag values
+     */
+    public static final int KEYFLAG_INTERNAL = 0x80000000;
+    public static final int KEYFLAG_INJECTED = 0x40000000;
 
+    /*
+     * From android.view.WindowManagerPolicy
+     */
+    public final static int POLICYFLAG_TRUSTED = 0x02000000;
+    public final static int POLICYFLAG_INJECTED = 0x01000000;
+    public final static int POLICYFLAG_VIRTUAL = 0x00000002;
+    public final static int POLICYFLAG_INTERACTIVE = 0x20000000;
+
+    /*
+     * Jellybean+
+     *
+     * From android.hardware.input.InputManager
+     */
+    public static final int INJECT_INPUT_EVENT_MODE_ASYNC = 0;
+
+    /*
+     * Field that will allow us to alter key flags on KeyEvent objects
+     */
     protected static Field mFieldKeyFlags;
 
     static {
@@ -45,57 +79,71 @@ public class InputManager {
         } catch (Throwable e) {
         }
     }
-	
-	public static void init() {
-		if(Common.DEBUG) Log.d(TAG, "Adding Input Manager Hook");
 
-        InputManager hook = new InputManager();
+    public static void init() {
+        Utils.log(Level.INFO, TAG, "Instantiating InputManager");
+
+        InputManager instance = new InputManager();
 
         try {
-            // Gingerbread
-            ReflectClass.forName("com.android.server.InputManager").inject("nativeInjectInputEvent", hook.hook_injectInputEvent);
+            /* Gingerbread
+             *
+             * com.android.server.InputManager$nativeInjectInputEvent(InputEvent event, int injectorPid, int injectorUid, int syncMode, int timeoutMillis)
+             */
+            ReflectClass.fromName("com.android.server.InputManager").bridge("nativeInjectInputEvent", instance.injectInputEvent);
 
         } catch (ReflectException e) {
             try {
-                // ICS
-                ReflectClass.forName("com.android.server.wm.InputManager").inject("nativeInjectInputEvent", hook.hook_injectInputEvent);
+                /* ICS
+                 *
+                 * com.android.server.wm.InputManager$nativeInjectInputEvent(InputEvent event, int injectorPid, int injectorUid, int syncMode, int timeoutMillis, int policyFlags)
+                 */
+                ReflectClass.fromName("com.android.server.wm.InputManager").bridge("nativeInjectInputEvent", instance.injectInputEvent);
 
             } catch (ReflectException e2) {
                 try {
-                    // Jellybean+
-                    ReflectClass.forName("com.android.server.input.InputManagerService").inject("nativeInjectInputEvent", hook.hook_injectInputEvent);
+                    /* Jellybean+
+                     *
+                     * com.android.server.input.InputManager$nativeInjectInputEvent(int ptr, InputEvent event, int injectorPid, int injectorUid, int syncMode, int timeoutMillis, int policyFlags)
+                     */
+                    ReflectClass.fromName("com.android.server.input.InputManagerService").bridge("nativeInjectInputEvent", instance.injectInputEvent);
 
                 } catch (ReflectException e3) {
-                    Log.e(TAG, e3.getMessage(), e3);
+                    Utils.log(Level.ERROR, TAG, e3.getMessage(), e3);
                 }
             }
         }
-	}
+    }
 
-	protected XC_MethodHook hook_injectInputEvent = new XC_MethodHook() {
-		@Override
-		protected final void beforeHookedMethod(final MethodHookParam param) {
-            InputEvent event = (InputEvent) (param.args[1] instanceof InputEvent ? param.args[1] : param.args[0]);
+    public MethodBridge injectInputEvent = new MethodBridge() {
+        @Override
+        public void bridgeBegin(BridgeParams params) {
+            InputEvent event = (InputEvent) (params.args[1] instanceof InputEvent ? params.args[1] : params.args[0]);
 
-			if (param.args[0] instanceof KeyEvent) {
+            if (event instanceof KeyEvent) {
                 KeyEvent keyEvent = (KeyEvent) event;
                 int keyFlags = keyEvent.getFlags();
 
-                /*
-                 * KitKat has an error where PolicyFlags[FLAG_INJECTED] will always show the key as injected in PhoneWindowManager#interceptKeyBeforeDispatching.
-                 * Since our PhoneWindowManager hook depends on being able to distinguish between button presses
-                 * and actual injected keys, we have added this small hook that will add the FLAG_INJECTED flag directly to the
-                 * KeyEvent itself whenever it get's parsed though this service method.
-                 */
-                if ((keyFlags & FLAG_INJECTED) != FLAG_INJECTED) {
+                if ((keyFlags & KEYFLAG_INJECTED) != KEYFLAG_INJECTED) {
                     try {
-                        mFieldKeyFlags.set(keyEvent, keyFlags | FLAG_INJECTED);
+                        mFieldKeyFlags.set(keyEvent, keyFlags|KEYFLAG_INJECTED);
 
                     } catch (Throwable e) {
-                        Log.e(TAG, e.getMessage(), e);
+                        Utils.log(Utils.Level.ERROR, TAG, e.getMessage(), e);
                     }
                 }
-			}
-		}
-	};
+
+                /*
+                 * Gingerbread does not parse policy flags via the Java InputManager
+                 */
+                if (params.args.length > 5) {
+                    int policyFlags = (Integer) params.args[ params.args.length-1 ];
+
+                    if ((keyEvent.getFlags() & KEYFLAG_INTERNAL) == KEYFLAG_INTERNAL && (policyFlags & POLICYFLAG_TRUSTED) != POLICYFLAG_TRUSTED) {
+                        params.args[params.args.length - 1] = policyFlags|POLICYFLAG_TRUSTED;
+                    }
+                }
+            }
+        }
+    };
 }
