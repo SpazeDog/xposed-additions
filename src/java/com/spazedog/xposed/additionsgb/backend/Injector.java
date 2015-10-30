@@ -13,7 +13,10 @@ public class Injector extends InitBridge {
 
     @Override
     public void onZygoteInit() {
-
+		/*
+		 * This should be loaded right away to catch any errors
+		 */
+        LogcatMonitor.init();
     }
 
     @Override

@@ -62,13 +62,6 @@ public final class Common {
 	
 	public static final String PREFERENCE_FILE = "config";
 	
-	public static class LogFile {
-		public static final Long SIZE = 1024L*512;
-		public static final File LOCK = new File(Environment.getDataDirectory(), "data/" + PACKAGE_NAME + "/cache/error.log.lock");
-		public static final File MAIN = new File(Environment.getDataDirectory(), "data/" + PACKAGE_NAME + "/cache/error.main.log");
-		public static final File STORED = new File(Environment.getDataDirectory(), "data/" + PACKAGE_NAME + "/cache/error.stored.log");
-	}
-	
 	public static String actionType(String action) {
 		return action == null ? null : 
 			action.matches("^[0-9]+$") ? "dispatch" : 

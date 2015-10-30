@@ -114,6 +114,15 @@ public class BackendService extends BackendProxy.Stub {
                         .invokeMethod("addService", Constants.SERVICE_MODULE_BACKEND, this, true);
             }
 
+			/*
+		 	 * Move temp log to this instance
+		 	 */
+            synchronized (mLogEntries) {
+                for (String entry : LogcatMonitor.getLogEntries(false)) {
+                    mLogEntries.add(entry);
+                }
+            }
+
             /*
              * The service is now accessible
              */
@@ -289,6 +298,25 @@ public class BackendService extends BackendProxy.Stub {
     @Override
     public void sendListenerMsg(int type, HashBundle data) throws RemoteException {
         synchronized (mListeners) {
+            switch (type) {
+                case Constants.BRC_LOGCAT: {
+                    synchronized (mLogEntries) {
+                        if (mLogEntries.size() > 150) {
+                            /*
+                             * Truncate the list. We remove 15% of Constants.LOG_ENTRY_SIZE entries at a time to avoid having to do this each time this is called
+                             */
+                            int truncate = (int) (Constants.LOG_ENTRY_SIZE * 0.15);
+
+                            for (int i=0; i < truncate; i++) {
+                                mLogEntries.remove(0);
+                            }
+                        }
+
+                        mLogEntries.add(data.getString("entry"));
+                    }
+                }
+            }
+
             for (ListenerMonitor curMonitor : mListeners) {
                 try {
                     ListenerProxy proxy = curMonitor.getProxy();

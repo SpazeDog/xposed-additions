@@ -24,6 +24,12 @@ public final class Constants {
 	public static final String PERMISSION_SETTINGS_RW = "permissions.additionsgb.settings.rw";
 	public static final String SERVICE_MODULE_BACKEND = "user.additionsgb.backend.service";
 	public static final String SERVICE_APP_PREFERENCES = "app.additionsgb.preferences.service.BIND";
+    public static final int LOG_ENTRY_SIZE = 150;
 
 	public static final boolean FORCE_DEBUG = true;
+
+    /*
+     * Type codes from sendListenerMsg in the BackendService and Mgr
+     */
+    public static final int BRC_LOGCAT = 1;
 }
