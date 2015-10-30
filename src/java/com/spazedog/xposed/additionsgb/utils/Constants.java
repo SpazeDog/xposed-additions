@@ -18,6 +18,9 @@
 package com.spazedog.xposed.additionsgb.utils;
 
 
+import com.spazedog.lib.utilsLib.app.MsgActivity;
+import com.spazedog.lib.utilsLib.app.logic.ActivityLogic;
+
 public final class Constants {
 
 	public static final String PACKAGE_NAME = "com.spazedog.xposed.additionsgb";
@@ -43,10 +46,10 @@ public final class Constants {
     /**
      * Type codes from 'sendMessage', the internal Activity/Fragment message system from UtilsLib
      */
-    public static final int MSG_ACTIVITY_RESULT = ActivityLogic.MSG_ACTIVITY_RESULT;
-    public static final int MSG_BACKSTACK_CHANGE = ActivityLogic.MSG_BACKSTACK_CHANGE;
-    public static final int MSG_FRAGMENT_ATTACHMENT = ActivityLogic.MSG_FRAGMENT_ATTACHMENT;
-    public static final int MSG_FRAGMENT_DETACHMENT = ActivityLogic.MSG_FRAGMENT_DETACHMENT;
+    public static final int MSG_ACTIVITY_RESULT = MsgActivity.MSG_ACTIVITY_RESULT;
+    public static final int MSG_BACKSTACK_CHANGE = MsgActivity.MSG_BACKSTACK_CHANGE;
+    public static final int MSG_FRAGMENT_ATTACHMENT = MsgActivity.MSG_FRAGMENT_ATTACHMENT;
+    public static final int MSG_FRAGMENT_DETACHMENT = MsgActivity.MSG_FRAGMENT_DETACHMENT;
     public static final int MSG_NAVIGATION_DRAWER_STATE = 1;
     public static final int MSG_DIALOG_SELECTOR = 2;
 
