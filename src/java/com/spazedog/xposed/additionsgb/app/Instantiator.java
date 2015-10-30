@@ -16,6 +16,9 @@ public class Instantiator<T> {
 
     protected Class<?> get(int id) {
         switch (id) {
+            // Fragments
+            case R.id.fragment_launch_selector: return FragmentLaunchSelector.class;
+
             // Services
             case R.id.service_preferences: return PreferenceService.class;
 

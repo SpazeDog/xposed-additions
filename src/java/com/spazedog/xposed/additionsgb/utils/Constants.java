@@ -48,4 +48,10 @@ public final class Constants {
     public static final int MSG_FRAGMENT_ATTACHMENT = ActivityLogic.MSG_FRAGMENT_ATTACHMENT;
     public static final int MSG_FRAGMENT_DETACHMENT = ActivityLogic.MSG_FRAGMENT_DETACHMENT;
     public static final int MSG_NAVIGATION_DRAWER_STATE = 1;
+    public static final int MSG_DIALOG_SELECTOR = 2;
+
+	/*
+	 * Result codes from 'startActivityForResult'
+	 */
+	public static final int RESULT_ACTION_PARSE_SHORTCUT = 1024;											// Used by FragmentLaunchSelector
 }
