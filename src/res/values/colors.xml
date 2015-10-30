@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    
+    <!-- ====================================================
+    	 	BASIC APP CONDITIONS
+    -->
+    
+    <color name="appColorPrimary">#424242</color>
+    <color name="appColorSecondary">#212121</color>
+    
+    <color name="accentColorPrimary">#E0E0E0</color>
+    <color name="accentColorSecondary">#BDBDBD</color>
+    <color name="accentColorControlHighlight">#40E0E0E0</color>
+    <color name="accentColorControlActivated">#D9E0E0E0</color>
+    
+    <color name="backgroundColorPrimary">#FFFFFF</color>
+    <color name="backgroundColorSecondary">#FAFAFA</color>
+
+    <color name="textColorPrimaryEnabled">#D9000000</color>
+    <color name="textColorPrimaryDisabled">#40000000</color>
+    
+    <color name="textColorSecondaryEnabled">#8C000000</color>
+    <color name="textColorSecondaryDisabled">#1A000000</color>
+    
+    <color name="textColorPrimaryInvertedEnabled">#D9FFFFFF</color>
+    <color name="textColorPrimaryInvertedDisabled">#40FFFFFF</color>
+    
+    <color name="textColorSecondaryInvertedEnabled">#8CFFFFFF</color>
+    <color name="textColorSecondaryInvertedDisabled">#1AFFFFFF</color>
+    
+    <color name="listDividerColor">#8Ccbcbcb</color>
+    
+</resources>

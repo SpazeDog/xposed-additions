@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <dimen name="actionBarHeight">56dp</dimen>
+    <dimen name="navigationDrawerWidth">300dp</dimen>
+
+    <dimen name="textSizeSmall">14sp</dimen>
+    <dimen name="textSizeNormal">16sp</dimen>
+    <dimen name="textSizeActionBar">16sp</dimen>
+
+    <dimen name="layoutMarginVertical">7dp</dimen>
+    <dimen name="layoutMarginHorizontal">7dp</dimen>
+
+    <dimen name="appIconSize">48dp</dimen>
+
+</resources>

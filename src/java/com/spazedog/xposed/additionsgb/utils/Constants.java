@@ -39,4 +39,13 @@ public final class Constants {
     public static final int BRC_SL_APPFOCUS = 6;
     public static final int BRC_SL_SOFTKEYBOARD = 7;
     public static final int BRC_SL_DISPLAY = 8;
+
+    /**
+     * Type codes from 'sendMessage', the internal Activity/Fragment message system from UtilsLib
+     */
+    public static final int MSG_ACTIVITY_RESULT = ActivityLogic.MSG_ACTIVITY_RESULT;
+    public static final int MSG_BACKSTACK_CHANGE = ActivityLogic.MSG_BACKSTACK_CHANGE;
+    public static final int MSG_FRAGMENT_ATTACHMENT = ActivityLogic.MSG_FRAGMENT_ATTACHMENT;
+    public static final int MSG_FRAGMENT_DETACHMENT = ActivityLogic.MSG_FRAGMENT_DETACHMENT;
+    public static final int MSG_NAVIGATION_DRAWER_STATE = 1;
 }

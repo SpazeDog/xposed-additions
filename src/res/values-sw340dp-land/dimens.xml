@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+
+    <dimen name="actionBarHeight">58dp</dimen>
+    <dimen name="navigationDrawerWidth">340dp</dimen>
+    <dimen name="textSizeActionBar">16sp</dimen>
+
+</resources>

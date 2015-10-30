@@ -13,9 +13,9 @@
     <application
         android:icon="@mipmap/ic_launcher"
         android:label="Xposed Additions"
-        android:theme="@style/AppTheme" 
+        android:theme="@style/App.Theme.Light.Combat"
         tools:replace="android:label">
-        
+
         <!-- Cydia Substrate -->
         <meta-data android:name="com.saurik.substrate.main" android:value="com.spazedog.xposed.additionsgb.backend.Injector"/>
 
@@ -26,20 +26,18 @@
         
         <service android:name=".ServiceTorch">
             <intent-filter>
-                <action android:name="com.spazedog.xposed.additionsgb.TOGGLE_FLASHLIGHT" />
+                <action android:name="app.additionsgb.torch.service.TOGGLE" />
             </intent-filter>
         </service>
         
-        <service android:name=".ServicePreferences">
+        <service android:name="com.spazedog.xposed.additionsgb.app.service.PreferenceService">
             <intent-filter>
                 <action android:name="app.additionsgb.preferences.service.BIND" />
             </intent-filter>
         </service>
         
         <activity
-            android:name=".ActivityMain"
-            android:label="Xposed Additions"
-            android:configChanges="orientation|screenSize" >
+            android:name="com.spazedog.xposed.additionsgb.app.ActivityMain">
 
             <intent-filter>
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -47,17 +45,6 @@
             </intent-filter>
             
         </activity>
-        
-        <activity android:label="@string/category_title_buttons" android:name=".ActivityScreenRemapMain" android:configChanges="orientation|screenSize" />
-        <activity android:label="@string/category_title_buttons" android:name=".ActivityScreenRemapKey" android:configChanges="orientation|screenSize" />
-        <activity android:label="@string/category_title_buttons" android:name=".ActivityScreenRemapCondition" android:configChanges="orientation|screenSize" />
-        <activity android:label="@string/category_title_buttons" android:name=".ActivitySelectorRemap" android:configChanges="orientation|screenSize" />
-        
-        <activity android:label="@string/category_title_usbplug" android:name=".ActivityScreenUSB" android:configChanges="orientation|screenSize" />
-        
-        <activity android:label="@string/category_title_layout" android:name=".ActivityScreenLayout" android:configChanges="orientation|screenSize" />
-        
-        <activity android:label="@string/category_title_logviewer" android:name=".ActivityViewerLog" android:configChanges="orientation|screenSize" />
         
     </application>
 

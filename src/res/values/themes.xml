@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <style name="App" />
+    
+    <style name="App.Theme" parent="Theme.AppCompat.Light.NoActionBar">
+        
+	    <!-- ====================================================
+	    	 	SETUP BASIC APP COLOR REFERENCES
+	    -->
+	    
+	    <item name="appColorPrimary">@color/appColorPrimary</item>
+	    <item name="appColorSecondary">@color/appColorSecondary</item>
+	    
+	    <item name="accentColorPrimary">@color/accentColorPrimary</item>
+	    <item name="accentColorSecondary">@color/accentColorSecondary</item>
+	    <item name="accentColorControlHighlight">@color/accentColorControlHighlight</item>
+	    <item name="accentColorControlActivated">@color/accentColorControlActivated</item>
+	    
+	    <item name="backgroundColorPrimary">@color/backgroundColorPrimary</item>
+	    <item name="backgroundColorSecondary">@color/backgroundColorSecondary</item>
+	    
+	    <item name="itemSelectableBackground">@drawable/item_selectable_background</item>
+	    <item name="listDividerColor">@color/listDividerColor</item>
+
+
+        <!-- ====================================================
+                 SETUP BASIC TEXT COLOR REFERENCES
+        -->
+
+        <item name="textColorPrimary">@color/text_color_primary_selector</item>
+        <item name="textColorPrimaryEnabled">@color/textColorPrimaryEnabled</item>
+        <item name="textColorPrimaryDisabled">@color/textColorPrimaryDisabled</item>
+
+        <item name="textColorSecondary">@color/text_color_secondary_selector</item>
+        <item name="textColorSecondaryEnabled">@color/textColorSecondaryEnabled</item>
+        <item name="textColorSecondaryDisabled">@color/textColorSecondaryDisabled</item>
+
+        <item name="textColorPrimaryInverted">@color/text_color_primary_inverted_selector</item>
+        <item name="textColorPrimaryInvertedEnabled">@color/textColorPrimaryInvertedEnabled</item>
+        <item name="textColorPrimaryInvertedDisabled">@color/textColorPrimaryInvertedDisabled</item>
+
+        <item name="textColorSecondaryInverted">@color/text_color_secondary_inverted_selector</item>
+        <item name="textColorSecondaryInvertedEnabled">@color/textColorSecondaryInvertedEnabled</item>
+        <item name="textColorSecondaryInvertedDisabled">@color/textColorSecondaryInvertedDisabled</item>
+
+
+        <!-- ====================================================
+                 SETUP STYLE ATTRIBUTES REFERENCES
+        -->
+
+        <item name="actionBarStyle">@style/App.ActionBar</item>
+	    
+    </style>
+    
+    <style name="App.Theme.Light">
+
+        <!-- ====================================================
+                 SETUP SUPPORT LIBRARY COLORS
+        -->
+
+		<item name="colorPrimary">?attr/appColorPrimary</item>
+        <item name="colorPrimaryDark">?attr/appColorPrimary</item>
+        <item name="android:textColorPrimary">?attr/textColorPrimary</item>
+        <item name="android:windowBackground">?attr/backgroundColorSecondary</item>
+        <item name="colorControlHighlight">?attr/accentColorControlHighlight</item>
+        <item name="colorControlActivated">?attr/accentColorControlActivated</item>
+        <item name="colorAccent">@color/accentColorPrimary</item>
+
+    </style>
+    
+    <style name="App.Theme.Light.Combat">
+        <!-- 
+        	This has to be placed in this section. 
+        	It will ensure that this attr is replaced in values-v21/themes.xml where we do not need a custom
+        	selector in order to get a custom selection color. 
+         -->
+        <item name="selectableItemBackground">@drawable/item_selectable_background</item>
+    </style>
+    
+</resources>

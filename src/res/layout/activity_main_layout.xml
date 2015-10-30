@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<android.support.v4.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/drawer"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <RelativeLayout
+        android:id="@+id/wrapper"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <FrameLayout
+            android:id="@+id/content"
+            android:layout_width="match_parent"
+            android:layout_height="fill_parent"
+            android:layout_below="@+id/toolbar"
+            android:foreground="@drawable/bottom_shadow" />
+
+        <android.support.v7.widget.Toolbar
+            style="?attr/actionBarStyle"
+            android:id="@+id/toolbar"
+            android:elevation="4dp" />
+
+    </RelativeLayout>
+
+    <android.support.design.widget.NavigationView
+        android:id="@+id/navigation"
+        android:layout_width="@dimen/navigationDrawerWidth"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:background="?attr/backgroundColorSecondary"
+        android:elevation="4dp"
+        app:menu="@menu/activity_main_navigation_menu" />
+
+</android.support.v4.widget.DrawerLayout>

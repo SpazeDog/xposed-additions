@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+
+    <style name="App.Theme.Light.Combat">
+        <item name="android:colorEdgeEffect">?attr/accentColorControlHighlight</item>
+
+        <!--
+        	Overwrite our own custom attr to use the android selector.
+        	In v21+ we do not need a custom selector to get a custom selection color.
+         -->
+        <item name="itemSelectableBackground">?android:attr/selectableItemBackground</item>
+    </style>
+
+</resources>

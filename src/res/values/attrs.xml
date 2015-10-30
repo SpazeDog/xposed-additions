@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    
+    <!-- ====================================================
+    	 	BASIC APP COLORS
+    -->
+
+    <attr name="appColorPrimary" format="reference|color" />
+    <attr name="appColorSecondary" format="reference|color" />
+
+    <attr name="accentColorPrimary" format="reference|color" />
+    <attr name="accentColorSecondary" format="reference|color" />
+    <attr name="accentColorControlHighlight" format="reference|color" />
+    <attr name="accentColorControlActivated" format="reference|color" />
+
+    <attr name="backgroundColorPrimary" format="reference|color" />
+    <attr name="backgroundColorSecondary" format="reference|color" />
+
+    <attr name="itemSelectableBackground" format="reference|color" />
+    <attr name="listDividerColor" format="reference|color" />
+
+
+    <!-- ====================================================
+    	 	BASIC TEXT COLORS
+    -->
+
+    <attr name="textColorPrimary" format="reference|color" />
+    <attr name="textColorPrimaryEnabled" format="reference|color" />
+    <attr name="textColorPrimaryDisabled" format="reference|color" />
+
+    <attr name="textColorSecondary" format="reference|color" />
+    <attr name="textColorSecondaryEnabled" format="reference|color" />
+    <attr name="textColorSecondaryDisabled" format="reference|color" />
+
+    <attr name="textColorPrimaryInverted" format="reference|color" />
+    <attr name="textColorPrimaryInvertedEnabled" format="reference|color" />
+    <attr name="textColorPrimaryInvertedDisabled" format="reference|color" />
+
+    <attr name="textColorSecondaryInverted" format="reference|color" />
+    <attr name="textColorSecondaryInvertedEnabled" format="reference|color" />
+    <attr name="textColorSecondaryInvertedDisabled" format="reference|color" />
+
+    <!-- ====================================================
+    	 	STYLE ATTRIBUTES
+    -->
+
+    <!-- <attr name="actionBarStyle" format="reference" /> Exists -->
+    
+</resources>
