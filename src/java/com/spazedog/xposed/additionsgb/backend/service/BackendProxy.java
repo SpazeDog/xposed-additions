@@ -164,45 +164,54 @@ public interface BackendProxy extends IInterface {
 
         @Override
         public int getVersion() throws RemoteException {
+            Parcel args = Parcel.obtain();
             Parcel callee = Parcel.obtain();
 
             try {
-                mBinder.transact(TRANSACTION_getVersion, null, callee, 0);
+                args.writeInterfaceToken(DESCRIPTOR);
+                mBinder.transact(TRANSACTION_getVersion, args, callee, 0);
                 callee.readException();
 
                 return callee.readInt();
 
             } finally {
+                args.recycle();
                 callee.recycle();
             }
         }
 
         @Override
         public boolean isActive() throws RemoteException {
+            Parcel args = Parcel.obtain();
             Parcel callee = Parcel.obtain();
 
             try {
-                mBinder.transact(TRANSACTION_isActive, null, callee, 0);
+                args.writeInterfaceToken(DESCRIPTOR);
+                mBinder.transact(TRANSACTION_isActive, args, callee, 0);
                 callee.readException();
 
                 return callee.readInt() > 0;
 
             } finally {
+                args.recycle();
                 callee.recycle();
             }
         }
 
         @Override
         public boolean isReady() throws RemoteException {
+            Parcel args = Parcel.obtain();
             Parcel callee = Parcel.obtain();
 
             try {
-                mBinder.transact(TRANSACTION_isReady, null, callee, 0);
+                args.writeInterfaceToken(DESCRIPTOR);
+                mBinder.transact(TRANSACTION_isReady, args, callee, 0);
                 callee.readException();
 
                 return callee.readInt() > 0;
 
             } finally {
+                args.recycle();
                 callee.recycle();
             }
         }
@@ -266,15 +275,18 @@ public interface BackendProxy extends IInterface {
 
         @Override
         public boolean isDebugEnabled() throws RemoteException {
+            Parcel args = Parcel.obtain();
             Parcel callee = Parcel.obtain();
 
             try {
-                mBinder.transact(TRANSACTION_isDebugEnabled, null, callee, 0);
+                args.writeInterfaceToken(DESCRIPTOR);
+                mBinder.transact(TRANSACTION_isDebugEnabled, args, callee, 0);
                 callee.readException();
 
                 return callee.readInt() > 0;
 
             } finally {
+                args.recycle();
                 callee.recycle();
             }
         }
