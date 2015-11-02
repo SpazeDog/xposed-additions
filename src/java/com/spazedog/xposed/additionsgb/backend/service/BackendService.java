@@ -32,6 +32,7 @@ import android.os.Build;
 import android.os.IBinder;
 import android.os.Process;
 import android.os.RemoteException;
+import android.util.Log;
 
 import com.spazedog.lib.reflecttools.ReflectClass;
 import com.spazedog.lib.reflecttools.ReflectException;
@@ -40,6 +41,7 @@ import com.spazedog.lib.utilsLib.HashBundle;
 import com.spazedog.lib.utilsLib.SparseList;
 import com.spazedog.xposed.additionsgb.app.service.PreferenceProxy;
 import com.spazedog.xposed.additionsgb.backend.LogcatMonitor;
+import com.spazedog.xposed.additionsgb.backend.LogcatMonitor.LogcatEntry;
 import com.spazedog.xposed.additionsgb.utils.AndroidHelper;
 import com.spazedog.xposed.additionsgb.utils.Constants;
 import com.spazedog.xposed.additionsgb.utils.Utils;
@@ -60,7 +62,7 @@ public class BackendService extends BackendProxy.Stub {
         public boolean DebugEnabled = false;
     }
 
-    private List<String> mLogEntries = new SparseList<String>();
+    private List<LogcatEntry> mLogEntries = new SparseList<LogcatEntry>();
 
     private int mSystemUID = 0;
     private int mAppUID = 0;
@@ -118,7 +120,7 @@ public class BackendService extends BackendProxy.Stub {
 		 	 * Move temp log to this instance
 		 	 */
             synchronized (mLogEntries) {
-                for (String entry : LogcatMonitor.getLogEntries(false)) {
+                for (LogcatEntry entry : LogcatMonitor.getLogEntries(true)) {
                     mLogEntries.add(entry);
                 }
             }
@@ -318,7 +320,7 @@ public class BackendService extends BackendProxy.Stub {
                             }
                         }
 
-                        mLogEntries.add(data.getString("entry"));
+                        mLogEntries.add((LogcatEntry) data.getParcelable("entry"));
                     }
                 }
             }
@@ -360,5 +362,10 @@ public class BackendService extends BackendProxy.Stub {
     @Override
     public boolean isDebugEnabled() throws RemoteException {
         return mValues.DebugEnabled;
+    }
+
+    @Override
+    public List<LogcatEntry> getLogEntries() throws RemoteException {
+        return mLogEntries;
     }
 }

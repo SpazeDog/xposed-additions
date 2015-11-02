@@ -19,39 +19,67 @@
 
 package com.spazedog.xposed.additionsgb.backend;
 
-import android.annotation.SuppressLint;
-import android.os.*;
+import android.os.Parcel;
 import android.os.Process;
+import android.util.Log;
 
 import com.spazedog.lib.reflecttools.ReflectClass;
 import com.spazedog.lib.reflecttools.ReflectException;
 import com.spazedog.lib.reflecttools.bridge.MethodBridge;
 import com.spazedog.lib.utilsLib.HashBundle;
+import com.spazedog.lib.utilsLib.MultiParcelableBuilder;
+import com.spazedog.lib.utilsLib.SparseList;
 import com.spazedog.xposed.additionsgb.backend.service.BackendServiceMgr;
 import com.spazedog.xposed.additionsgb.utils.Constants;
 import com.spazedog.xposed.additionsgb.utils.Utils;
 import com.spazedog.xposed.additionsgb.utils.Utils.Level;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
-@SuppressLint("UseSparseArrays")
 public class LogcatMonitor {
 	public static final String TAG = LogcatMonitor.class.getName();
 
-	private final static int DEBUG = 3;
-	private final static int INFO = 4;
-	private final static int ERROR = 6;
+    private static List<LogcatEntry> oLogEntries = new SparseList<LogcatEntry>();
 
-    private static volatile String[] oLogEntries = new String[0];
-	private final static Map<Integer, String> LEVELS = new HashMap<Integer, String>();
-	static {
-		LEVELS.put(DEBUG, "D");
-		LEVELS.put(INFO, "I");
-		LEVELS.put(ERROR, "E");
-	}
+    public static class LogcatEntry extends MultiParcelableBuilder {
+
+        public final long Time;
+        public final int Pid;
+        public final int Uid;
+        public final int Level;
+        public final String Tag;
+        public final String Message;
+
+        public LogcatEntry(int pid, int uid, int level, String tag, String message) {
+            Time = System.currentTimeMillis();
+            Pid = pid;
+            Uid = uid;
+            Level = level;
+            Tag = tag.startsWith(Constants.PACKAGE_NAME) ? ("XposedAdditions: " + tag.substring(tag.lastIndexOf(".")+1).trim()) : tag.trim();
+            Message = message.replace("\n", "\r\n\t\t").trim();
+        }
+
+        public LogcatEntry(Parcel in, ClassLoader loader) {
+            Time = (Long) unparcelData(in, loader);
+            Pid = (Integer) unparcelData(in, loader);
+            Uid = (Integer) unparcelData(in, loader);
+            Level = (Integer) unparcelData(in, loader);
+            Tag = (String) unparcelData(in, loader);
+            Message = (String) unparcelData(in, loader);
+        }
+
+        @Override
+        public void writeToParcel(Parcel out, int flags) {
+            super.writeToParcel(out, flags);
+
+            parcelData(Time, out, flags);
+            parcelData(Pid, out, flags);
+            parcelData(Uid, out, flags);
+            parcelData(Level, out, flags);
+            parcelData(Tag, out, flags);
+            parcelData(Message, out, flags);
+        }
+    }
 	
 	public final Object mLock = new Object();
 	public volatile boolean mBusy = false;
@@ -60,28 +88,30 @@ public class LogcatMonitor {
 		Utils.log(Level.INFO, TAG, "Instantiating Logcat Monitor");
 		
 		try {
-			ReflectClass.fromName("android.util.Log")
-				.bridge("println_native", new LogcatMonitor().hook_println_native);
+            LogcatMonitor instance = new LogcatMonitor();
+            ReflectClass logcat = ReflectClass.fromName("android.util.Log");
+
+            logcat.bridge("println_native", instance.hook_println_native);
 			
 		} catch (ReflectException e) {
 			Utils.log(Level.ERROR, TAG, e.getMessage(), e);
 		}
 	}
 
-    public static List<String> getLogEntries() {
+    public static List<LogcatEntry> getLogEntries() {
         return getLogEntries(false);
     }
 
-    public static List<String> getLogEntries(boolean clearLog) {
+    public static List<LogcatEntry> getLogEntries(boolean clearLog) {
         synchronized (oLogEntries) {
-            List<String> logsEntries = new ArrayList<String>();
+            List<LogcatEntry> logsEntries = new SparseList<LogcatEntry>();
 
-            for (String entry : oLogEntries) {
+            for (LogcatEntry entry : oLogEntries) {
                 logsEntries.add(entry);
             }
 
             if (clearLog) {
-                oLogEntries = new String[0];
+                oLogEntries.clear();
             }
 
             return logsEntries;
@@ -98,53 +128,35 @@ public class LogcatMonitor {
 		@Override
 		public void bridgeBegin(BridgeParams param) {
 			synchronized (mLock) {
-				String message = (String) param.args[3];
-				String tag = (String) param.args[2];
-				int priority = (Integer) param.args[1];
-				boolean tagHasName = tag != null && tag.contains(Constants.PACKAGE_NAME);
-				
-				if (tagHasName || (priority == ERROR && message.contains(Constants.PACKAGE_NAME))) {
-					if (!mBusy) {
-						mBusy = true;
-						
-						String entry = "";
-						entry += LEVELS.get(priority);
-						entry += "/";
-						entry += tag;
-						entry += "\r\n\t";
-						entry += message.replace("\n", "\r\n\t\t");
-						entry += "\r\n";
-						
-						BackendServiceMgr manager = BackendServiceMgr.getInstance(true);
-						
-						if (manager != null && manager.isServiceActive()) {
-							manager.sendListenerMsg(Constants.BRC_LOGCAT, new HashBundle("entry", entry));
+                int priority = (Integer) param.args[1];
+                String tag = (String) param.args[2];
+                String message = (String) param.args[3];
 
-						} else if (Binder.getCallingUid() <= Process.SYSTEM_UID) {
-                            /*
-                             * TODO:
-                             *      This is not working properly. Depending on Android version, it differs which processes will inherit the data.
-                             *      It does however assemble the system process log, but we need a better way so that we are able to display the log data
-                             *      in the apps log viewer if the service is not started for some reason.
-                             */
-                            synchronized (oLogEntries) {
-                                if (oLogEntries.length < Constants.LOG_ENTRY_SIZE) {
-                                    String[] logEntries = new String[ oLogEntries.length+1 ];
-                                    logEntries[oLogEntries.length] = entry;
+                if (!mBusy && (tag != null && tag.contains(Constants.PACKAGE_NAME)) || (priority == Log.ERROR && message.contains(Constants.PACKAGE_NAME))) {
+                    mBusy = true;
 
-                                    for (int i=0; i < oLogEntries.length; i++) {
-                                        logEntries[i] = oLogEntries[i];
-                                    }
+                    BackendServiceMgr manager = BackendServiceMgr.getInstance(true);
 
-                                    oLogEntries = logEntries;
-                                }
+                    if (manager != null && manager.isServiceActive()) {
+                        manager.sendListenerMsg(Constants.BRC_LOGCAT, new HashBundle("entry", new LogcatEntry(Process.myPid(), Process.myUid(), priority, tag, message)));
+
+                    } else if (Process.myUid() <= Process.SYSTEM_UID) {
+                        /*
+                         * TODO:
+                         *      This is not working properly. Depending on Android version, it differs which processes will inherit the data.
+                         *      It does however assemble the system process log, but we need a better way so that we are able to display the log data
+                         *      in the apps log viewer if the service is not started for some reason.
+                         */
+                        synchronized (oLogEntries) {
+                            if (oLogEntries.size() < Constants.LOG_ENTRY_SIZE) {
+                                oLogEntries.add(new LogcatEntry(Process.myPid(), Process.myUid(), priority, tag, message));
                             }
-						}
-						
-						mBusy = false;
-					}
-				}
-			}
-		}
-	};
+                        }
+                    }
+
+                    mBusy = false;
+                }
+            }
+        }
+    };
 }

@@ -25,12 +25,14 @@ import android.os.RemoteException;
 import com.spazedog.lib.reflecttools.ReflectClass;
 import com.spazedog.lib.reflecttools.ReflectException;
 import com.spazedog.lib.utilsLib.HashBundle;
+import com.spazedog.xposed.additionsgb.backend.LogcatMonitor.LogcatEntry;
 import com.spazedog.xposed.additionsgb.utils.Constants;
 import com.spazedog.xposed.additionsgb.utils.Utils;
 import com.spazedog.xposed.additionsgb.utils.Utils.Level;
 
 import java.lang.ref.WeakReference;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class BackendServiceMgr {
@@ -234,5 +236,17 @@ public class BackendServiceMgr {
         } catch (NullPointerException e) {}
 
         return false;
+    }
+
+    public List<LogcatEntry> getLogEntries() {
+        try {
+            return mServiceProxy.getLogEntries();
+
+        } catch (RemoteException e) {
+            handleRemoteException(e);
+
+        } catch (NullPointerException e) {}
+
+        return null;
     }
 }

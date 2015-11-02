@@ -27,6 +27,10 @@ import android.os.Parcel;
 import android.os.RemoteException;
 
 import com.spazedog.lib.utilsLib.HashBundle;
+import com.spazedog.lib.utilsLib.SparseList;
+import com.spazedog.xposed.additionsgb.backend.LogcatMonitor.LogcatEntry;
+
+import java.util.List;
 
 
 public interface BackendProxy extends IInterface {
@@ -45,6 +49,7 @@ public interface BackendProxy extends IInterface {
     int TRANSACTION_attachListener = IBinder.FIRST_CALL_TRANSACTION+5;
     int TRANSACTION_sendListenerMsg = IBinder.FIRST_CALL_TRANSACTION+6;
     int TRANSACTION_isDebugEnabled = IBinder.FIRST_CALL_TRANSACTION+7;
+    int TRANSACTION_getLogEntries = IBinder.FIRST_CALL_TRANSACTION+8;
 
 
     /*
@@ -59,6 +64,7 @@ public interface BackendProxy extends IInterface {
     void attachListener(ListenerProxy proxy) throws RemoteException;
     void sendListenerMsg(int type, HashBundle data) throws RemoteException;
     boolean isDebugEnabled() throws RemoteException;
+    List<LogcatEntry> getLogEntries() throws RemoteException;
 
 
     /*
@@ -132,6 +138,9 @@ public interface BackendProxy extends IInterface {
 
                     } break; case TRANSACTION_isDebugEnabled: {
                         caller.writeInt( isDebugEnabled() ? 1 : 0 );
+
+                    } break; case TRANSACTION_getLogEntries: {
+                        caller.writeParcelable((SparseList<LogcatEntry>) getLogEntries(), 0);
 
                     } break; default: {
                         return false;
@@ -284,6 +293,24 @@ public interface BackendProxy extends IInterface {
                 callee.readException();
 
                 return callee.readInt() > 0;
+
+            } finally {
+                args.recycle();
+                callee.recycle();
+            }
+        }
+
+        @Override
+        public List<LogcatEntry> getLogEntries() throws RemoteException {
+            Parcel args = Parcel.obtain();
+            Parcel callee = Parcel.obtain();
+
+            try {
+                args.writeInterfaceToken(DESCRIPTOR);
+                mBinder.transact(TRANSACTION_getLogEntries, args, callee, 0);
+                callee.readException();
+
+                return (SparseList<LogcatEntry>) callee.readParcelable(SparseList.class.getClassLoader());
 
             } finally {
                 args.recycle();

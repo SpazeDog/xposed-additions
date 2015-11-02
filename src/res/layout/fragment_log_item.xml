@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:card="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <android.support.v7.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        card:cardCornerRadius="4dp"
+        card:cardElevation="7dp">
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:textFilterEnabled="false">
+
+            <LinearLayout
+                android:orientation="vertical"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingBottom="@dimen/layoutMarginVertical"
+                android:paddingTop="@dimen/layoutMarginVertical"
+                android:paddingLeft="@dimen/layoutMarginHorizontal"
+                android:paddingRight="@dimen/layoutMarginHorizontal">
+
+                <TextView
+                    android:id="@+id/item_title"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="@style/App.TextAppearance"
+                    android:textStyle="bold"
+                    android:paddingBottom="@dimen/textSizeNormal"/>
+
+                <TextView
+                    android:id="@+id/item_summary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="@style/App.TextAppearance.Small"
+                    android:paddingBottom="@dimen/textSizeNormal"/>
+
+                <TextView
+                    android:id="@+id/item_time"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="@style/App.TextAppearance"/>
+
+            </LinearLayout>
+
+        </HorizontalScrollView>
+
+    </android.support.v7.widget.CardView>
+
+</LinearLayout>

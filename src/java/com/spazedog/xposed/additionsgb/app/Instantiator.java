@@ -18,6 +18,7 @@ public class Instantiator<T> {
         switch (id) {
             // Fragments
             case R.id.fragment_launch_selector: return FragmentLaunchSelector.class;
+            case R.id.fragment_log: return FragmentLog.class;
 
             // Services
             case R.id.service_preferences: return PreferenceService.class;

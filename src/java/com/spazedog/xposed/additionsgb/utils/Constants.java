@@ -23,6 +23,7 @@ import com.spazedog.lib.utilsLib.app.logic.ActivityLogic;
 
 public final class Constants {
 
+    public static final String SUPPORT_EMAIL = "d.bergloev@gmail.com";
 	public static final String PACKAGE_NAME = "com.spazedog.xposed.additionsgb";
 	public static final String PERMISSION_SETTINGS_RW = "permissions.additionsgb.settings.rw";
 	public static final String SERVICE_MODULE_BACKEND = "user.additionsgb.backend.service";

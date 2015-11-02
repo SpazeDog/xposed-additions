@@ -29,5 +29,10 @@
     <color name="textColorSecondaryInvertedDisabled">#1AFFFFFF</color>
     
     <color name="listDividerColor">#8Ccbcbcb</color>
+
+    <color name="logColorError">#ff0100</color>
+    <color name="logColorWarning">#f5970a</color>
+    <color name="logColorInfo">#008000</color>
+    <color name="logColorDebug">#0000ff</color>
     
 </resources>
