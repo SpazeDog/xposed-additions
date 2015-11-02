@@ -1,5 +1,12 @@
 <resources>
 
+    <style name="App.ContentPadding">
+        <item name="android:paddingTop">@dimen/layoutMarginVertical</item>
+        <item name="android:paddingBottom">@dimen/layoutMarginVertical</item>
+        <item name="android:paddingLeft">@dimen/layoutMarginHorizontal</item>
+        <item name="android:paddingRight">@dimen/layoutMarginHorizontal</item>
+    </style>
+
     <style name="App.ActionBar">
         <item name="android:layout_height">@dimen/actionBarHeight</item>
         <item name="android:layout_width">match_parent</item>
@@ -7,7 +14,17 @@
         <item name="titleTextAppearance">@style/App.TextAppearance.Title.ActionBar</item>
     </style>
 
-    <style name="App.TextAppearance" parent="@style/TextAppearance.AppCompat">
+    <style name="App.CardView">
+        <item name="cardCornerRadius">4dp</item>
+        <item name="cardElevation">7dp</item>
+    </style>
+
+    <style name="App.CardView.Title" parent="App.ContentPadding">
+        <item name="android:textAppearance">@style/App.TextAppearance.Secondary</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="App.TextAppearance" parent="TextAppearance.AppCompat">
         <item name="android:textColor">?attr/textColorPrimary</item>
         <item name="android:textSize">@dimen/textSizeNormal</item>
     </style>
@@ -40,7 +57,7 @@
         <item name="android:textSize">@dimen/textSizeSmall</item>
     </style>
 
-    <style name="App.TextAppearance.Title.ActionBar" parent="@style/App.TextAppearance.Inverted">
+    <style name="App.TextAppearance.Title.ActionBar" parent="App.TextAppearance.Inverted">
         <item name="android:textSize">@dimen/textSizeActionBar</item>
         <item name="android:textStyle">bold</item>
     </style>

@@ -2,6 +2,11 @@
 
 <menu xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" >
 
+    <item android:id="@+id/fragment_status"
+          android:icon="@drawable/ic_info_white_24dp"
+          android:title="@string/menu_navigation_title_status"
+          app:showAsAction="always" />
+
     <item android:id="@+id/fragment_log"
           android:icon="@drawable/ic_announcement_white_24dp"
           android:title="@string/menu_navigation_title_log"
