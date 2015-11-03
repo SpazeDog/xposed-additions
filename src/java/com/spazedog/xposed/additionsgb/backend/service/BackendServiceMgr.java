@@ -144,7 +144,7 @@ public class BackendServiceMgr {
 
     private final Set<ServiceListener> mListeners = new HashSet<ServiceListener>();
 
-    interface ServiceListener {
+    public interface ServiceListener {
         void onReceiveMsg(int type, HashBundle data);
     }
 

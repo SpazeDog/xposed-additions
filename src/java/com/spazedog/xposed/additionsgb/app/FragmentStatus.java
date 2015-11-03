@@ -27,15 +27,21 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.spazedog.lib.utilsLib.HashBundle;
 import com.spazedog.xposed.additionsgb.BuildConfig;
 import com.spazedog.xposed.additionsgb.R;
 import com.spazedog.xposed.additionsgb.app.ActivityMain.ActivityMainFragment;
 import com.spazedog.xposed.additionsgb.backend.LogcatMonitor.LogcatEntry;
 import com.spazedog.xposed.additionsgb.backend.service.BackendServiceMgr;
+import com.spazedog.xposed.additionsgb.backend.service.BackendServiceMgr.ServiceListener;
+import com.spazedog.xposed.additionsgb.utils.Constants;
 
 import java.util.List;
 
-public class FragmentStatus extends ActivityMainFragment {
+public class FragmentStatus extends ActivityMainFragment implements ServiceListener {
+
+    private TextView mLogErrorView;
+    private TextView mLogWarningView;
 
 
     /*
@@ -51,27 +57,10 @@ public class FragmentStatus extends ActivityMainFragment {
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        mLogErrorView = (TextView) view.findViewById(R.id.status_log_errors_item);
+        mLogWarningView = (TextView) view.findViewById(R.id.status_log_warnings_item);
+
         BackendServiceMgr backendMgr = getBackendMgr();
-
-        if (backendMgr != null && backendMgr.isServiceActive()) {
-            TextView logErrorView = (TextView) view.findViewById(R.id.status_log_errors_item);
-            TextView logWarningView = (TextView) view.findViewById(R.id.status_log_warnings_item);
-            List<LogcatEntry> entries = backendMgr.getLogEntries();
-
-            int errorCount = 0;
-            int warningCount = 0;
-
-            for (LogcatEntry entry : entries) {
-                switch (entry.Level) {
-                    case Log.ERROR: errorCount++; break;
-                    case Log.WARN: warningCount++; break;
-                }
-            }
-
-            logErrorView.setText("" + errorCount);
-            logWarningView.setText("" + warningCount);
-        }
-
         TextView backendView = (TextView) view.findViewById(R.id.status_backend_service_item);
 
         if (backendMgr != null && backendMgr.isServiceReady() && BuildConfig.VERSION_CODE != backendMgr.getServiceVersion()) {
@@ -89,6 +78,64 @@ public class FragmentStatus extends ActivityMainFragment {
         } else {
             backendView.setText(R.string.status_backend_info_missing);
             backendView.setTextColor(getResources().getColor(R.color.logColorError));
+        }
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+
+        updateLogCount();
+
+        BackendServiceMgr backendMgr = getBackendMgr();
+
+        if (backendMgr != null) {
+            backendMgr.attachListener(this);
+        }
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+
+        BackendServiceMgr backendMgr = getBackendMgr();
+
+        if (backendMgr != null) {
+            backendMgr.detachListener(this);
+        }
+    }
+
+    /*
+     * =================================================
+     * INTERNAL METHODS
+     */
+
+    private void updateLogCount() {
+        BackendServiceMgr backendMgr = getBackendMgr();
+
+        if (backendMgr != null && backendMgr.isServiceActive()) {
+            List<LogcatEntry> entries = backendMgr.getLogEntries();
+
+            int errorCount = 0;
+            int warningCount = 0;
+
+            for (LogcatEntry entry : entries) {
+                switch (entry.Level) {
+                    case Log.ERROR: errorCount++; break;
+                    case Log.WARN: warningCount++; break;
+                }
+            }
+
+            mLogErrorView.setText("" + errorCount);
+            mLogWarningView.setText("" + warningCount);
+        }
+    }
+
+    @Override
+    public void onReceiveMsg(int type, HashBundle data) {
+        switch (type) {
+            case Constants.BRC_LOGCAT:
+                updateLogCount();
         }
     }
 }

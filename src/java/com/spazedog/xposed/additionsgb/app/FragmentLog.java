@@ -27,7 +27,6 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.pm.Signature;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.design.widget.Snackbar;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.format.DateUtils;
@@ -40,33 +39,30 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.spazedog.lib.utilsLib.HashBundle;
 import com.spazedog.lib.utilsLib.SparseList;
 import com.spazedog.xposed.additionsgb.R;
 import com.spazedog.xposed.additionsgb.app.ActivityMain.ActivityMainFragment;
 import com.spazedog.xposed.additionsgb.backend.LogcatMonitor.LogcatEntry;
 import com.spazedog.xposed.additionsgb.backend.service.BackendServiceMgr;
+import com.spazedog.xposed.additionsgb.backend.service.BackendServiceMgr.ServiceListener;
 import com.spazedog.xposed.additionsgb.utils.Constants;
 
-import java.util.Collections;
 import java.util.List;
 
-public class FragmentLog extends ActivityMainFragment {
+public class FragmentLog extends ActivityMainFragment implements ServiceListener {
 
     protected List<LogcatEntry> mLogEntries = new SparseList<LogcatEntry>();
-    protected Snackbar mSnackBar;
+
+    protected RecyclerView mRecyclerView;
+    protected RecyclerView.LayoutManager mRecyclerManager;
+    protected RecyclerView.Adapter mRecyclerAdapter;
 
 
     /*
      * =================================================
      * FRAGMENT OVERRIDES
      */
-
-    @Override
-    public void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-
-        outState.putParcelable("mLogEntries", (SparseList) mLogEntries);
-    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -83,36 +79,35 @@ public class FragmentLog extends ActivityMainFragment {
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        RecyclerView recyclerView = (RecyclerView) view.findViewById(R.id.scrollView);
-        RecyclerView.LayoutManager recyclerManager = new LinearLayoutManager(getActivity());
-        RecyclerView.Adapter recyclerAdapter = new LogAdapter();
+        mRecyclerView = (RecyclerView) view.findViewById(R.id.scrollView);
+        mRecyclerManager = new LinearLayoutManager(getActivity());
+        mRecyclerAdapter = new LogAdapter();
 
-        recyclerView.setLayoutManager(recyclerManager);
-        recyclerView.setAdapter(recyclerAdapter);
-
-        BackendServiceMgr backendMgr = getBackendMgr();
-
-        if (savedInstanceState != null && savedInstanceState.containsKey("mLogEntries")) {
-            mLogEntries = (SparseList) savedInstanceState.getParcelable("mLogEntries");
-
-        } else if (backendMgr != null && backendMgr.isServiceActive()) {
-            List<LogcatEntry> entries = backendMgr.getLogEntries();
-
-            for (int i=entries.size()-1; i >= 0; i--) {
-                mLogEntries.add(entries.remove(i));
-            }
-        }
-
-        recyclerAdapter.notifyDataSetChanged();
+        mRecyclerView.setLayoutManager(mRecyclerManager);
+        mRecyclerView.setAdapter(mRecyclerAdapter);
     }
 
     @Override
-    public void onPause() {
-        super.onPause();
+    public void onStart() {
+        super.onStart();
 
-        if (mSnackBar != null) {
-            mSnackBar.dismiss();
-            mSnackBar = null;
+        updateLogcatEntries();
+
+        BackendServiceMgr backendMgr = getBackendMgr();
+
+        if (backendMgr != null) {
+            backendMgr.attachListener(this);
+        }
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+
+        BackendServiceMgr backendMgr = getBackendMgr();
+
+        if (backendMgr != null) {
+            backendMgr.detachListener(this);
         }
     }
 
@@ -194,6 +189,28 @@ public class FragmentLog extends ActivityMainFragment {
         }
 
         return builder.toString();
+    }
+
+    @Override
+    public void onReceiveMsg(int type, HashBundle data) {
+        switch (type) {
+            case Constants.BRC_LOGCAT:
+                updateLogcatEntries();
+        }
+    }
+
+    private void updateLogcatEntries() {
+        BackendServiceMgr backendMgr = getBackendMgr();
+
+        if (backendMgr != null && backendMgr.isServiceActive()) {
+            List<LogcatEntry> entries = backendMgr.getLogEntries();
+
+            for (int i=entries.size()-1; i >= 0; i--) {
+                mLogEntries.add(entries.remove(i));
+            }
+
+            mRecyclerAdapter.notifyDataSetChanged();
+        }
     }
 
 
