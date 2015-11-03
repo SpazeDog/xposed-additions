@@ -249,4 +249,8 @@ public class BackendServiceMgr {
 
         return null;
     }
+
+    public void requestServiceReload(int flags) {
+        sendListenerMsg(Constants.BRC_SERVICE_RELOAD, new HashBundle("flags", flags));
+    }
 }

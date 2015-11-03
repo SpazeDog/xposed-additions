@@ -20,6 +20,7 @@
 package com.spazedog.xposed.additionsgb.backend.service;
 
 
+import android.annotation.SuppressLint;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -29,16 +30,18 @@ import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.Binder;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Message;
 import android.os.Process;
 import android.os.RemoteException;
-import android.util.Log;
 
 import com.spazedog.lib.reflecttools.ReflectClass;
 import com.spazedog.lib.reflecttools.ReflectException;
 import com.spazedog.lib.reflecttools.bridge.MethodBridge;
 import com.spazedog.lib.utilsLib.HashBundle;
 import com.spazedog.lib.utilsLib.SparseList;
+import com.spazedog.lib.utilsLib.os.ThreadHandler;
 import com.spazedog.xposed.additionsgb.app.service.PreferenceProxy;
 import com.spazedog.xposed.additionsgb.backend.LogcatMonitor;
 import com.spazedog.xposed.additionsgb.backend.LogcatMonitor.LogcatEntry;
@@ -54,8 +57,12 @@ import java.util.Set;
 public class BackendService extends BackendProxy.Stub {
     public static final String TAG = BackendService.class.getName();
 
-    public static final int FLAG_PREPARE = 0x00000001;
-    public static final int FLAG_CONFIG = 0x00000001;
+    public static final int FLAG_RELOAD_ALL = 0x00000001;
+    public static final int FLAG_RELOAD_CONFIG = 0x00000001;
+
+    private static final int STATE_ACTIVE = 1;
+    private static final int STATE_PENDING = 2;
+    private static final int STATE_READY = 3;
 
     private static class StateValues {
         public int UserId = 0;
@@ -68,13 +75,81 @@ public class BackendService extends BackendProxy.Stub {
     private int mAppUID = 0;
     private int mVersion = 0;
 
-    private boolean mIsReady = false;
-    private boolean mIsActive = false;
+    private int mState = 0;
 
     private Context mContext;
     private StateValues mValues = new StateValues();
 
     private BackendService() {}
+
+
+    /*
+     * =================================================
+     * SETTINGS UP HANDLERS
+     *
+     *  - Handler Leaks does not matter as this instance will
+     *  - continue to live until the device is shut down.
+     */
+
+    private Handler mListenerHandler;
+
+    @SuppressLint("HandlerLeak")
+    private class ListenerHandler extends ThreadHandler {
+
+        public ListenerHandler() {
+            super("XposedAdditions: BackendService");
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            HashBundle data = (HashBundle) msg.obj;
+            boolean system = msg.arg1 > 0;
+            int type = msg.what;
+
+            switch (type) {
+                case Constants.BRC_SL_USERSWITCH: {
+                    if (data.getBoolean("switched", false)) {
+                        mValues.UserId = data.getInt("current_userid", 0);
+                        sendPreferenceRequest(FLAG_RELOAD_ALL);
+                    }
+
+                } break; case Constants.BRC_LOGCAT: {
+                    synchronized (mLogEntries) {
+                        if (mLogEntries.size() > 150) {
+                        /*
+                         * Truncate the list. We remove 15% of Constants.LOG_ENTRY_SIZE entries at a time to avoid having to do this each time this is called
+                         */
+                            int truncate = (int) (Constants.LOG_ENTRY_SIZE * 0.15);
+
+                            for (int i=0; i < truncate; i++) {
+                                mLogEntries.remove(0);
+                            }
+                        }
+
+                        mLogEntries.add((LogcatEntry) data.getParcelable("entry"));
+                    }
+
+                } break; case Constants.BRC_SERVICE_RELOAD: {
+                    int flags = data.getInt("flags", FLAG_RELOAD_ALL);
+                    sendPreferenceRequest(flags);
+
+                    // This should not be parsed to listeners
+                    return;
+                }
+            }
+
+            for (ListenerMonitor curMonitor : mListeners) {
+                try {
+                    ListenerProxy proxy = curMonitor.getProxy();
+
+                    if (proxy.asBinder().pingBinder()) {
+                        proxy.onReceiveMsg(type, data);
+                    }
+
+                } catch (RemoteException e) {}
+            }
+        }
+    };
 
 
     /*
@@ -128,7 +203,7 @@ public class BackendService extends BackendProxy.Stub {
             /*
              * The service is now accessible
              */
-            mIsActive = true;
+            mState = STATE_ACTIVE;
 
         } catch (ReflectException e) {
             Utils.log(Level.ERROR, TAG, e.getMessage(), e);
@@ -160,7 +235,10 @@ public class BackendService extends BackendProxy.Stub {
                 Utils.log(Level.ERROR, TAG, "Could not find module package information", e);
             }
 
-            sendPreferenceRequest(FLAG_PREPARE);
+            mState = STATE_PENDING;
+            mListenerHandler = new ListenerHandler();
+
+            sendPreferenceRequest(FLAG_RELOAD_ALL);
         }
     };
 
@@ -189,16 +267,21 @@ public class BackendService extends BackendProxy.Stub {
             public void onServiceConnected(ComponentName name, IBinder service) {
                 Utils.log(Level.DEBUG, TAG, "Sending Application Preference Request with flags(" + flags + ")");
 
+                if (mState == STATE_PENDING) {
+                    mState = STATE_READY;
+                }
+
                 try {
                     PreferenceProxy proxy = PreferenceProxy.Stub.asInterface(service);
+                    HashBundle data = new HashBundle();
+                    data.putInt("flags", flags);
 
-                    if ((flags & FLAG_CONFIG) != 0)
+                    if ((flags & FLAG_RELOAD_CONFIG) != 0) {
                         mValues.DebugEnabled = proxy.getIntConfig("enable_debug") > 0 || Constants.FORCE_DEBUG;
-
-                    if ((flags & FLAG_PREPARE) == FLAG_PREPARE) {
-                        mIsReady = true;
-                        sendListenerMsg(-1, null);
+                        data.putBoolean("debugEnabled", mValues.DebugEnabled);
                     }
+
+                    sendListenerMsg(-1, data, true);
 
                 } catch (RemoteException e) {
                     Utils.log(Level.INFO, TAG, e.getMessage(), e);
@@ -299,41 +382,19 @@ public class BackendService extends BackendProxy.Stub {
 
     @Override
     public void sendListenerMsg(int type, HashBundle data) throws RemoteException {
+        sendListenerMsg(type, data, false);
+    }
+
+    public void sendListenerMsg(int type, HashBundle data, boolean system) throws RemoteException {
         synchronized (mListeners) {
-            switch (type) {
-                case Constants.BRC_SL_USERSWITCH: {
-                    if (data.getBoolean("switched", false)) {
-                        mValues.UserId = data.getInt("current_userid", 0);
-                        sendPreferenceRequest(FLAG_PREPARE);
-                    }
+            if (type == -1 && !system) {
+                Utils.log(Level.ERROR, TAG, "Only the service can send messages as service to it's listeners");
 
-                } break; case Constants.BRC_LOGCAT: {
-                    synchronized (mLogEntries) {
-                        if (mLogEntries.size() > 150) {
-                            /*
-                             * Truncate the list. We remove 15% of Constants.LOG_ENTRY_SIZE entries at a time to avoid having to do this each time this is called
-                             */
-                            int truncate = (int) (Constants.LOG_ENTRY_SIZE * 0.15);
+            } else if (type < 0 && Binder.getCallingUid() != mSystemUID) {
+                Utils.log(Level.ERROR, TAG, "Msg types below 0 can only be sent by the system");
 
-                            for (int i=0; i < truncate; i++) {
-                                mLogEntries.remove(0);
-                            }
-                        }
-
-                        mLogEntries.add((LogcatEntry) data.getParcelable("entry"));
-                    }
-                }
-            }
-
-            for (ListenerMonitor curMonitor : mListeners) {
-                try {
-                    ListenerProxy proxy = curMonitor.getProxy();
-
-                    if (proxy.asBinder().pingBinder()) {
-                        proxy.onReceiveMsg(type, data);
-                    }
-
-                } catch (RemoteException e) {}
+            } else {
+                mListenerHandler.obtainMessage(type, system ? 1 : 0, 0, data).sendToTarget();
             }
         }
     }
@@ -351,12 +412,12 @@ public class BackendService extends BackendProxy.Stub {
 
     @Override
     public boolean isActive() throws RemoteException {
-        return mIsActive;
+        return mState >= STATE_ACTIVE;
     }
 
     @Override
     public boolean isReady() throws RemoteException {
-        return mIsReady;
+        return mState == STATE_READY;
     }
 
     @Override
