@@ -62,8 +62,7 @@ public class BackendService extends BackendProxy.Stub {
     public static final int FLAG_RELOAD_CONFIG = 0x00000001;
 
     private static final int STATE_ACTIVE = 1;
-    private static final int STATE_PENDING = 2;
-    private static final int STATE_READY = 3;
+    private static final int STATE_READY = 2;
 
     private static class StateValues {
         public int UserId = 0;
@@ -73,7 +72,7 @@ public class BackendService extends BackendProxy.Stub {
 
     private List<LogcatEntry> mLogEntries = new SparseList<LogcatEntry>();
 
-    private int mSystemUID = 0;
+    private int mSystemUID = Process.SYSTEM_UID;
     private int mAppUID = 0;
     private int mVersion = 0;
 
@@ -179,6 +178,7 @@ public class BackendService extends BackendProxy.Stub {
         Utils.log(Level.INFO, TAG, "Starting Settings Service");
 
         mContext = context;
+        mListenerHandler = new ListenerHandler();
 
 		/*
 		 * Add this service to the service manager
@@ -192,20 +192,6 @@ public class BackendService extends BackendProxy.Stub {
                 ReflectClass.fromName("android.os.ServiceManager")
                         .invokeMethod("addService", Constants.SERVICE_MODULE_BACKEND, this, true);
             }
-
-			/*
-		 	 * Move temp log to this instance
-		 	 */
-            synchronized (mLogEntries) {
-                for (LogcatEntry entry : LogcatMonitor.getLogEntries(true)) {
-                    mLogEntries.add(entry);
-                }
-            }
-
-            /*
-             * The service is now accessible
-             */
-            mState = STATE_ACTIVE;
 
         } catch (ReflectException e) {
             Utils.log(Level.ERROR, TAG, e.getMessage(), e);
@@ -229,7 +215,6 @@ public class BackendService extends BackendProxy.Stub {
 				 */
                 PackageInfo info = mContext.getPackageManager().getPackageInfo(Constants.PACKAGE_NAME, 0);
 
-                mSystemUID = Process.myUid();
                 mAppUID = info.applicationInfo.uid;
                 mVersion = info.versionCode;
 
@@ -237,8 +222,19 @@ public class BackendService extends BackendProxy.Stub {
                 Utils.log(Level.ERROR, TAG, "Could not find module package information", e);
             }
 
-            mState = STATE_PENDING;
-            mListenerHandler = new ListenerHandler();
+			/*
+		 	 * Move temp log to this instance
+		 	 */
+            synchronized (mLogEntries) {
+                for (LogcatEntry entry : LogcatMonitor.getLogEntries(true)) {
+                    mLogEntries.add(entry);
+                }
+            }
+
+            /*
+             * The service is now accessible
+             */
+            mState = STATE_ACTIVE;
 
             sendPreferenceRequest(FLAG_RELOAD_ALL);
         }
@@ -269,7 +265,7 @@ public class BackendService extends BackendProxy.Stub {
             public void onServiceConnected(ComponentName name, IBinder service) {
                 Utils.log(Level.DEBUG, TAG, "Sending Application Preference Request with flags(" + flags + ")");
 
-                if (mState == STATE_PENDING) {
+                if (mState == STATE_ACTIVE) {
                     mState = STATE_READY;
                 }
 
@@ -396,10 +392,10 @@ public class BackendService extends BackendProxy.Stub {
     public void sendListenerMsg(int type, HashBundle data, boolean system) throws RemoteException {
         synchronized (mListeners) {
             if (type == -1 && !system) {
-                Utils.log(Level.ERROR, TAG, "Only the service can send messages as service to it's listeners");
+                Utils.log(Level.ERROR, TAG, "Only the service can send messages as service to it's listeners\n\t\tPID: " + Binder.getCallingPid() + "\n\t\tUID: " + Binder.getCallingUid() + "\n\t\tMsg Type: " + type);
 
             } else if (type < 0 && Binder.getCallingUid() != mSystemUID) {
-                Utils.log(Level.ERROR, TAG, "Msg types below 0 can only be sent by the system");
+                Utils.log(Level.ERROR, TAG, "Msg types below 0 can only be sent by the system\n\t\tPID: " + Binder.getCallingPid() + "\n\t\tUID: " + Binder.getCallingUid() + "\n\t\tMsg Type: " + type);
 
             } else {
                 mListenerHandler.obtainMessage(type, system ? 1 : 0, 0, data).sendToTarget();

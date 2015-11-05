@@ -95,14 +95,15 @@ public class PowerManager implements ServiceListener {
 
     private boolean mIsPowered = false;
     private boolean mWasPowered = false;
-    private int mCurPlugType = 0;
-    private int mOldPlugType = 0;
+    private int mPlugType = 0;
 
     @Override
     public void onReceiveMsg(int type, HashBundle data) {
         switch (type) {
             case Constants.BRC_MGR_UPDATE:
                 if ((data.getInt("flags") & BackendService.FLAG_RELOAD_CONFIG) != 0) {
+                    Utils.log(Level.DEBUG, TAG, "Updating Power Config");
+
                     mConfig = (PowerPlugConfig) data.getParcelable("powerConfig");
 
                     if (!mIsReady) {
@@ -165,7 +166,7 @@ public class PowerManager implements ServiceListener {
                         mIsPowered = (Boolean) mBatteryService.invokeMethod("isPowered");
                     }
 
-                    mCurPlugType = (Integer) mBatteryService.invokeMethod("getPlugType");
+                    mPlugType = (Integer) mBatteryService.invokeMethod("getPlugType");
                     mIsReady = mConfig != null;
 
                     mBackendMgr.attachListener(PowerManager.this);
@@ -185,11 +186,7 @@ public class PowerManager implements ServiceListener {
         public void bridgeBegin(BridgeParams params) {
             if (mIsReady) {
                 try {
-                    Utils.log(Level.DEBUG, TAG, "Received USB Plug/UnPlug state change");
-
                     mWasPowered = mIsPowered;
-                    mOldPlugType = mCurPlugType;
-                    mCurPlugType = (Integer) mBatteryService.invokeMethod("getPlugType");
 
                     if (VERSION.SDK_INT >= VERSION_CODES.JELLY_BEAN_MR1) {
                         mIsPowered = (Boolean) mBatteryService.invokeMethod("isPowered", BATTERY_PLUGGED_ANY);
@@ -198,31 +195,47 @@ public class PowerManager implements ServiceListener {
                         mIsPowered = (Boolean) mBatteryService.invokeMethod("isPowered");
                     }
 
+                    if (mIsPowered) {
+                        /*
+                         * If not powered, then we do not have any plug type.
+                         * We still need the old value though as to know which type we just unplugged from.
+                         * So only overwrite if we have a new type to use.
+                         */
+                        mPlugType = (Integer) mBatteryService.invokeMethod("getPlugType");
+                    }
+
                     int plugConfig = mIsPowered ? mConfig.Plug : mConfig.UnPlug;
-                    int plugType = mIsPowered ? mCurPlugType : mOldPlugType;
+
+                    Utils.log(Level.DEBUG, TAG, "Received USB " + (mIsPowered ? "Plug" : "Unplug") + " state");
 
                     if (plugConfig != PowerPlugConfig.PLUGGED_DEFAULT) {
-                        if (mIsPowered != mWasPowered || mCurPlugType != mOldPlugType) {
-                            switch (plugType) {
-                                case BATTERY_PLUGGED_AC: if ((plugConfig & PowerPlugConfig.PLUGGED_AC) == 0) { break; }
-                                case BATTERY_PLUGGED_USB: if ((plugConfig & PowerPlugConfig.PLUGGED_USB) == 0) { break; }
-                                case BATTERY_PLUGGED_WIRELESS: if ((plugConfig & PowerPlugConfig.PLUGGED_WIRELESS) == 0) { break; }
+                        if (mIsPowered != mWasPowered) {
+                            Utils.log(Level.DEBUG, TAG, "Handling custom Plug/Unplug settings\n\t\tConfig: " + plugConfig + "\n\t\tPlugType: " + mPlugType);
 
-                                    if (VERSION.SDK_INT >= VERSION_CODES.JELLY_BEAN_MR1) {
-                                        params.setResult(true);
+                            if ((mPlugType == BATTERY_PLUGGED_AC && (plugConfig & PowerPlugConfig.PLUGGED_AC) != 0)
+                                    || (mPlugType == BATTERY_PLUGGED_USB && (plugConfig & PowerPlugConfig.PLUGGED_USB) != 0)
+                                    || (mPlugType == BATTERY_PLUGGED_WIRELESS && (plugConfig & PowerPlugConfig.PLUGGED_WIRELESS) != 0)) {
 
-                                    } else {
-                                        mPowerManager.invokeMethod("forceUserActivityLocked");
-                                    }
+                                Utils.log(Level.DEBUG, TAG, "Allowing screen to turn on");
+
+                                if (VERSION.SDK_INT >= VERSION_CODES.JELLY_BEAN_MR1) {
+                                    params.setResult(true); return;
+
+                                } else {
+                                    mPowerManager.invokeMethod("forceUserActivityLocked");
+                                }
                             }
                         }
 
-                        if (VERSION.SDK_INT >= VERSION_CODES.JELLY_BEAN_MR1 && params.getResult() == null) {
+                        if (VERSION.SDK_INT >= VERSION_CODES.JELLY_BEAN_MR1) {
                             params.setResult(false);
 
                         } else {
                             params.setResult(null);
                         }
+
+                    } else {
+                        Utils.log(Level.DEBUG, TAG, "Using System Default settings");
                     }
 
                 } catch (ReflectException e) {

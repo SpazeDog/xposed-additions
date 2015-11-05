@@ -34,6 +34,7 @@ public final class SystemStateListener {
 	private ReflectClass mActivityManagerService;
 	private BackendServiceMgr mBackendMgr;
 	private Context mContext;
+	private boolean mReady = false;
 
 	public static void init(Context context) {
 		Utils.log(Level.INFO, TAG, "Instantiating System State Listeners");
@@ -126,6 +127,7 @@ public final class SystemStateListener {
 			filter.addAction(Intent.ACTION_SCREEN_OFF);
 			
 			mContext.registerReceiver(stateBroadcastReveiver, filter);
+            mReady = true;
 		}
 	};
 	
@@ -253,20 +255,22 @@ public final class SystemStateListener {
 		
 		@Override
         public void bridgeBegin(BridgeParams param) {
-			Utils.log(Level.DEBUG, TAG, "Checking new activity focus change");
+            if (mReady) {
+                Utils.log(Level.DEBUG, TAG, "Checking new activity focus change");
 
-			Object focusedActivity = mActivityManagerService.findField("mFocusedActivity").getValue();
-			
-			/*
-			 * The original method does not return any indication whether or not something has changed. 
-			 * So we need to check this ourself.
-			 */
-			if (focusedActivity == null || !focusedActivity.equals( param.args[0] )) {
-				mSendBroadcast = true;
-				
-			} else {
-				mSendBroadcast = false;
-			}
+                Object focusedActivity = mActivityManagerService.findField("mFocusedActivity").getValue();
+
+                /*
+                 * The original method does not return any indication whether or not something has changed.
+                 * So we need to check this ourself.
+                 */
+                if (focusedActivity == null || !focusedActivity.equals(param.args[0])) {
+                    mSendBroadcast = true;
+
+                } else {
+                    mSendBroadcast = false;
+                }
+            }
 		}
 		
 		@Override
