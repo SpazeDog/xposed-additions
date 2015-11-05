@@ -45,6 +45,7 @@ import com.spazedog.lib.utilsLib.os.ThreadHandler;
 import com.spazedog.xposed.additionsgb.app.service.PreferenceProxy;
 import com.spazedog.xposed.additionsgb.backend.LogcatMonitor;
 import com.spazedog.xposed.additionsgb.backend.LogcatMonitor.LogcatEntry;
+import com.spazedog.xposed.additionsgb.backend.PowerManager.PowerPlugConfig;
 import com.spazedog.xposed.additionsgb.utils.AndroidHelper;
 import com.spazedog.xposed.additionsgb.utils.Constants;
 import com.spazedog.xposed.additionsgb.utils.Utils;
@@ -67,6 +68,7 @@ public class BackendService extends BackendProxy.Stub {
     private static class StateValues {
         public int UserId = 0;
         public boolean DebugEnabled = false;
+        public PowerPlugConfig mPowerConfig;
     }
 
     private List<LogcatEntry> mLogEntries = new SparseList<LogcatEntry>();
@@ -277,8 +279,14 @@ public class BackendService extends BackendProxy.Stub {
                     data.putInt("flags", flags);
 
                     if ((flags & FLAG_RELOAD_CONFIG) != 0) {
-                        mValues.DebugEnabled = proxy.getIntConfig("enable_debug") > 0 || Constants.FORCE_DEBUG;
+                        int powerPlug = proxy.getIntConfig("power_plug", PowerPlugConfig.PLUGGED_DEFAULT);
+                        int powerUnplug = proxy.getIntConfig("power_unplug", PowerPlugConfig.PLUGGED_DEFAULT);
+
+                        mValues.DebugEnabled = proxy.getIntConfig("enable_debug", 0) > 0 || Constants.FORCE_DEBUG;
+                        mValues.mPowerConfig = new PowerPlugConfig(powerPlug, powerUnplug);
+
                         data.putBoolean("debugEnabled", mValues.DebugEnabled);
+                        data.put("powerConfig", mValues.mPowerConfig);
                     }
 
                     sendListenerMsg(-1, data, true);
@@ -428,5 +436,10 @@ public class BackendService extends BackendProxy.Stub {
     @Override
     public List<LogcatEntry> getLogEntries() throws RemoteException {
         return mLogEntries;
+    }
+
+    @Override
+    public PowerPlugConfig getPowerConfig() throws RemoteException {
+        return mValues.mPowerConfig;
     }
 }

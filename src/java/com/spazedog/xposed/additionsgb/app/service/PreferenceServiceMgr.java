@@ -45,10 +45,18 @@ public class PreferenceServiceMgr {
     }
 
     public int getIntConfig(String name) {
-        return mProxy.getIntConfig(name);
+        return getIntConfig(name, 0);
+    }
+
+    public int getIntConfig(String name, int defValue) {
+        return mProxy.getIntConfig(name, defValue);
     }
 
     public String getStringConfig(String name) {
-        return mProxy.getStringConfig(name);
+        return getStringConfig(name, null);
+    }
+
+    public String getStringConfig(String name, String defValue) {
+        return mProxy.getStringConfig(name, defValue);
     }
 }

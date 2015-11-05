@@ -45,8 +45,8 @@ public interface PreferenceProxy extends IInterface {
      */
 
     void putConfig(String name, Object value) throws RemoteException;
-    int getIntConfig(String name) throws RemoteException;
-    String getStringConfig(String name) throws RemoteException;
+    int getIntConfig(String name, int defValue) throws RemoteException;
+    String getStringConfig(String name, String defValue) throws RemoteException;
 
     /*
      * =================================================
@@ -99,13 +99,15 @@ public interface PreferenceProxy extends IInterface {
 
                     } break; case TRANSACTION_getIntConfig: {
                         String name = args.readString();
-                        int value = getIntConfig(name);
+                        int defValue = args.readInt();
+                        int value = getIntConfig(name, defValue);
 
                         caller.writeInt(value);
 
                     } break; case TRANSACTION_getStringConfig: {
                         String name = args.readString();
-                        String value = getStringConfig(name);
+                        String defValue = (String) args.readValue(String.class.getClassLoader());
+                        String value = getStringConfig(name, defValue);
 
                         caller.writeString(value);
 
@@ -156,13 +158,14 @@ public interface PreferenceProxy extends IInterface {
         }
 
         @Override
-        public int getIntConfig(String name) throws RemoteException {
+        public int getIntConfig(String name, int defValue) throws RemoteException {
             Parcel args = Parcel.obtain();
             Parcel caller = Parcel.obtain();
 
             try {
                 args.writeInterfaceToken(DESCRIPTOR);
                 args.writeString(name);
+                args.writeInt(defValue);
                 mBinder.transact(Stub.TRANSACTION_getIntConfig, args, caller, 0);
                 caller.readException();
 
@@ -175,13 +178,14 @@ public interface PreferenceProxy extends IInterface {
         }
 
         @Override
-        public String getStringConfig(String name) throws RemoteException {
+        public String getStringConfig(String name, String defValue) throws RemoteException {
             Parcel args = Parcel.obtain();
             Parcel caller = Parcel.obtain();
 
             try {
                 args.writeInterfaceToken(DESCRIPTOR);
                 args.writeString(name);
+                args.writeValue(defValue);
                 mBinder.transact(Stub.TRANSACTION_getStringConfig, args, caller, 0);
                 caller.readException();
 

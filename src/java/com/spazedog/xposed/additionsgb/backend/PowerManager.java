@@ -1,6 +1,6 @@
 /*
  * This file is part of the Xposed Additions Project: https://github.com/spazedog/xposed-additions
- *  
+ *
  * Copyright (c) 2014 Daniel Bergløv
  *
  * Xposed Additions is free software: you can redistribute it and/or modify
@@ -19,168 +19,216 @@
 
 package com.spazedog.xposed.additionsgb.backend;
 
-import android.content.Context;
-import android.os.BatteryManager;
-import android.util.Log;
+
+import android.os.Build.VERSION;
+import android.os.Build.VERSION_CODES;
+import android.os.Parcel;
 
 import com.spazedog.lib.reflecttools.ReflectClass;
-import com.spazedog.lib.reflecttools.utils.ReflectConstants.Match;
-import com.spazedog.lib.reflecttools.utils.ReflectException;
-import com.spazedog.xposed.additionsgb.Common;
-import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
-import com.spazedog.xposed.additionsgb.configs.Settings;
+import com.spazedog.lib.reflecttools.ReflectException;
+import com.spazedog.lib.reflecttools.ReflectMember.Result;
+import com.spazedog.lib.reflecttools.bridge.MethodBridge;
+import com.spazedog.lib.utilsLib.HashBundle;
+import com.spazedog.lib.utilsLib.MultiParcelableBuilder;
+import com.spazedog.xposed.additionsgb.backend.service.BackendService;
+import com.spazedog.xposed.additionsgb.backend.service.BackendServiceMgr;
+import com.spazedog.xposed.additionsgb.backend.service.BackendServiceMgr.ServiceListener;
+import com.spazedog.xposed.additionsgb.utils.Constants;
+import com.spazedog.xposed.additionsgb.utils.Utils;
+import com.spazedog.xposed.additionsgb.utils.Utils.Level;
 
-import de.robv.android.xposed.XC_MethodHook;
+public class PowerManager implements ServiceListener {
+    public static final String TAG = PowerManager.class.getName();
 
-public final class PowerManager {
-	public static final String TAG = PowerManager.class.getName();
-	
-	protected static Boolean OLD_SDK = false;
-	
-	protected final Object mLock = new Object();
-	
-	protected Context mContext;
-	
-	protected ReflectClass mPowerManager;
-	protected ReflectClass mBatteryService;
-	
-	protected XServiceManager mPreferences;
+    /*
+     * These are from android.os.BatteryManager
+     */
+    private static final int BATTERY_PLUGGED_AC = 1;
+    private static final int BATTERY_PLUGGED_USB = 2;
+    private static final int BATTERY_PLUGGED_WIRELESS = 4;
+    private static final int BATTERY_PLUGGED_ANY;
 
-	protected Integer mPlugType;
-	protected Boolean mIsPowered;
-	protected Boolean mInitiated = false;
-	protected Boolean mSystemReady = false;
-	
-	public static void init() {
-		if(Common.DEBUG) Log.d(TAG, "Adding Power Manager Hook");
-		
-		PowerManager hooks = new PowerManager();
-		
-		try {
-			ReflectClass pms = ReflectClass.forName("com.android.server.power.PowerManagerService");
-			
-			if (android.os.Build.VERSION.SDK_INT >= 21) {
-				pms.inject("systemReady", hooks.hook_init);
-				
-			} else {
-				pms.inject("init", hooks.hook_init);
-			}
-			
-			pms.inject("shouldWakeUpWhenPluggedOrUnpluggedLocked", hooks.hook_shouldWakeUpWhenPluggedOrUnpluggedLocked);
-			
-		} catch (ReflectException ignore) {
-			try {
-				OLD_SDK = true;
-				
-				ReflectClass.forName("com.android.server.PowerManagerService").inject("init", hooks.hook_init);
-				ReflectClass.forName("com.android.server.PowerManagerService$BatteryReceiver").inject("onReceive", hooks.hook_shouldWakeUpWhenPluggedOrUnpluggedLocked);
-				
-			} catch (ReflectException e) {
-				Log.e(TAG, e.getMessage(), e);
-			}
-		}
-	}
-	
-	protected XC_MethodHook hook_init = new XC_MethodHook() {
-		@Override
-		protected final void afterHookedMethod(final MethodHookParam param) {
-			try {
-				if(Common.debug()) Log.d(TAG, "Initiating Power Manager Hook");
-				
-				mSystemReady = true;
-				mPowerManager = ReflectClass.forReceiver(param.thisObject);
-				
-				if (android.os.Build.VERSION.SDK_INT >= 21) {
-					mBatteryService = mPowerManager.findField("mBatteryManagerInternal").getValueToInstance();
-					
-				} else {
-					mBatteryService = mPowerManager.findField("mBatteryService").getValueToInstance();
-				}
-				
-				mContext = (Context) mPowerManager.findField("mContext").getValue();
-				
-				mPreferences = XServiceManager.getInstance();
-				
-				if (mPreferences == null) {
-					throw new ReflectException("XService has not been started", null);
-				}
-				
-			} catch (ReflectException e) {
-				Log.e(TAG, e.getMessage(), e);
-				
-				ReflectClass.forReceiver(param.thisObject).removeInjections();
-			}
-		}
-	};
-	
-	protected XC_MethodHook hook_shouldWakeUpWhenPluggedOrUnpluggedLocked = new XC_MethodHook() {
-		@Override
-		protected final void beforeHookedMethod(final MethodHookParam param) {
-			synchronized (mLock) {
-				if (mSystemReady) {
-					try {
-						if(Common.debug()) Log.d(TAG, "Received USB Plug/UnPlug state change");
-		
-						Boolean powered = OLD_SDK ? (Boolean) mBatteryService.findMethod("isPowered").invoke() : (Boolean) mBatteryService.findMethod("isPowered", Match.BEST, Integer.TYPE).invoke(BatteryManager.BATTERY_PLUGGED_AC | BatteryManager.BATTERY_PLUGGED_USB);
-						Integer plugType = (Integer) mBatteryService.findMethod("getPlugType").invoke();
-						Integer oldPlugType = mPlugType;
-						Boolean wasPowered = mIsPowered;
-						
-						if (mInitiated) {
-							Boolean pluggedAC = BatteryManager.BATTERY_PLUGGED_AC == plugType || BatteryManager.BATTERY_PLUGGED_AC == oldPlugType;
-							Boolean pluggedUSB = BatteryManager.BATTERY_PLUGGED_USB == plugType || BatteryManager.BATTERY_PLUGGED_USB == oldPlugType;
-							
-							if (powered != wasPowered && (pluggedAC || pluggedUSB)) {
-								Boolean moduleStatus = mPreferences.getBoolean(
-										powered ? Settings.USB_CONNECTION_SWITCH_PLUG : Settings.USB_CONNECTION_SWITCH_UNPLUG);
-								
-								if (moduleStatus) {
-									String configAction = mPreferences.getString(
-											powered ? Settings.USB_CONNECTION_PLUG : Settings.USB_CONNECTION_UNPLUG);
-									
-									if(Common.debug()) Log.d(TAG, "Handling USB Plug/UnPlug display state");
-									
-									if (OLD_SDK) {
-										mPowerManager.findFieldDeep("mIsPowered").setValue(powered);
-									}
-									
-									if (configAction.equals("on") 
-											|| (pluggedAC && configAction.equals("ac")) 
-												|| (pluggedUSB && configAction.equals("usb"))) {
-										
-										if(Common.debug()) Log.d(TAG, "Turning display on");
-										
-										if (OLD_SDK) {
-											mPowerManager.findMethodDeep("forceUserActivityLocked").invoke();
-											param.setResult(false);
-											
-										} else {
-											param.setResult(true);
-										}
-										
-									} else {
-										if(Common.debug()) Log.d(TAG, "Disabling default handler");
-										
-										param.setResult(false);
-									}
-								}
-								
-							} else if (powered == wasPowered) {
-								param.setResult(false);
-							}
-							
-						} else {
-							mInitiated = true;
-						}
-		
-						mIsPowered = powered;
-						mPlugType = plugType;
-						
-					} catch (ReflectException e) {
-						Log.e(TAG, e.getMessage(), e);
-					}
-				}
-			}
-		}
-	};
+    static {
+        if (VERSION.SDK_INT >= VERSION_CODES.JELLY_BEAN_MR1) {
+            BATTERY_PLUGGED_ANY = BATTERY_PLUGGED_AC | BATTERY_PLUGGED_USB | BATTERY_PLUGGED_WIRELESS;
+
+        } else {
+            BATTERY_PLUGGED_ANY = BATTERY_PLUGGED_AC | BATTERY_PLUGGED_USB;
+        }
+    }
+
+    public static class PowerPlugConfig extends MultiParcelableBuilder {
+
+        public final static int PLUGGED_AC = 0x00000001;
+        public final static int PLUGGED_USB = 0x00000002;
+        public final static int PLUGGED_WIRELESS = 0x00000004;
+        public final static int PLUGGED_DEFAULT = 0xFFFFFFFF;
+
+        public final int Plug;
+        public final int UnPlug;
+
+        public PowerPlugConfig(int plug, int unPlug) {
+            Plug = plug;
+            UnPlug = unPlug;
+        }
+
+        public PowerPlugConfig(Parcel source) {
+            Plug = (Integer) unparcelData(source, null);
+            UnPlug = (Integer) unparcelData(source, null);
+        }
+
+        @Override
+        public void writeToParcel(Parcel out, int flags) {
+            super.writeToParcel(out, flags);
+
+            parcelData(Plug, out, flags);
+            parcelData(UnPlug, out, flags);
+        }
+    }
+
+    private boolean mIsReady = false;
+
+    private ReflectClass mPowerManager;
+    private ReflectClass mBatteryService;
+    private BackendServiceMgr mBackendMgr;
+    private PowerPlugConfig mConfig;
+
+    private boolean mIsPowered = false;
+    private boolean mWasPowered = false;
+    private int mCurPlugType = 0;
+    private int mOldPlugType = 0;
+
+    @Override
+    public void onReceiveMsg(int type, HashBundle data) {
+        switch (type) {
+            case Constants.BRC_MGR_UPDATE:
+                if ((data.getInt("flags") & BackendService.FLAG_RELOAD_CONFIG) != 0) {
+                    mConfig = (PowerPlugConfig) data.getParcelable("powerConfig");
+
+                    if (!mIsReady) {
+                        mIsReady = true;
+                    }
+                }
+        }
+    }
+
+    public static void init() {
+        Utils.log(Level.INFO, TAG, "Instantiating PowerManager");
+
+        PowerManager instance = new PowerManager();
+
+        try {
+            if (VERSION.SDK_INT >= VERSION_CODES.JELLY_BEAN_MR1) {
+                ReflectClass pms = ReflectClass.fromName("com.android.server.power.PowerManagerService");
+                pms.bridge("shouldWakeUpWhenPluggedOrUnpluggedLocked", instance.shouldWakeUpWhenPluggedOrUnplugged);
+
+                if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP) {
+                    pms.bridge("systemReady", instance.systemReady);
+
+                } else {
+                    pms.bridge("init", instance.systemReady);
+                }
+
+            } else {
+                ReflectClass.fromName("com.android.server.PowerManagerService").bridge("init", instance.systemReady);
+                ReflectClass.fromName("com.android.server.PowerManagerService$BatteryReceiver").bridge("onReceive", instance.shouldWakeUpWhenPluggedOrUnplugged);
+            }
+
+        } catch (ReflectException e) {
+            Utils.log(Level.ERROR, TAG, e.getMessage(), e);
+        }
+    }
+
+    public MethodBridge systemReady = new MethodBridge() {
+        @Override
+        public void bridgeEnd(BridgeParams params) {
+            try {
+                Utils.log(Level.INFO, TAG, "Configuring PowerManager");
+
+                mBackendMgr = BackendServiceMgr.getInstance();
+
+                if (mBackendMgr != null) {
+                    mConfig = mBackendMgr.getPowerConfig();
+                    mPowerManager = ReflectClass.fromReceiver(params.receiver);
+
+                    if (VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP) {
+                        mBatteryService = (ReflectClass) mPowerManager.findField("mBatteryManagerInternal").getValue(Result.INSTANCE);
+
+                    } else {
+                        mBatteryService = (ReflectClass) mPowerManager.findField("mBatteryService").getValue(Result.INSTANCE);
+                    }
+
+                    if (VERSION.SDK_INT >= VERSION_CODES.JELLY_BEAN_MR1) {
+                        mIsPowered = (Boolean) mBatteryService.invokeMethod("isPowered", BATTERY_PLUGGED_ANY);
+
+                    } else {
+                        mIsPowered = (Boolean) mBatteryService.invokeMethod("isPowered");
+                    }
+
+                    mCurPlugType = (Integer) mBatteryService.invokeMethod("getPlugType");
+                    mIsReady = mConfig != null;
+
+                    mBackendMgr.attachListener(PowerManager.this);
+
+                } else {
+                    Utils.log(Level.ERROR, TAG, "The backend service is not loaded");
+                }
+
+            } catch (ReflectException e) {
+                Utils.log(Level.ERROR, TAG, e.getMessage(), e);
+            }
+        }
+    };
+
+    public MethodBridge shouldWakeUpWhenPluggedOrUnplugged = new MethodBridge() {
+        @Override
+        public void bridgeBegin(BridgeParams params) {
+            if (mIsReady) {
+                try {
+                    Utils.log(Level.DEBUG, TAG, "Received USB Plug/UnPlug state change");
+
+                    mWasPowered = mIsPowered;
+                    mOldPlugType = mCurPlugType;
+                    mCurPlugType = (Integer) mBatteryService.invokeMethod("getPlugType");
+
+                    if (VERSION.SDK_INT >= VERSION_CODES.JELLY_BEAN_MR1) {
+                        mIsPowered = (Boolean) mBatteryService.invokeMethod("isPowered", BATTERY_PLUGGED_ANY);
+
+                    } else {
+                        mIsPowered = (Boolean) mBatteryService.invokeMethod("isPowered");
+                    }
+
+                    int plugConfig = mIsPowered ? mConfig.Plug : mConfig.UnPlug;
+                    int plugType = mIsPowered ? mCurPlugType : mOldPlugType;
+
+                    if (plugConfig != PowerPlugConfig.PLUGGED_DEFAULT) {
+                        if (mIsPowered != mWasPowered || mCurPlugType != mOldPlugType) {
+                            switch (plugType) {
+                                case BATTERY_PLUGGED_AC: if ((plugConfig & PowerPlugConfig.PLUGGED_AC) == 0) { break; }
+                                case BATTERY_PLUGGED_USB: if ((plugConfig & PowerPlugConfig.PLUGGED_USB) == 0) { break; }
+                                case BATTERY_PLUGGED_WIRELESS: if ((plugConfig & PowerPlugConfig.PLUGGED_WIRELESS) == 0) { break; }
+
+                                    if (VERSION.SDK_INT >= VERSION_CODES.JELLY_BEAN_MR1) {
+                                        params.setResult(true);
+
+                                    } else {
+                                        mPowerManager.invokeMethod("forceUserActivityLocked");
+                                    }
+                            }
+                        }
+
+                        if (VERSION.SDK_INT >= VERSION_CODES.JELLY_BEAN_MR1 && params.getResult() == null) {
+                            params.setResult(false);
+
+                        } else {
+                            params.setResult(null);
+                        }
+                    }
+
+                } catch (ReflectException e) {
+                    Utils.log(Level.ERROR, TAG, e.getMessage(), e);
+                }
+            }
+        }
+    };
 }

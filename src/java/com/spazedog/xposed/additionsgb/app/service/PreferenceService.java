@@ -118,13 +118,13 @@ public class PreferenceService extends Service {
                             mContext.checkCallingPermission(permission) == PackageManager.PERMISSION_GRANTED;
         }
 
-        protected Object getConfig(String name) {
+        protected Object getConfig(String name, Object defValue) {
             if (!checkPermission(Constants.PERMISSION_SETTINGS_RW)) {
                 throw new SecurityException("Application has not acquired the permission '" + Constants.PERMISSION_SETTINGS_RW + "");
             }
 
-            int type = 0;
-            Object value = null;
+            int type = -1;
+            Object value = defValue;
             SQLiteDatabase db = mDatabase.getReadableDatabase();
             Cursor result = db.rawQuery(String.format("SELECT %s, %s FROM %s WHERE %s = '%s'", SettingsEntry.COLUMN_TYPE, SettingsEntry.COLUMN_VALUE, SettingsEntry.TABLE_NAME, SettingsEntry.COLUMN_NAME, name), null);
 
@@ -136,7 +136,7 @@ public class PreferenceService extends Service {
             result.close();
             db.close();
 
-            if (value != null) {
+            if (value != null && type != -1) {
                 switch (type) {
                     case SettingsEntry.TYPE_INTEGER:
                         value = Integer.valueOf((String) value); break;
@@ -177,15 +177,15 @@ public class PreferenceService extends Service {
         }
 
         @Override
-        public int getIntConfig(String name) {
-            Object val = getConfig(name);
+        public int getIntConfig(String name, int defValue) {
+            Object val = getConfig(name, defValue);
 
-            return val != null ? (Integer) val : 0;
+            return val != null ? (Integer) val : defValue;
         }
 
         @Override
-        public String getStringConfig(String name) {
-            return (String) getConfig(name);
+        public String getStringConfig(String name, String defValue) {
+            return (String) getConfig(name, defValue);
         }
 	};
 }

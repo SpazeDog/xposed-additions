@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+
+    <style name="App.ExpListView">
+        <item name="android:divider">@null</item>
+        <item name="android:listSelector">?attr/itemSelectableBackground</item>
+        <item name="android:groupIndicator">@drawable/listview_group_indicator</item>
+        <item name="android:indicatorStart">7dp</item>
+    </style>
+
+</resources>

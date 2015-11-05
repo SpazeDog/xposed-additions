@@ -35,15 +35,17 @@ public final class Constants {
     /*
      * Type codes from sendListenerMsg in the BackendService and Mgr
      */
-    public static final int BRC_SERVICE_RELOAD = 1;
-    public static final int BRC_LOGCAT = -512;
-    public static final int BRC_SL_MEDIA = -1024;
-    public static final int BRC_SL_KEYGUARD = -1025;
-    public static final int BRC_SL_TELEPHONY = -1026;
-    public static final int BRC_SL_USERSWITCH = -1027;
-    public static final int BRC_SL_APPFOCUS = -1028;
-    public static final int BRC_SL_SOFTKEYBOARD = -1029;
-    public static final int BRC_SL_DISPLAY = -1030;
+    public static final int BRC_MGR_UPDATE = 512;           // Used by BackendServiceMgr to alert local listeners about config changes, properly triggered by 'BRC_SERVICE_RELOAD'
+
+    public static final int BRC_SERVICE_RELOAD = 1;         // Request the service to reload settings from PreferenceService, used by BackendServiceMgr
+    public static final int BRC_LOGCAT = -512;              // New Logcat Entry sent by LogcatMonitor to the service
+    public static final int BRC_SL_MEDIA = -1024;           // State update sent by SystemStateListener to the service
+    public static final int BRC_SL_KEYGUARD = -1025;        // State update sent by SystemStateListener to the service
+    public static final int BRC_SL_TELEPHONY = -1026;       // State update sent by SystemStateListener to the service
+    public static final int BRC_SL_USERSWITCH = -1027;      // State update sent by SystemStateListener to the service
+    public static final int BRC_SL_APPFOCUS = -1028;        // State update sent by SystemStateListener to the service
+    public static final int BRC_SL_SOFTKEYBOARD = -1029;    // State update sent by SystemStateListener to the service
+    public static final int BRC_SL_DISPLAY = -1030;         // State update sent by SystemStateListener to the service
 
     /**
      * Type codes from 'sendMessage', the internal Activity/Fragment message system from UtilsLib

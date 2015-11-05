@@ -1,3 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+
 <resources>
 
     <style name="App.ContentPadding">
@@ -17,6 +19,21 @@
     <style name="App.CardView">
         <item name="cardCornerRadius">4dp</item>
         <item name="cardElevation">7dp</item>
+    </style>
+
+    <style name="App.ExpListView">
+        <item name="android:divider">@null</item>
+        <item name="android:listSelector">?attr/itemSelectableBackground</item>
+        <item name="android:groupIndicator">@drawable/listview_group_indicator</item>
+        <item name="android:indicatorLeft">7dp</item>
+    </style>
+
+    <style name="App.ExpListView.Group" parent="App">
+        <item name="android:paddingLeft">?android:attr/expandableListPreferredItemPaddingLeft</item>
+    </style>
+
+    <style name="App.ExpListView.Item" parent="App">
+        <item name="android:paddingLeft">?android:attr/expandableListPreferredChildPaddingLeft</item>
     </style>
 
     <style name="App.CardView.Title" parent="App.ContentPadding">

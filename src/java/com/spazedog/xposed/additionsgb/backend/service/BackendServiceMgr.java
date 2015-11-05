@@ -20,12 +20,14 @@
 package com.spazedog.xposed.additionsgb.backend.service;
 
 
-import android.os.RemoteException;
+import android.os.*;
+import android.os.Process;
 
 import com.spazedog.lib.reflecttools.ReflectClass;
 import com.spazedog.lib.reflecttools.ReflectException;
 import com.spazedog.lib.utilsLib.HashBundle;
 import com.spazedog.xposed.additionsgb.backend.LogcatMonitor.LogcatEntry;
+import com.spazedog.xposed.additionsgb.backend.PowerManager.PowerPlugConfig;
 import com.spazedog.xposed.additionsgb.utils.Constants;
 import com.spazedog.xposed.additionsgb.utils.Utils;
 import com.spazedog.xposed.additionsgb.utils.Utils.Level;
@@ -125,18 +127,54 @@ public class BackendServiceMgr {
      * SERVICE LISTENERS
      */
 
+    private class ListenerHandler extends Handler {
+        public ListenerHandler() {
+            super(Looper.getMainLooper());
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            for (ServiceListener curListener : mListeners) {
+                curListener.onReceiveMsg(msg.what, (HashBundle) msg.obj);
+            }
+        }
+    }
+
+    public Handler getHandler() {
+        if (mListenerHandler == null && Looper.getMainLooper() != null) {
+            mListenerHandler = new ListenerHandler();
+        }
+
+        return mListenerHandler;
+    }
+
+    private ListenerHandler mListenerHandler;
     private ListenerProxy mListenerProxy = new ListenerProxy.Stub() {
 
         @Override
         public void onReceiveMsg(int type, HashBundle data) {
             synchronized (mListeners) {
-                if (type != -1) {
+                /*
+                 * -1 is everything sent directly from the service.
+                 * For now it is only used to send updated configs,
+                 * but it might be used for more in the future.
+                 */
+                if (type == -1 && Binder.getCallingUid() == Process.SYSTEM_UID) {
+                    type = Constants.BRC_MGR_UPDATE;
+
+                } else if (type == -1) {
+                    Utils.log(Level.ERROR, TAG, "Received message from service outside the system process"); return;
+                }
+
+                Handler handler = getHandler();
+
+                if (handler != null) {
+                    handler.obtainMessage(type, data).sendToTarget();
+
+                } else {
                     for (ServiceListener curListener : mListeners) {
                         curListener.onReceiveMsg(type, data);
                     }
-
-                } else {
-                    // internal information from service
                 }
             }
         }
@@ -250,7 +288,23 @@ public class BackendServiceMgr {
         return null;
     }
 
+    public void requestServiceReload() {
+        requestServiceReload(BackendService.FLAG_RELOAD_ALL);
+    }
+
     public void requestServiceReload(int flags) {
         sendListenerMsg(Constants.BRC_SERVICE_RELOAD, new HashBundle("flags", flags));
+    }
+
+    public PowerPlugConfig getPowerConfig() {
+        try {
+            return mServiceProxy.getPowerConfig();
+
+        } catch (RemoteException e) {
+            handleRemoteException(e);
+
+        } catch (NullPointerException e) {}
+
+        return null;
     }
 }
