@@ -36,6 +36,7 @@ import java.lang.ref.WeakReference;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 public class BackendServiceMgr {
 
@@ -180,7 +181,7 @@ public class BackendServiceMgr {
         }
     };
 
-    private final Set<ServiceListener> mListeners = new HashSet<ServiceListener>();
+    private final Set<ServiceListener> mListeners = new CopyOnWriteArraySet<ServiceListener>();
 
     public interface ServiceListener {
         void onReceiveMsg(int type, HashBundle data);

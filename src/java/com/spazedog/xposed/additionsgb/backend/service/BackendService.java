@@ -54,6 +54,8 @@ import com.spazedog.xposed.additionsgb.utils.Utils.Level;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 public class BackendService extends BackendProxy.Stub {
     public static final String TAG = BackendService.class.getName();
@@ -324,7 +326,7 @@ public class BackendService extends BackendProxy.Stub {
      * LISTENERS
      */
 
-    private final Set<ListenerMonitor> mListeners = new HashSet<ListenerMonitor>();
+    private final Set<ListenerMonitor> mListeners = new CopyOnWriteArraySet<ListenerMonitor>();
 
     private class ListenerMonitor implements IBinder.DeathRecipient {
 
