@@ -47,6 +47,7 @@ import com.spazedog.xposed.additionsgb.R;
 import com.spazedog.xposed.additionsgb.app.service.PreferenceServiceMgr;
 import com.spazedog.xposed.additionsgb.backend.service.BackendServiceMgr;
 import com.spazedog.xposed.additionsgb.utils.Constants;
+import com.spazedog.xposed.additionsgb.utils.Utils;
 
 public class ActivityMain extends MsgActivity implements OnNavigationItemSelectedListener, DrawerListener {
 
@@ -114,6 +115,14 @@ public class ActivityMain extends MsgActivity implements OnNavigationItemSelecte
         }
 
         mNavigationView.setNavigationItemSelectedListener(this);
+
+        /*
+         * For now Settings only has owner configurations, so no need to display this for other users
+         */
+        if (!Utils.isOwner(this)) {
+            Menu menu = mNavigationView.getMenu();
+            menu.removeItem(R.id.fragment_settings);
+        }
     }
 
     @Override

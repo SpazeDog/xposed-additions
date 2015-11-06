@@ -7,6 +7,7 @@
     <item type="id" name="fragment_log" />
     <item type="id" name="fragment_status" />
     <item type="id" name="fragment_power" />
+    <item type="id" name="fragment_settings" />
 
     <item type="id" name="tag_data" />
     <item type="id" name="tag_holder" />

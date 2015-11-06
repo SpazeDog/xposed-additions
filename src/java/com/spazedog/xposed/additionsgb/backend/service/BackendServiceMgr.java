@@ -307,4 +307,16 @@ public class BackendServiceMgr {
 
         return null;
     }
+
+    public boolean isOwnerLocked() {
+        try {
+            return mServiceProxy.isOwnerLocked();
+
+        } catch (RemoteException e) {
+            handleRemoteException(e);
+
+        } catch (NullPointerException e) {}
+
+        return false;
+    }
 }

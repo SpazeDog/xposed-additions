@@ -17,14 +17,17 @@
 
 package com.spazedog.xposed.additionsgb.utils;
 
-import android.os.Build;
+import android.content.Context;
 import android.util.Log;
 
 import com.spazedog.xposed.additionsgb.backend.service.BackendServiceMgr;
 
+import java.io.File;
+
 public final class Utils {
 	
 	private static int oDebugEnabled = 0;
+    private static int oUserId = -1;
 	
 	public enum Level {INFO, DEBUG, ERROR}
 	
@@ -75,4 +78,24 @@ public final class Utils {
 		
 		return oDebugEnabled == 1;
 	}
+
+    public static boolean isOwner(Context context) {
+        if (oUserId == -1) {
+            try {
+                /*
+                 * /data/data/<package> on version without multi user support, always the owner
+                 * /data/user/<userId>/<package> on newer Android versions, we want <userId>
+                 */
+                oUserId = Integer.valueOf(new File(context.getApplicationInfo().dataDir).getParentFile().getName());
+
+            } catch (NumberFormatException e) {
+                /*
+                 * We hit an older Android version, owner is all we have
+                 */
+                oUserId = 0;
+            }
+        }
+
+        return oUserId == 0;
+    }
 }

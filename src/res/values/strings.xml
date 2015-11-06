@@ -10,6 +10,7 @@
     <string name='menu_navigation_title_log'>View Log</string>
     <string name='menu_navigation_title_status'>Status</string>
     <string name='menu_navigation_title_power'>Power Control</string>
+    <string name='menu_navigation_title_settings'>Settings</string>
 
 
     <!-- ================================================
@@ -25,6 +26,7 @@
     <string name='status_backend_info_active'>The backend module has been loaded but not properly initialized</string>
     <string name='status_backend_info_updated'>The app packs a newer backend module than the one that is currenly loaded. Please reboot your device to load the new module version</string>
     <string name='status_backend_info_missing'>The backend module is currently not loaded. Please make sure that you have Xposed Framework installed and that you have this module enabled in the Xposed Installer app</string>
+    <string name='status_backend_info_owner'>The device owner has locked the module configurations. Any changes made will have no affect until the configurations are unlocked!</string>
 
 
     <!-- ================================================
@@ -39,5 +41,17 @@
     <string name='power_plugtype_usb'>USB</string>
     <string name='power_plugtype_ac'>AC</string>
     <string name='power_plugtype_wl'>Wireless</string>
+
+
+    <!-- ================================================
+         Strings for FragmentSettings
+    ================================================ -->
+
+    <string name='settings_title_owner'>Device Owner</string>
+    <string name='settings_name_owner_lock'>Lock Configuration</string>
+    <string name='settings_summary_owner_lock'>Do not allow other users on the device to make their own configurations</string>
+    <string name='settings_name_owner_debug'>Enable Debug</string>
+    <string name='settings_summary_owner_debug'>Print debug messages from the module into logcat</string>
+
 
 </resources>

@@ -52,6 +52,7 @@ public interface BackendProxy extends IInterface {
     int TRANSACTION_isDebugEnabled = IBinder.FIRST_CALL_TRANSACTION+7;
     int TRANSACTION_getLogEntries = IBinder.FIRST_CALL_TRANSACTION+8;
     int TRANSACTION_getPowerConfig = IBinder.FIRST_CALL_TRANSACTION+9;
+    int TRANSACTION_isOwnerLocked = IBinder.FIRST_CALL_TRANSACTION+10;
 
 
     /*
@@ -68,6 +69,7 @@ public interface BackendProxy extends IInterface {
     boolean isDebugEnabled() throws RemoteException;
     List<LogcatEntry> getLogEntries() throws RemoteException;
     PowerPlugConfig getPowerConfig() throws RemoteException;
+    boolean isOwnerLocked() throws RemoteException;
 
 
     /*
@@ -147,6 +149,9 @@ public interface BackendProxy extends IInterface {
 
                     } break; case TRANSACTION_getPowerConfig: {
                         caller.writeParcelable(getPowerConfig(), 0);
+
+                    } break; case TRANSACTION_isOwnerLocked: {
+                        caller.writeInt(isOwnerLocked() ? 1 : 0);
 
                     } break; default: {
                         return false;
@@ -335,6 +340,24 @@ public interface BackendProxy extends IInterface {
                 caller.readException();
 
                 return (PowerPlugConfig) caller.readParcelable(PowerPlugConfig.class.getClassLoader());
+
+            } finally {
+                args.recycle();
+                caller.recycle();
+            }
+        }
+
+        @Override
+        public boolean isOwnerLocked() throws RemoteException {
+            Parcel args = Parcel.obtain();
+            Parcel caller = Parcel.obtain();
+
+            try {
+                args.writeInterfaceToken(DESCRIPTOR);
+                mBinder.transact(Stub.TRANSACTION_isOwnerLocked, args, caller, 0);
+                caller.readException();
+
+                return caller.readInt() > 0;
 
             } finally {
                 args.recycle();

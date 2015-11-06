@@ -62,23 +62,30 @@ public class FragmentStatus extends ActivityMainFragment implements ServiceListe
 
         BackendServiceMgr backendMgr = getBackendMgr();
         TextView backendView = (TextView) view.findViewById(R.id.status_backend_service_item);
+        int textRes = 0;
+        int colorRes = 0;
 
         if (backendMgr != null && backendMgr.isServiceReady() && BuildConfig.VERSION_CODE != backendMgr.getServiceVersion()) {
-            backendView.setText(R.string.status_backend_info_updated);
-            backendView.setTextColor(getResources().getColor(R.color.logColorWarning));
+            textRes = R.string.status_backend_info_updated;
+            colorRes = R.color.logColorWarning;
 
         } if (backendMgr != null && backendMgr.isServiceReady()) {
-            backendView.setText(R.string.status_backend_info_ready);
-            backendView.setTextColor(getResources().getColor(R.color.logColorInfo));
+            boolean ownerLocked = backendMgr.isOwnerLocked();
+
+            textRes = ownerLocked ? R.string.status_backend_info_owner : R.string.status_backend_info_ready;
+            colorRes = ownerLocked ? R.color.logColorWarning : R.color.logColorInfo;
 
         } else if (backendMgr != null && backendMgr.isServiceActive()) {
-            backendView.setText(R.string.status_backend_info_active);
-            backendView.setTextColor(getResources().getColor(R.color.logColorWarning));
+            textRes = R.string.status_backend_info_active;
+            colorRes = R.color.logColorWarning;
 
         } else {
-            backendView.setText(R.string.status_backend_info_missing);
-            backendView.setTextColor(getResources().getColor(R.color.logColorError));
+            textRes = R.string.status_backend_info_missing;
+            colorRes = R.color.logColorError;
         }
+
+        backendView.setText(getResources().getString(textRes));
+        backendView.setTextColor(getResources().getColor(colorRes));
     }
 
     @Override

@@ -67,6 +67,7 @@ public class BackendService extends BackendProxy.Stub {
     private static class StateValues {
         public int UserId = 0;
         public boolean DebugEnabled = false;
+        public boolean OwnerLock = false;
         public PowerPlugConfig mPowerConfig;
     }
 
@@ -254,6 +255,14 @@ public class BackendService extends BackendProxy.Stub {
     }
 
     private void sendPreferenceRequest(final int flags) {
+        /*
+         * If settings has been locked by owner, do not
+         * update anything unless the current user is the owner
+         */
+        if (mValues.OwnerLock && mValues.UserId != 0) {
+            return;
+        }
+
 		/*
 		 * Make sure that our application is the one being called.
 		 */
@@ -278,9 +287,14 @@ public class BackendService extends BackendProxy.Stub {
                         int powerPlug = proxy.getIntConfig("power_plug", PowerPlugConfig.PLUGGED_DEFAULT);
                         int powerUnplug = proxy.getIntConfig("power_unplug", PowerPlugConfig.PLUGGED_DEFAULT);
 
-                        mValues.DebugEnabled = proxy.getIntConfig("enable_debug", 0) > 0 || Constants.FORCE_DEBUG;
                         mValues.mPowerConfig = new PowerPlugConfig(powerPlug, powerUnplug);
 
+                        if (mValues.UserId == 0) {
+                            mValues.DebugEnabled = proxy.getIntConfig("enable_debug", 0) > 0 || Constants.FORCE_DEBUG;
+                            mValues.OwnerLock = proxy.getIntConfig("owner_lock", 0) > 0;
+                        }
+
+                        data.putBoolean("ownerLocked", mValues.OwnerLock);
                         data.putBoolean("debugEnabled", mValues.DebugEnabled);
                         data.put("powerConfig", mValues.mPowerConfig);
                     }
@@ -437,5 +451,10 @@ public class BackendService extends BackendProxy.Stub {
     @Override
     public PowerPlugConfig getPowerConfig() throws RemoteException {
         return mValues.mPowerConfig;
+    }
+
+    @Override
+    public boolean isOwnerLocked() throws RemoteException {
+        return mValues.OwnerLock && mValues.UserId != 0;
     }
 }
