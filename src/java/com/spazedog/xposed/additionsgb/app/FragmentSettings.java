@@ -63,7 +63,7 @@ public class FragmentSettings extends ActivityMainFragment implements OnClickLis
 
         PreferenceServiceMgr preferenceMgr = getPreferenceMgr();
 
-        if (!Utils.isOwner(getActivity())) {
+        if (Utils.isOwner(getActivity())) {
             mEnabledebug = preferenceMgr.getIntConfig("enable_debug") > 0;
             mOwnerLock = preferenceMgr.getIntConfig("owner_lock") > 0;
 
