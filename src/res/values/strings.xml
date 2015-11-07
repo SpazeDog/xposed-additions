@@ -36,6 +36,8 @@
     <string name='power_title_plug'>Wake on Plug/Unplug</string>
     <string name='power_name_plug'>Plug</string>
     <string name='power_name_unplug'>Unplug</string>
+    <string name='power_summary_plug'>Turn on the screen when connecting to a power source</string>
+    <string name='power_summary_unplug'>Turn on the screen when disconnecting from a power source</string>
 
     <string name='power_plugtype_default'>System Default</string>
     <string name='power_plugtype_usb'>USB</string>

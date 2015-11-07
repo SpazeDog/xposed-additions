@@ -9,6 +9,13 @@
         <item name="android:paddingRight">@dimen/layoutMarginHorizontal</item>
     </style>
 
+    <style name="App.ContentPaddingVertical">
+        <item name="android:paddingTop">@dimen/layoutMarginVerticalSmall</item>
+        <item name="android:paddingBottom">@dimen/layoutMarginVerticalSmall</item>
+        <item name="android:paddingLeft">@dimen/layoutMarginHorizontal</item>
+        <item name="android:paddingRight">@dimen/layoutMarginHorizontal</item>
+    </style>
+
     <style name="App.ActionBar">
         <item name="android:layout_height">@dimen/actionBarHeight</item>
         <item name="android:layout_width">match_parent</item>
@@ -17,24 +24,21 @@
     </style>
 
     <style name="App.CardView">
-        <item name="cardCornerRadius">4dp</item>
-        <item name="cardElevation">7dp</item>
+        <item name="cardCornerRadius">2dp</item>
+        <item name="cardElevation">3dp</item>
+        <item name="android:layout_marginBottom">3dp</item>
     </style>
 
     <style name="App.ExpListView">
         <item name="android:divider">@null</item>
         <item name="android:listSelector">?attr/itemSelectableBackground</item>
-        <item name="android:groupIndicator">@drawable/listview_group_indicator</item>
-        <item name="android:indicatorLeft">7dp</item>
+        <item name="android:groupIndicator">@null</item>
+        <item name="android:paddingTop">@dimen/layoutMarginVerticalSmall</item>
+        <item name="android:paddingBottom">@dimen/layoutMarginVerticalSmall</item>
     </style>
 
-    <style name="App.ExpListView.Group" parent="App">
-        <item name="android:paddingLeft">?android:attr/expandableListPreferredItemPaddingLeft</item>
-    </style>
-
-    <style name="App.ExpListView.Item" parent="App">
-        <item name="android:paddingLeft">?android:attr/expandableListPreferredChildPaddingLeft</item>
-    </style>
+    <style name="App.ExpListView.Group" parent="App.ContentPaddingVertical" />
+    <style name="App.ExpListView.Item" parent="App.ContentPaddingVertical" />
 
     <style name="App.CardView.Title" parent="App.ContentPadding">
         <item name="android:textAppearance">@style/App.TextAppearance.Secondary</item>

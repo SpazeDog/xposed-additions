@@ -6,46 +6,48 @@
     android:layout_height="wrap_content">
 
     <android.support.v7.widget.CardView
+        style="@style/App.CardView"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        card:cardCornerRadius="4dp"
-        card:cardElevation="7dp">
+        android:layout_height="wrap_content">
 
         <HorizontalScrollView
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:fillViewport="true"
             android:textFilterEnabled="false">
 
             <LinearLayout
                 android:orientation="vertical"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingBottom="@dimen/layoutMarginVertical"
-                android:paddingTop="@dimen/layoutMarginVertical"
-                android:paddingLeft="@dimen/layoutMarginHorizontal"
-                android:paddingRight="@dimen/layoutMarginHorizontal">
+                android:layout_height="wrap_content">
 
                 <TextView
                     android:id="@+id/item_title"
+                    style="@style/App.CardView.Title"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textAppearance="@style/App.TextAppearance"
-                    android:textStyle="bold"
-                    android:paddingBottom="@dimen/textSizeNormal"/>
+                    android:text="@string/settings_title_owner"/>
 
-                <TextView
-                    android:id="@+id/item_summary"
+                <LinearLayout
+                    style="@style/App.ContentPadding"
+                    android:orientation="vertical"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="@style/App.TextAppearance.Small"
-                    android:paddingBottom="@dimen/textSizeNormal"/>
+                    android:layout_height="wrap_content">
 
-                <TextView
-                    android:id="@+id/item_time"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="@style/App.TextAppearance"/>
+                    <TextView
+                        android:id="@+id/item_summary"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@style/App.TextAppearance.Small"
+                        android:paddingBottom="@dimen/textSizeNormal"/>
+
+                    <TextView
+                        android:id="@+id/item_time"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textAppearance="@style/App.TextAppearance"/>
+
+                </LinearLayout>
 
             </LinearLayout>
 

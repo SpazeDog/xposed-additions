@@ -284,10 +284,17 @@ public class ActivityMain extends MsgActivity implements OnNavigationItemSelecte
             boolean isLoaded = isFragmentLoaded(Instantiator.Fragments.getClass(item.getItemId()));
 
             if (isLoaded) {
+                /*
+                 * The newer version of the support libs has some new issues.
+                 * We need to set the checkable state manually as setChecked() no longer
+                 * does this.
+                 */
+                item.setCheckable(true);
                 item.setChecked(true);
                 setTitle(item.getTitle());
 
-                break;
+            } else {
+                item.setChecked(false);
             }
         }
 

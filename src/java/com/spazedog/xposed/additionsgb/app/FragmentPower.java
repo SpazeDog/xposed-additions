@@ -147,10 +147,18 @@ public class FragmentPower extends ActivityMainFragment {
             }
 
             TextView groupTitle = (TextView) convertView.findViewById(R.id.power_list_title_group);
+            TextView groupSummary = (TextView) convertView.findViewById(R.id.power_list_summary_group);
 
             switch (groupPosition) {
-                case 0: groupTitle.setText(getResources().getString(R.string.power_name_plug)); break;
-                case 1: groupTitle.setText(getResources().getString(R.string.power_name_unplug));
+                case 0:
+                    groupTitle.setText(R.string.power_name_plug);
+                    groupSummary.setText(R.string.power_summary_plug);
+
+                    break;
+
+                case 1:
+                    groupTitle.setText(R.string.power_name_unplug);
+                    groupSummary.setText(R.string.power_summary_unplug);
             }
 
             return convertView;
@@ -170,28 +178,33 @@ public class FragmentPower extends ActivityMainFragment {
             switch (childPosition) {
                 case 0:
                     itemTitle.setText("- " + getResources().getString(R.string.power_plugtype_default));
+                    itemTitle.setEnabled(true);
                     itemCheckbox.setChecked(flags == PowerPlugConfig.PLUGGED_DEFAULT);
+                    itemCheckbox.setEnabled(true);
 
                     break;
 
                 case 1:
                     itemTitle.setText("- " + getResources().getString(R.string.power_plugtype_usb));
-                    itemCheckbox.setChecked((flags & PowerPlugConfig.PLUGGED_USB) != 0 && flags != PowerPlugConfig.PLUGGED_DEFAULT);
-                    itemCheckbox.setEnabled(flags != PowerPlugConfig.PLUGGED_DEFAULT);
+                    itemTitle.setEnabled(flags != PowerPlugConfig.PLUGGED_DEFAULT);
+                    itemCheckbox.setChecked((flags & PowerPlugConfig.PLUGGED_USB) != 0 && itemTitle.isEnabled());
+                    itemCheckbox.setEnabled(itemTitle.isEnabled());
 
                     break;
 
                 case 2:
                     itemTitle.setText("- " + getResources().getString(R.string.power_plugtype_ac));
-                    itemCheckbox.setChecked((flags & PowerPlugConfig.PLUGGED_AC) != 0 && flags != PowerPlugConfig.PLUGGED_DEFAULT);
-                    itemCheckbox.setEnabled(flags != PowerPlugConfig.PLUGGED_DEFAULT);
+                    itemTitle.setEnabled(flags != PowerPlugConfig.PLUGGED_DEFAULT);
+                    itemCheckbox.setChecked((flags & PowerPlugConfig.PLUGGED_AC) != 0 && itemTitle.isEnabled());
+                    itemCheckbox.setEnabled(itemTitle.isEnabled());
 
                     break;
 
                 case 3:
                     itemTitle.setText("- " + getResources().getString(R.string.power_plugtype_wl));
-                    itemCheckbox.setChecked((flags & PowerPlugConfig.PLUGGED_WIRELESS) != 0 && flags != PowerPlugConfig.PLUGGED_DEFAULT);
-                    itemCheckbox.setEnabled(flags != PowerPlugConfig.PLUGGED_DEFAULT);
+                    itemTitle.setEnabled(flags != PowerPlugConfig.PLUGGED_DEFAULT);
+                    itemCheckbox.setChecked((flags & PowerPlugConfig.PLUGGED_WIRELESS) != 0 && itemTitle.isEnabled());
+                    itemCheckbox.setEnabled(itemTitle.isEnabled());
             }
 
             return convertView;
