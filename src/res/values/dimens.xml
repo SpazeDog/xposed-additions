@@ -8,6 +8,7 @@
     <dimen name="textSizeNormal">16sp</dimen>
     <dimen name="textSizeActionBar">16sp</dimen>
 
+    <dimen name="listItemMarginVertical">21dp</dimen>
     <dimen name="layoutMarginVertical">7dp</dimen>
     <dimen name="layoutMarginHorizontal">7dp</dimen>
     <dimen name="layoutMarginVerticalSmall">3.5dp</dimen>

@@ -12,9 +12,9 @@
         android:title="@string/menu_navigation_title_log"
         app:showAsAction="always" />
 
-    <item android:id="@+id/fragment_power"
+    <item android:id="@+id/fragment_display"
         android:icon="@drawable/navigation_item_icon"
-        android:title="@string/menu_navigation_title_power"
+        android:title="@string/menu_navigation_title_display"
         app:showAsAction="always" />
 
     <item android:id="@+id/fragment_settings"

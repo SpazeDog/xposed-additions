@@ -1,6 +1,6 @@
 /*
  * This file is part of the Xposed Additions Project: https://github.com/spazedog/xposed-additions
- *  
+ *
  * Copyright (c) 2014 Daniel Bergløv
  *
  * Xposed Additions is free software: you can redistribute it and/or modify
@@ -19,144 +19,111 @@
 
 package com.spazedog.xposed.additionsgb.backend;
 
-import java.util.ArrayList;
-import java.util.List;
 
 import android.app.Activity;
-import android.app.AndroidAppHelper;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
-import android.util.Log;
+import android.os.Parcel;
 import android.view.Window;
 
 import com.spazedog.lib.reflecttools.ReflectClass;
-import com.spazedog.lib.reflecttools.utils.ReflectException;
-import com.spazedog.xposed.additionsgb.Common;
-import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
-import com.spazedog.xposed.additionsgb.configs.Settings;
+import com.spazedog.lib.reflecttools.ReflectException;
+import com.spazedog.lib.reflecttools.bridge.MethodBridge;
+import com.spazedog.lib.utilsLib.MultiParcelableBuilder;
+import com.spazedog.lib.utilsLib.SparseList;
+import com.spazedog.xposed.additionsgb.backend.service.BackendServiceMgr;
+import com.spazedog.xposed.additionsgb.utils.Utils;
+import com.spazedog.xposed.additionsgb.utils.Utils.Level;
 
-import de.robv.android.xposed.XC_MethodHook;
+import java.util.List;
 
-public final class ApplicationLayout {
-	public static final String TAG = ApplicationLayout.class.getName();
-	
-	protected Boolean mConfigureKeyguard = true;
-	protected Boolean mKeyguardOverwriteRotation = false;
-	
-	protected Boolean mGetSettings = true;
-	protected Boolean mEnableRotation = false;
-	protected Boolean mBlackListed = false;
-	
-	protected List<String> mBlackList = new ArrayList<String>();
-	protected String mPackageName = null;
-	
-	public static void init() {
-		if(Common.DEBUG) Log.d(TAG, "Adding Application Layout Hook");
-		
-		ApplicationLayout appLayout = new ApplicationLayout();
+public class ApplicationLayout {
+    public static final String TAG = ApplicationLayout.class.getName();
 
-		try {
-			ReflectClass.forName("com.android.internal.policy.impl.PhoneWindow").inject("generateLayout", appLayout.hook_orientationAndLayout);
-			ReflectClass.forName("android.app.Activity").inject("setRequestedOrientation", appLayout.hook_orientationAndLayout);
-			
-			/*
-			 * The keyguard has it's own way of handling this. This is actually handled in KeyguardViewManager, but this class
-			 * get's moved around in almost every release, and each version introduces new ways of handling orientation settings. 
-			 * The System Property is the only persistent control. 
-			 */
-			ReflectClass.forName("android.os.SystemProperties").inject("getBoolean", appLayout.hook_keyguardLayout);
-			
-		} catch (ReflectException e) {
-			Log.e(TAG, e.getMessage(), e);
-		}
-	}
-	
-	protected XC_MethodHook hook_keyguardLayout = new XC_MethodHook() {
-		@Override
-		protected final void beforeHookedMethod(final MethodHookParam param) {
-			if (param.args.length > 0 && "lockscreen.rot_override".equals(param.args[0])) {
-				if (mConfigureKeyguard) {
-					XServiceManager preferences = XServiceManager.getInstance();
-					
-					if (preferences != null) {
-						mConfigureKeyguard = false;
-						mKeyguardOverwriteRotation = preferences.getBoolean(Settings.LAYOUT_ENABLE_GLOBAL_ROTATION);
-					}
-				}
-				
-				if (mKeyguardOverwriteRotation) {
-					param.setResult(true);
-				}
-			}
-		}
-	};
-	
-	protected XC_MethodHook hook_orientationAndLayout = new XC_MethodHook() {
-		@Override
-		protected final void beforeHookedMethod(final MethodHookParam param) {
-			if (param.thisObject instanceof Window) {
-				mPackageName = ((Window) param.thisObject).getContext().getPackageName();
-				
-			} else {
-				mPackageName = ((Context) param.thisObject).getPackageName();
-			}
-			
-			/*
-			 * This instance is going to be parsed across multiple processes.
-			 * Each process will not get any changes made by other processes, so
-			 * for each new process we need a new setup. 
-			 */
-			if (mGetSettings) {
-				XServiceManager preferences = XServiceManager.getInstance();
-				
-				if (preferences != null) {
-					mGetSettings = false;
-					mEnableRotation = preferences.getBoolean(Settings.LAYOUT_ENABLE_GLOBAL_ROTATION);
-					
-					if (mEnableRotation && preferences.isPackageUnlocked()) {
-						mBlackList = preferences.getStringArray(Settings.LAYOUT_GLOBAL_ROTATION_BLACKLIST);
-						
-						if (mBlackList == null) {
-							mBlackList = new ArrayList<String>();
-						}
-					}
-					
-				} else {
-					return;
-				}
-			}
-			
-			mBlackListed = mBlackList.contains( mPackageName );
-			
-			if (mEnableRotation && !mBlackListed) {
-				if(Common.debug()) Log.d(TAG, "+ " + param.method.getName() + ": Allowing Rotation for '" + mPackageName + "'");
-				
-				if ("setRequestedOrientation".equals(param.method.getName())) {
-					param.args[0] = ActivityInfo.SCREEN_ORIENTATION_USER;
-				}
-				
-			} else if (mEnableRotation) {
-				if(Common.debug()) Log.d(TAG, "- " + param.method.getName() + ": Rotation has been blacklisted for '" + mPackageName + "'");
-			}
-		}
-		
-		@Override
-		protected final void afterHookedMethod(final MethodHookParam param) {
-			if (mEnableRotation && !mBlackListed) {
-				if(Common.debug()) Log.d(TAG, "+ " + param.method.getName() + ": Allowing Rotation for '" + mPackageName + "'");
-				
-				if ("generateLayout".equals(param.method.getName())) {
-					Window window = (Window) param.thisObject;
-					Context context = window.getContext();
-					
-					if (context instanceof Activity) {
-						((Activity) context).setRequestedOrientation( ActivityInfo.SCREEN_ORIENTATION_USER );
-					}
-				}
-				
-			} else if (mEnableRotation) {
-				if(Common.debug()) Log.d(TAG, "- " + param.method.getName() + ": Rotation has been blacklisted for '" + mPackageName + "'");
-			}
-		}
-	};
+    public static class RotationConfig extends MultiParcelableBuilder {
+
+        public final boolean OverwriteRotation;
+        public final List<String> BlackList;
+
+        public RotationConfig(boolean overwriteRotation, List<String> blackList) {
+            OverwriteRotation = overwriteRotation;
+            BlackList = blackList != null ? blackList : new SparseList<String>();
+        }
+
+        public RotationConfig(Parcel source) {
+            OverwriteRotation = (Boolean) unparcelData(source, null);
+            BlackList = (List<String>) unparcelData(source, getClass().getClassLoader());
+        }
+
+        @Override
+        public void writeToParcel(Parcel out, int flags) {
+            super.writeToParcel(out, flags);
+
+            parcelData(OverwriteRotation, out, flags);
+            parcelData(BlackList, out, flags);
+        }
+    }
+
+    public static void init() {
+        try {
+            Utils.log(Level.INFO, TAG, "Instantiating ApplicationLayout");
+
+            ApplicationLayout instance = new ApplicationLayout();
+
+            ReflectClass.fromName("android.os.SystemProperties").bridge("getBoolean", instance.shouldEnableScreenRotation);
+            ReflectClass.fromName("com.android.internal.policy.impl.PhoneWindow").bridge("generateLayout", instance.generateLayout);
+
+        } catch (ReflectException e) {
+            Utils.log(Level.ERROR, TAG, e.getMessage(), e);
+        }
+    }
+
+    private RotationConfig mRotationConfig;
+
+    private RotationConfig getRotationConfig() {
+        if (mRotationConfig == null) {
+            BackendServiceMgr backendMgr = BackendServiceMgr.getInstance();
+
+            if (backendMgr != null && backendMgr.isServiceReady()) {
+                mRotationConfig = null;
+            }
+        }
+
+        return mRotationConfig;
+    }
+
+    public MethodBridge shouldEnableScreenRotation = new MethodBridge() {
+        @Override
+        public void bridgeBegin(BridgeParams params) {
+            if (params.args.length > 0 && "lockscreen.rot_override".equals(params.args[0])) {
+                RotationConfig rotationConfig = getRotationConfig();
+
+                if (rotationConfig != null && rotationConfig.OverwriteRotation) {
+                    Utils.log(Level.DEBUG, TAG, "Overwriting rotation settings on LockScreen");
+
+                    params.setResult(true);
+                }
+            }
+        }
+    };
+
+    public MethodBridge generateLayout = new MethodBridge() {
+        @Override
+        public void bridgeEnd(BridgeParams params) {
+            Window window = (Window) params.receiver;
+            Context context = window.getContext();
+            RotationConfig rotationConfig = getRotationConfig();
+
+            if (context instanceof Activity && rotationConfig != null && rotationConfig.OverwriteRotation) {
+                Activity activity = (Activity) context;
+                String packageName = activity.getPackageName();
+
+                if (activity.getRequestedOrientation() != ActivityInfo.SCREEN_ORIENTATION_USER && !mRotationConfig.BlackList.contains(packageName)) {
+                    Utils.log(Level.DEBUG, TAG, "Overwriting rotation settings on package '" + packageName + "'");
+
+                    activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_USER);
+                }
+            }
+        }
+    };
 }

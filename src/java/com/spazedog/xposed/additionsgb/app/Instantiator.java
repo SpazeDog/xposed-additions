@@ -20,7 +20,7 @@ public class Instantiator<T> {
             case R.id.fragment_launch_selector: return FragmentLaunchSelector.class;
             case R.id.fragment_log: return FragmentLog.class;
             case R.id.fragment_status: return FragmentStatus.class;
-            case R.id.fragment_power: return FragmentPower.class;
+            case R.id.fragment_display: return FragmentDisplay.class;
             case R.id.fragment_settings: return FragmentSettings.class;
 
             // Services

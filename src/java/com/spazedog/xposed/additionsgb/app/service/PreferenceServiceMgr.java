@@ -24,6 +24,8 @@ import android.content.Context;
 
 import com.spazedog.xposed.additionsgb.app.service.PreferenceService.Proxy;
 
+import java.util.List;
+
 public class PreferenceServiceMgr {
 
     public static final String TAG = PreferenceServiceMgr.class.getName();
@@ -58,5 +60,13 @@ public class PreferenceServiceMgr {
 
     public String getStringConfig(String name, String defValue) {
         return mProxy.getStringConfig(name, defValue);
+    }
+
+    public List<String> getStringListConfig(String name) {
+        return getStringListConfig(name, null);
+    }
+
+    public List<String> getStringListConfig(String name, List<String> defValue) {
+        return mProxy.getStringListConfig(name, defValue);
     }
 }

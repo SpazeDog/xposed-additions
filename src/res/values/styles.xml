@@ -2,6 +2,17 @@
 
 <resources>
 
+    <!--
+        Used by UtilsLib Dialog Fragment -->
+    <style name="App.Dialog">
+        <item name="android:windowFrame">@null</item>
+        <item name="android:windowIsFloating">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowAnimationStyle">@android:style/Animation.Dialog</item>
+        <item name="android:windowBackground">@drawable/dialog_background</item>
+        <item name="android:colorBackgroundCacheHint">@null</item>
+    </style>
+
     <style name="App.ContentPadding">
         <item name="android:paddingTop">@dimen/layoutMarginVertical</item>
         <item name="android:paddingBottom">@dimen/layoutMarginVertical</item>
@@ -38,7 +49,9 @@
     </style>
 
     <style name="App.ExpListView.Group" parent="App.ContentPaddingVertical" />
-    <style name="App.ExpListView.Item" parent="App.ContentPaddingVertical" />
+    <style name="App.ExpListView.Item" parent="App.ContentPaddingVertical">
+        <item name="android:paddingLeft">@dimen/listItemMarginVertical</item>
+    </style>
 
     <style name="App.CardView.Title" parent="App.ContentPadding">
         <item name="android:textAppearance">@style/App.TextAppearance.Secondary</item>

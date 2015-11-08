@@ -51,25 +51,95 @@ import com.spazedog.xposed.additionsgb.utils.Utils;
 
 public class ActivityMain extends MsgActivity implements OnNavigationItemSelectedListener, DrawerListener {
 
-    public static class ActivityMainFragment extends MsgFragment {
+    public interface IActivityMainFragment {
+        PreferenceServiceMgr getPreferenceMgr();
+        BackendServiceMgr getBackendMgr();
+        void setArgs(HashBundle args);
+        HashBundle getArgs();
+        void loadFragment(int id, HashBundle args, Boolean backStack);
+    }
 
+    public static class ActivityMainFragment extends MsgFragment implements IActivityMainFragment {
+
+        @Override
         public PreferenceServiceMgr getPreferenceMgr() {
             return ((ActivityMain) getActivity()).mPreferenceMgr;
         }
 
+        @Override
         public BackendServiceMgr getBackendMgr() {
             return ((ActivityMain) getActivity()).mBackendMgr;
+        }
+
+        @Override
+        public void setArgs(HashBundle args) {
+            Bundle bundle = getArguments();
+
+            if (bundle == null) {
+                bundle = new Bundle();
+            }
+
+            bundle.putParcelable("args", args);
+
+            setArguments(bundle);
+        }
+
+        @Override
+        public HashBundle getArgs() {
+            Bundle bundle = getArguments();
+
+            if (bundle != null) {
+                return (HashBundle) bundle.getParcelable("args");
+            }
+
+            return null;
+        }
+
+        @Override
+        public void loadFragment(int id, HashBundle args, Boolean backStack) {
+            ((ActivityMain) getActivity()).loadFragment(id, args, backStack);
         }
     }
 
-    public static class ActivityMainDialog extends MsgFragmentDialog {
+    public static class ActivityMainDialog extends MsgFragmentDialog implements IActivityMainFragment {
 
+        @Override
         public PreferenceServiceMgr getPreferenceMgr() {
             return ((ActivityMain) getActivity()).mPreferenceMgr;
         }
 
+        @Override
         public BackendServiceMgr getBackendMgr() {
             return ((ActivityMain) getActivity()).mBackendMgr;
+        }
+
+        @Override
+        public void setArgs(HashBundle args) {
+            Bundle bundle = getArguments();
+
+            if (bundle == null) {
+                bundle = new Bundle();
+            }
+
+            bundle.putParcelable("args", args);
+
+            setArguments(bundle);
+        }
+
+        @Override
+        public HashBundle getArgs() {
+            Bundle bundle = getArguments();
+
+            if (bundle != null) {
+                return (HashBundle) bundle.getParcelable("args");
+            }
+
+            return null;
+        }
+
+        @Override
+        public void loadFragment(int id, HashBundle args, Boolean backStack) {
+            ((ActivityMain) getActivity()).loadFragment(id, args, backStack);
         }
     }
 
@@ -197,12 +267,12 @@ public class ActivityMain extends MsgActivity implements OnNavigationItemSelecte
      * FRAGMENT MANAGEMENT
      */
 
-    public void loadFragment(int id, Bundle args, Boolean backStack) {
+    public void loadFragment(int id, HashBundle args, Boolean backStack) {
         Fragment fragment = Instantiator.Fragments.getInstance(id);
 
         if (fragment != null) {
-            if (args != null) {
-                fragment.setArguments(args);
+            if (args != null && fragment instanceof IActivityMainFragment) {
+                ((IActivityMainFragment) fragment).setArgs(args);
             }
 
             loadFragment(fragment, backStack);

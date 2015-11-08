@@ -7,14 +7,14 @@
     android:layout_height="wrap_content">
 
     <TextView
-        android:id="@+id/power_list_title_item"
+        android:id="@+id/display_usb_list_title_item"
         android:layout_weight="1"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:textAppearance="@style/App.TextAppearance.Small" />
 
     <android.support.v7.widget.AppCompatCheckBox
-        android:id="@+id/power_list_checkbox_item"
+        android:id="@+id/display_usb_list_checkbox_item"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:focusable="false"

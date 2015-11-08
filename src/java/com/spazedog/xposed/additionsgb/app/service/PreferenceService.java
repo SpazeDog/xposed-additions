@@ -27,10 +27,13 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.IBinder;
 import android.os.Process;
+import android.text.TextUtils;
 
+import com.spazedog.lib.utilsLib.SparseList;
 import com.spazedog.xposed.additionsgb.app.service.PreferenceDatabase.SettingsEntry;
 import com.spazedog.xposed.additionsgb.utils.Constants;
 
+import java.util.List;
 import java.util.Objects;
 
 public class PreferenceService extends Service {
@@ -142,7 +145,17 @@ public class PreferenceService extends Service {
                         value = Integer.valueOf((String) value); break;
 
                     case SettingsEntry.TYPE_NULL:
-                        value = null;
+                        value = null; break;
+
+                    case SettingsEntry.TYPE_LIST:
+                        String[] list = ((String) value).split(",");
+                        value = new SparseList<String>();
+
+                        if (!"".equals(value)) {
+                            for (String item : list) {
+                                ((List) value).add(item);
+                            }
+                        }
                 }
             }
 
@@ -167,6 +180,10 @@ public class PreferenceService extends Service {
             } else if (value instanceof String) {
                 type = SettingsEntry.TYPE_STRING;
 
+            } else if (value instanceof List) {
+                type = SettingsEntry.TYPE_LIST;
+                value = TextUtils.join(",", (List) value);
+
             } else {
                 return;
             }
@@ -186,6 +203,11 @@ public class PreferenceService extends Service {
         @Override
         public String getStringConfig(String name, String defValue) {
             return (String) getConfig(name, defValue);
+        }
+
+        @Override
+        public List<String> getStringListConfig(String name, List<String> defValue) {
+            return (List<String>) getConfig(name, defValue);
         }
 	};
 }

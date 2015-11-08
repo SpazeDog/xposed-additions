@@ -65,6 +65,7 @@ public class PreferenceDatabase extends SQLiteOpenHelper {
         public static final int TYPE_NULL = 0;
         public static final int TYPE_INTEGER = 1;
         public static final int TYPE_STRING = 2;
+        public static final int TYPE_LIST = 3;
 
         public final int type;
         public final T value;

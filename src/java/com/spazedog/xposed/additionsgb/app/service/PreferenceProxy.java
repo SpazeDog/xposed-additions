@@ -25,6 +25,10 @@ import android.os.IInterface;
 import android.os.Parcel;
 import android.os.RemoteException;
 
+import com.spazedog.lib.utilsLib.MultiParcelable.ParcelHelper;
+
+import java.util.List;
+
 public interface PreferenceProxy extends IInterface {
 
 	String DESCRIPTOR = PreferenceProxy.class.getName();
@@ -38,6 +42,7 @@ public interface PreferenceProxy extends IInterface {
     int TRANSACTION_putConfig = IBinder.FIRST_CALL_TRANSACTION+1;
     int TRANSACTION_getIntConfig = IBinder.FIRST_CALL_TRANSACTION+2;
     int TRANSACTION_getStringConfig = IBinder.FIRST_CALL_TRANSACTION+3;
+    int TRANSACTION_getStringListConfig = IBinder.FIRST_CALL_TRANSACTION+4;
 
     /*
      * =================================================
@@ -47,6 +52,7 @@ public interface PreferenceProxy extends IInterface {
     void putConfig(String name, Object value) throws RemoteException;
     int getIntConfig(String name, int defValue) throws RemoteException;
     String getStringConfig(String name, String defValue) throws RemoteException;
+    List<String> getStringListConfig(String name, List<String> defValue) throws RemoteException;
 
     /*
      * =================================================
@@ -93,7 +99,7 @@ public interface PreferenceProxy extends IInterface {
                 switch (type) {
                     case TRANSACTION_putConfig: {
                         String name = args.readString();
-                        Object value = args.readValue(null);
+                        Object value = ParcelHelper.unparcelData(args, getClass().getClassLoader());
 
                         putConfig(name, value);
 
@@ -110,6 +116,18 @@ public interface PreferenceProxy extends IInterface {
                         String value = getStringConfig(name, defValue);
 
                         caller.writeString(value);
+
+                    } break; case TRANSACTION_getStringListConfig: {
+                        /*
+                         * We use ParcelHelper in case we have SparseList running through
+                         * the default value, which is a proper parcelable class and should not
+                         * be written using android's pure Parcel List writer.
+                         */
+                        String name = args.readString();
+                        List<String> defValue = (List<String>) ParcelHelper.unparcelData(args, getClass().getClassLoader());
+                        List<String> value = getStringListConfig(name, defValue);
+
+                        ParcelHelper.parcelData(value, caller, 0);
 
                     } break; default: {
                         return false;
@@ -147,7 +165,7 @@ public interface PreferenceProxy extends IInterface {
 
             try {
                 args.writeInterfaceToken(DESCRIPTOR);
-                args.writeValue(value);
+                ParcelHelper.parcelData(value, args, 0);
                 mBinder.transact(Stub.TRANSACTION_putConfig, args, caller, 0);
                 caller.readException();
 
@@ -190,6 +208,26 @@ public interface PreferenceProxy extends IInterface {
                 caller.readException();
 
                 return caller.readString();
+
+            } finally {
+                args.recycle();
+                caller.recycle();
+            }
+        }
+
+        @Override
+        public List<String> getStringListConfig(String name, List<String> defValue) throws RemoteException {
+            Parcel args = Parcel.obtain();
+            Parcel caller = Parcel.obtain();
+
+            try {
+                args.writeInterfaceToken(DESCRIPTOR);
+                args.writeString(name);
+                ParcelHelper.parcelData(defValue, args, 0);
+                mBinder.transact(Stub.TRANSACTION_getStringListConfig, args, caller, 0);
+                caller.readException();
+
+                return (List<String>) ParcelHelper.unparcelData(caller, getClass().getClassLoader());
 
             } finally {
                 args.recycle();

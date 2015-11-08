@@ -43,6 +43,7 @@ import com.spazedog.lib.utilsLib.HashBundle;
 import com.spazedog.lib.utilsLib.SparseList;
 import com.spazedog.lib.utilsLib.os.ThreadHandler;
 import com.spazedog.xposed.additionsgb.app.service.PreferenceProxy;
+import com.spazedog.xposed.additionsgb.backend.ApplicationLayout.RotationConfig;
 import com.spazedog.xposed.additionsgb.backend.LogcatMonitor;
 import com.spazedog.xposed.additionsgb.backend.LogcatMonitor.LogcatEntry;
 import com.spazedog.xposed.additionsgb.backend.PowerManager.PowerPlugConfig;
@@ -70,7 +71,8 @@ public class BackendService extends BackendProxy.Stub {
         public int UserId = 0;
         public boolean DebugEnabled = false;
         public boolean OwnerLock = false;
-        public PowerPlugConfig mPowerConfig;
+        public PowerPlugConfig PowerConfig;
+        public RotationConfig RotationConfig;
     }
 
     private List<LogcatEntry> mLogEntries = new SparseList<LogcatEntry>();
@@ -288,8 +290,11 @@ public class BackendService extends BackendProxy.Stub {
                     if ((flags & FLAG_RELOAD_CONFIG) != 0) {
                         int powerPlug = proxy.getIntConfig("power_plug", PowerPlugConfig.PLUGGED_DEFAULT);
                         int powerUnplug = proxy.getIntConfig("power_unplug", PowerPlugConfig.PLUGGED_DEFAULT);
+                        boolean rotationOverwrite = proxy.getIntConfig("rotation_overwrite", 0) > 0;
+                        List<String> rotationBlacklist = proxy.getStringListConfig("rotation_blacklist", null);
 
-                        mValues.mPowerConfig = new PowerPlugConfig(powerPlug, powerUnplug);
+                        mValues.PowerConfig = new PowerPlugConfig(powerPlug, powerUnplug);
+                        mValues.RotationConfig = new RotationConfig(rotationOverwrite, rotationBlacklist);
 
                         if (mValues.UserId == 0) {
                             mValues.DebugEnabled = proxy.getIntConfig("enable_debug", 0) > 0 || Constants.FORCE_DEBUG;
@@ -298,7 +303,8 @@ public class BackendService extends BackendProxy.Stub {
 
                         data.putBoolean("ownerLocked", mValues.OwnerLock);
                         data.putBoolean("debugEnabled", mValues.DebugEnabled);
-                        data.put("powerConfig", mValues.mPowerConfig);
+                        data.put("powerConfig", mValues.PowerConfig);
+                        data.put("rotationConfig", mValues.RotationConfig);
                     }
 
                     sendListenerMsg(-1, data, true);
@@ -452,11 +458,16 @@ public class BackendService extends BackendProxy.Stub {
 
     @Override
     public PowerPlugConfig getPowerConfig() throws RemoteException {
-        return mValues.mPowerConfig;
+        return mValues.PowerConfig;
     }
 
     @Override
     public boolean isOwnerLocked() throws RemoteException {
         return mValues.OwnerLock && mValues.UserId != 0;
+    }
+
+    @Override
+    public RotationConfig getRotationConfig() throws RemoteException {
+        return mValues.RotationConfig;
     }
 }

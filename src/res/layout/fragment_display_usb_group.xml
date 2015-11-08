@@ -10,13 +10,13 @@
     android:paddingBottom="@dimen/layoutMarginVertical">
 
     <TextView
-        android:id="@+id/power_list_title_group"
+        android:id="@+id/display_usb_list_title_group"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textAppearance="@style/App.TextAppearance" />
 
     <TextView
-        android:id="@+id/power_list_summary_group"
+        android:id="@+id/display_usb_list_summary_group"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:textAppearance="@style/App.TextAppearance.Secondary.Small"/>

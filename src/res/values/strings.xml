@@ -9,7 +9,7 @@
     <string name='menu_title_rapport'>Send Rapport</string>
     <string name='menu_navigation_title_log'>View Log</string>
     <string name='menu_navigation_title_status'>Status</string>
-    <string name='menu_navigation_title_power'>Power Control</string>
+    <string name='menu_navigation_title_display'>Display Control</string>
     <string name='menu_navigation_title_settings'>Settings</string>
 
 
@@ -30,19 +30,25 @@
 
 
     <!-- ================================================
-         Strings for FragmentPower
+         Strings for FragmentDisplay
     ================================================ -->
 
-    <string name='power_title_plug'>Wake on Plug/Unplug</string>
-    <string name='power_name_plug'>Plug</string>
-    <string name='power_name_unplug'>Unplug</string>
-    <string name='power_summary_plug'>Turn on the screen when connecting to a power source</string>
-    <string name='power_summary_unplug'>Turn on the screen when disconnecting from a power source</string>
+    <string name='display_title_plug'>Wake on Plug/Unplug</string>
+    <string name='display_name_plug'>Plug</string>
+    <string name='display_name_unplug'>Unplug</string>
+    <string name='display_summary_plug'>Turn on the screen when connecting to a power source</string>
+    <string name='display_summary_unplug'>Turn on the screen when disconnecting from a power source</string>
 
-    <string name='power_plugtype_default'>System Default</string>
-    <string name='power_plugtype_usb'>USB</string>
-    <string name='power_plugtype_ac'>AC</string>
-    <string name='power_plugtype_wl'>Wireless</string>
+    <string name='display_plugtype_default'>System Default</string>
+    <string name='display_plugtype_usb'>USB</string>
+    <string name='display_plugtype_ac'>AC</string>
+    <string name='display_plugtype_wl'>Wireless</string>
+
+    <string name='display_title_rotation'>Application Layout</string>
+    <string name='display_name_rotation'>Overwrite Rotation</string>
+    <string name='display_name_rotation_blacklist'>Blacklist</string>
+    <string name='display_summary_rotation'>Force all apps to allow rotation</string>
+    <string name='display_summary_rotation_blacklist'>Do not overwrite rotation on selected apps</string>
 
 
     <!-- ================================================

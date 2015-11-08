@@ -26,21 +26,38 @@ import android.os.Bundle;
 import android.support.v7.widget.AppCompatCheckBox;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.BaseExpandableListAdapter;
+import android.widget.CheckBox;
 import android.widget.ExpandableListView;
 import android.widget.TextView;
 
+import com.spazedog.lib.utilsLib.HashBundle;
 import com.spazedog.xposed.additionsgb.R;
 import com.spazedog.xposed.additionsgb.app.ActivityMain.ActivityMainFragment;
 import com.spazedog.xposed.additionsgb.app.service.PreferenceServiceMgr;
 import com.spazedog.xposed.additionsgb.backend.PowerManager.PowerPlugConfig;
 import com.spazedog.xposed.additionsgb.backend.service.BackendService;
+import com.spazedog.xposed.additionsgb.backend.service.BackendServiceMgr;
+import com.spazedog.xposed.additionsgb.utils.Constants;
 
-public class FragmentPower extends ActivityMainFragment {
+import java.util.ArrayList;
+import java.util.List;
+
+public class FragmentDisplay extends ActivityMainFragment implements OnClickListener {
 
     protected ExpandableListView mListView;
     protected PowerAdapter mListAdapter;
+
+    private View mRotationBlacklistWrapper;
+    private View mRotationWrapper;
+    private CheckBox mRotationCheckbox;
+
+    private boolean mHasChanges = false;
+    private boolean mOverwriteRotation = false;
+    private List<String> mRotationBlacklist;
+
 
     /*
      * =================================================
@@ -48,26 +65,92 @@ public class FragmentPower extends ActivityMainFragment {
      */
 
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_power_layout, container, false);
+        return inflater.inflate(R.layout.fragment_display_layout, container, false);
     }
 
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        PreferenceServiceMgr PreferenceMgr = getPreferenceMgr();
+
+        mOverwriteRotation = PreferenceMgr.getIntConfig("rotation_overwrite", 0) > 0;
+        mRotationBlacklist = PreferenceMgr.getStringListConfig("rotation_blacklist", null);
+
         mListAdapter = new PowerAdapter();
-        mListView = (ExpandableListView) view.findViewById(R.id.power_list);
+        mListView = (ExpandableListView) view.findViewById(R.id.display_usb_list);
         mListView.setAdapter(mListAdapter);
         mListView.setOnChildClickListener(mListAdapter);
         mListView.setOnGroupExpandListener(mListAdapter);
+
+        mRotationBlacklistWrapper = view.findViewById(R.id.display_wrapper_rotation_blacklist);
+        mRotationBlacklistWrapper.setOnClickListener(this);
+
+        mRotationWrapper = view.findViewById(R.id.display_wrapper_rotation);
+        mRotationWrapper.setOnClickListener(this);
+        mRotationCheckbox = (CheckBox) view.findViewById(R.id.display_checkbox_rotation);
+        mRotationCheckbox.setChecked(mOverwriteRotation);
     }
 
     @Override
     public void onPause() {
         super.onPause();
 
-        mListAdapter.saveChanges();
+        if (mHasChanges) {
+            PreferenceServiceMgr PreferenceMgr = getPreferenceMgr();
+            PreferenceMgr.putConfig("rotation_overwrite", mOverwriteRotation ? 1 : 0);
+            PreferenceMgr.putConfig("rotation_blacklist", mRotationBlacklist);
+        }
+
+        if (mListAdapter.saveChanges() || mHasChanges) {
+            BackendServiceMgr backendMgr = getBackendMgr();
+
+            if (backendMgr != null) {
+                getBackendMgr().requestServiceReload(BackendService.FLAG_RELOAD_CONFIG);
+            }
+        }
+
+        mHasChanges = false;
     }
+
+    @Override
+    public void onReceiveMessage(int type, HashBundle data, boolean isSticky) {
+        switch (type) {
+            case Constants.MSG_DIALOG_SELECTOR:
+                int selectorType = data.getInt(FragmentLaunchSelector.EXTRAS_TYPE);
+
+                if (selectorType == FragmentLaunchSelector.APP_MULTI) {
+                    mRotationBlacklist = data.getStringList(FragmentLaunchSelector.EXTRAS_PKGS);
+                    mHasChanges = true;
+                }
+        }
+    }
+
+    /*
+     * =================================================
+     * INTERFACES OVERRIDES
+     */
+
+    @Override
+    public void onClick(View v) {
+        /*
+         * mRotationBlacklistWrapper is just a dialog request.
+         * No changes are made unless it returns something
+         */
+        mHasChanges = v != mRotationBlacklistWrapper;
+
+        if (v == mRotationWrapper) {
+            mRotationCheckbox.setChecked( (mOverwriteRotation = !mOverwriteRotation) );
+
+        } else {
+            HashBundle args = new HashBundle();
+            args.putInt(FragmentLaunchSelector.ARGS_FLAGS, FragmentLaunchSelector.APP_MULTI);
+            args.putStringList(FragmentLaunchSelector.ARGS_SELECTED, mRotationBlacklist);
+
+            loadFragment(R.id.fragment_launch_selector, args, false);
+        }
+    }
+
 
     /*
      * =================================================
@@ -88,7 +171,7 @@ public class FragmentPower extends ActivityMainFragment {
             mUnplugFlags = PreferenceMgr.getIntConfig("power_unplug", PowerPlugConfig.PLUGGED_DEFAULT);
         }
 
-        public void saveChanges() {
+        public boolean saveChanges() {
             if (mHasChanges) {
                 mHasChanges = false;
 
@@ -96,8 +179,10 @@ public class FragmentPower extends ActivityMainFragment {
                 PreferenceMgr.putConfig("power_plug", mPlugFlags);
                 PreferenceMgr.putConfig("power_unplug", mUnplugFlags);
 
-                getBackendMgr().requestServiceReload(BackendService.FLAG_RELOAD_CONFIG);
+                return true;
             }
+
+            return false;
         }
 
         @Override
@@ -143,22 +228,22 @@ public class FragmentPower extends ActivityMainFragment {
         public View getGroupView(int groupPosition, boolean isExpanded, View convertView, ViewGroup parent) {
             if (convertView == null) {
                 LayoutInflater inflater = LayoutInflater.from(getActivity());
-                convertView = inflater.inflate(R.layout.fragment_power_usb_group, parent, false);
+                convertView = inflater.inflate(R.layout.fragment_display_usb_group, parent, false);
             }
 
-            TextView groupTitle = (TextView) convertView.findViewById(R.id.power_list_title_group);
-            TextView groupSummary = (TextView) convertView.findViewById(R.id.power_list_summary_group);
+            TextView groupTitle = (TextView) convertView.findViewById(R.id.display_usb_list_title_group);
+            TextView groupSummary = (TextView) convertView.findViewById(R.id.display_usb_list_summary_group);
 
             switch (groupPosition) {
                 case 0:
-                    groupTitle.setText(R.string.power_name_plug);
-                    groupSummary.setText(R.string.power_summary_plug);
+                    groupTitle.setText(R.string.display_name_plug);
+                    groupSummary.setText(R.string.display_summary_plug);
 
                     break;
 
                 case 1:
-                    groupTitle.setText(R.string.power_name_unplug);
-                    groupSummary.setText(R.string.power_summary_unplug);
+                    groupTitle.setText(R.string.display_name_unplug);
+                    groupSummary.setText(R.string.display_summary_unplug);
             }
 
             return convertView;
@@ -168,16 +253,16 @@ public class FragmentPower extends ActivityMainFragment {
         public View getChildView(int groupPosition, int childPosition, boolean isLastChild, View convertView, ViewGroup parent) {
             if (convertView == null) {
                 LayoutInflater inflater = LayoutInflater.from(getActivity());
-                convertView = inflater.inflate(R.layout.fragment_power_usb_item, parent, false);
+                convertView = inflater.inflate(R.layout.fragment_display_usb_item, parent, false);
             }
 
             int flags = groupPosition == 0 ? mPlugFlags : mUnplugFlags;
-            TextView itemTitle = (TextView) convertView.findViewById(R.id.power_list_title_item);
-            AppCompatCheckBox itemCheckbox = (AppCompatCheckBox) convertView.findViewById(R.id.power_list_checkbox_item);
+            TextView itemTitle = (TextView) convertView.findViewById(R.id.display_usb_list_title_item);
+            AppCompatCheckBox itemCheckbox = (AppCompatCheckBox) convertView.findViewById(R.id.display_usb_list_checkbox_item);
 
             switch (childPosition) {
                 case 0:
-                    itemTitle.setText("- " + getResources().getString(R.string.power_plugtype_default));
+                    itemTitle.setText(R.string.display_plugtype_default);
                     itemTitle.setEnabled(true);
                     itemCheckbox.setChecked(flags == PowerPlugConfig.PLUGGED_DEFAULT);
                     itemCheckbox.setEnabled(true);
@@ -185,7 +270,7 @@ public class FragmentPower extends ActivityMainFragment {
                     break;
 
                 case 1:
-                    itemTitle.setText("- " + getResources().getString(R.string.power_plugtype_usb));
+                    itemTitle.setText(R.string.display_plugtype_usb);
                     itemTitle.setEnabled(flags != PowerPlugConfig.PLUGGED_DEFAULT);
                     itemCheckbox.setChecked((flags & PowerPlugConfig.PLUGGED_USB) != 0 && itemTitle.isEnabled());
                     itemCheckbox.setEnabled(itemTitle.isEnabled());
@@ -193,7 +278,7 @@ public class FragmentPower extends ActivityMainFragment {
                     break;
 
                 case 2:
-                    itemTitle.setText("- " + getResources().getString(R.string.power_plugtype_ac));
+                    itemTitle.setText(R.string.display_plugtype_ac);
                     itemTitle.setEnabled(flags != PowerPlugConfig.PLUGGED_DEFAULT);
                     itemCheckbox.setChecked((flags & PowerPlugConfig.PLUGGED_AC) != 0 && itemTitle.isEnabled());
                     itemCheckbox.setEnabled(itemTitle.isEnabled());
@@ -201,7 +286,7 @@ public class FragmentPower extends ActivityMainFragment {
                     break;
 
                 case 3:
-                    itemTitle.setText("- " + getResources().getString(R.string.power_plugtype_wl));
+                    itemTitle.setText(R.string.display_plugtype_wl);
                     itemTitle.setEnabled(flags != PowerPlugConfig.PLUGGED_DEFAULT);
                     itemCheckbox.setChecked((flags & PowerPlugConfig.PLUGGED_WIRELESS) != 0 && itemTitle.isEnabled());
                     itemCheckbox.setEnabled(itemTitle.isEnabled());

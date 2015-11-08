@@ -10,7 +10,9 @@
         android:layout_width="@dimen/appIconSize"
         android:layout_height="@dimen/appIconSize"
         android:layout_gravity="center_vertical"
-        android:adjustViewBounds="true" />
+        android:adjustViewBounds="true"
+        android:paddingTop="@dimen/layoutMarginVertical"
+        android:paddingBottom="@dimen/layoutMarginVertical"/>
 
     <LinearLayout
         android:id="@+id/item_clickable"
@@ -52,12 +54,14 @@
 
             </LinearLayout>
 
-            <CheckBox
+            <android.support.v7.widget.AppCompatCheckBox
                 android:id="@+id/item_checkbox"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
                 android:visibility="gone"
+                android:focusable="false"
+                android:clickable="false"
                 android:layout_marginLeft="@dimen/layoutMarginHorizontal"/>
 
         </LinearLayout>

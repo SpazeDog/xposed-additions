@@ -28,6 +28,7 @@ import android.os.RemoteException;
 
 import com.spazedog.lib.utilsLib.HashBundle;
 import com.spazedog.lib.utilsLib.SparseList;
+import com.spazedog.xposed.additionsgb.backend.ApplicationLayout.RotationConfig;
 import com.spazedog.xposed.additionsgb.backend.LogcatMonitor.LogcatEntry;
 import com.spazedog.xposed.additionsgb.backend.PowerManager.PowerPlugConfig;
 
@@ -53,6 +54,7 @@ public interface BackendProxy extends IInterface {
     int TRANSACTION_getLogEntries = IBinder.FIRST_CALL_TRANSACTION+8;
     int TRANSACTION_getPowerConfig = IBinder.FIRST_CALL_TRANSACTION+9;
     int TRANSACTION_isOwnerLocked = IBinder.FIRST_CALL_TRANSACTION+10;
+    int TRANSACTION_getRotationConfig = IBinder.FIRST_CALL_TRANSACTION+11;
 
 
     /*
@@ -70,7 +72,7 @@ public interface BackendProxy extends IInterface {
     List<LogcatEntry> getLogEntries() throws RemoteException;
     PowerPlugConfig getPowerConfig() throws RemoteException;
     boolean isOwnerLocked() throws RemoteException;
-
+    RotationConfig getRotationConfig() throws RemoteException;
 
     /*
      * =================================================
@@ -152,6 +154,9 @@ public interface BackendProxy extends IInterface {
 
                     } break; case TRANSACTION_isOwnerLocked: {
                         caller.writeInt(isOwnerLocked() ? 1 : 0);
+
+                    } break; case TRANSACTION_getRotationConfig: {
+                        caller.writeParcelable(getRotationConfig(), 0);
 
                     } break; default: {
                         return false;
@@ -358,6 +363,24 @@ public interface BackendProxy extends IInterface {
                 caller.readException();
 
                 return caller.readInt() > 0;
+
+            } finally {
+                args.recycle();
+                caller.recycle();
+            }
+        }
+
+        @Override
+        public RotationConfig getRotationConfig() throws RemoteException {
+            Parcel args = Parcel.obtain();
+            Parcel caller = Parcel.obtain();
+
+            try {
+                args.writeInterfaceToken(DESCRIPTOR);
+                mBinder.transact(Stub.TRANSACTION_getRotationConfig, args, caller, 0);
+                caller.readException();
+
+                return (RotationConfig) caller.readParcelable(RotationConfig.class.getClassLoader());
 
             } finally {
                 args.recycle();

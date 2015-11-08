@@ -136,9 +136,9 @@ public class FragmentLaunchSelector extends ActivityMainDialog {
 
         setRetainInstance(true);
 
-        Bundle bundle = getArguments();
+        HashBundle bundle = getArgs();
         mFlags = bundle.getInt(ARGS_FLAGS, URI_ALL);
-        mSelected = bundle.getStringArrayList(ARGS_SELECTED);
+        mSelected = bundle.getStringList(ARGS_SELECTED);
 
         mForegroundHandler = new ForegroundHandler();
         mBackgroundHandler = new BackgroundHandler();
@@ -780,7 +780,7 @@ public class FragmentLaunchSelector extends ActivityMainDialog {
             List<String> pkgs = new SparseList<String>();
             for (ItemEntry entry : mEntries) {
                 if (((MultiItemEntry) entry).isSelected()) {
-                    pkgs.add(entry.getLabel());
+                    pkgs.add(entry.getName());
                 }
             }
 

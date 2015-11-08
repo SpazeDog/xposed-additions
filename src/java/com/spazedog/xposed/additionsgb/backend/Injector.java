@@ -28,5 +28,6 @@ public class Injector extends InitBridge {
         SystemStateListener.init(systemContext);
         InputManager.init();
         PowerManager.init();
+        ApplicationLayout.init();
     }
 }
