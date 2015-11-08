@@ -20,17 +20,23 @@
 package com.spazedog.xposed.additionsgb.backend.service;
 
 
+import android.annotation.TargetApi;
 import android.os.Binder;
+import android.os.Build.VERSION_CODES;
 import android.os.IBinder;
 import android.os.IInterface;
 import android.os.Parcel;
 import android.os.RemoteException;
+import android.os.StrictMode;
 
 import com.spazedog.lib.utilsLib.HashBundle;
+import com.spazedog.lib.utilsLib.MultiParcelable.ParcelHelper;
 import com.spazedog.lib.utilsLib.SparseList;
 import com.spazedog.xposed.additionsgb.backend.ApplicationLayout.RotationConfig;
 import com.spazedog.xposed.additionsgb.backend.LogcatMonitor.LogcatEntry;
 import com.spazedog.xposed.additionsgb.backend.PowerManager.PowerPlugConfig;
+import com.spazedog.xposed.additionsgb.utils.Utils;
+import com.spazedog.xposed.additionsgb.utils.Utils.Level;
 
 import java.util.List;
 
@@ -81,6 +87,7 @@ public interface BackendProxy extends IInterface {
 
     abstract class Stub extends Binder implements BackendProxy {
 
+        @TargetApi(VERSION_CODES.HONEYCOMB)
         public Stub() {
             attachInterface(this, DESCRIPTOR);
         }
@@ -112,54 +119,70 @@ public interface BackendProxy extends IInterface {
 
             } else {
                 args.enforceInterface(DESCRIPTOR);
+                int pos = caller.dataPosition();
 
-                if ((flags & IBinder.FLAG_ONEWAY) == 0 && caller != null) {
+                if (caller != null) {
                     caller.writeNoException();
                 }
 
-                switch (type) {
-                    case TRANSACTION_getVersion: {
-                        caller.writeInt( getVersion() );
+                try {
+                    switch (type) {
+                        case TRANSACTION_getVersion: {
+                            caller.writeInt( getVersion() );
 
-                    } break; case TRANSACTION_isActive: {
-                        caller.writeInt( isActive() ? 1 : 0 );
+                        } break; case TRANSACTION_isActive: {
+                            caller.writeInt( isActive() ? 1 : 0 );
 
-                    } break; case TRANSACTION_isReady: {
-                        caller.writeInt( isReady() ? 1 : 0 );
+                        } break; case TRANSACTION_isReady: {
+                            caller.writeInt( isReady() ? 1 : 0 );
 
-                    } break; case TRANSACTION_detachListener: {
-                        detachListener(ListenerProxy.Stub.asInterface(args.readStrongBinder()));
+                        } break; case TRANSACTION_detachListener: {
+                            detachListener(ListenerProxy.Stub.asInterface(args.readStrongBinder()));
 
-                    } break; case TRANSACTION_attachListener: {
-                        attachListener(ListenerProxy.Stub.asInterface(args.readStrongBinder()));
+                        } break; case TRANSACTION_attachListener: {
+                            attachListener(ListenerProxy.Stub.asInterface(args.readStrongBinder()));
 
-                    } break; case TRANSACTION_sendListenerMsg: {
-                        int argType = args.readInt();
-                        HashBundle argData = null;
+                        } break; case TRANSACTION_sendListenerMsg: {
+                            int argType = args.readInt();
+                            HashBundle argData = null;
 
-                        if (args.readInt() > 0) {
-                            argData = args.readParcelable(HashBundle.class.getClassLoader());
+                            if (args.readInt() > 0) {
+                                argData = (HashBundle) ParcelHelper.unparcelData(args, Utils.getAppClassLoader());
+                            }
+
+                            sendListenerMsg(argType, argData);
+
+                        } break; case TRANSACTION_isDebugEnabled: {
+                            caller.writeInt( isDebugEnabled() ? 1 : 0 );
+
+                        } break; case TRANSACTION_getLogEntries: {
+                            ParcelHelper.parcelData(getLogEntries(), caller, 0);
+
+                        } break; case TRANSACTION_getPowerConfig: {
+                            ParcelHelper.parcelData(getPowerConfig(), caller, 0);
+
+                        } break; case TRANSACTION_isOwnerLocked: {
+                            caller.writeInt(isOwnerLocked() ? 1 : 0);
+
+                        } break; case TRANSACTION_getRotationConfig: {
+                            ParcelHelper.parcelData(getRotationConfig(), caller, 0);
+
+                        } break; default: {
+                            return false;
+                        }
+                    }
+
+                } catch (Exception e) {
+                    if (caller != null) {
+                        caller.setDataPosition(pos);
+                        caller.writeException(e);
+
+                    } else {
+                        if (e instanceof RuntimeException) {
+                            throw (RuntimeException) e;
                         }
 
-                        sendListenerMsg(argType, argData);
-
-                    } break; case TRANSACTION_isDebugEnabled: {
-                        caller.writeInt( isDebugEnabled() ? 1 : 0 );
-
-                    } break; case TRANSACTION_getLogEntries: {
-                        caller.writeParcelable((SparseList<LogcatEntry>) getLogEntries(), 0);
-
-                    } break; case TRANSACTION_getPowerConfig: {
-                        caller.writeParcelable(getPowerConfig(), 0);
-
-                    } break; case TRANSACTION_isOwnerLocked: {
-                        caller.writeInt(isOwnerLocked() ? 1 : 0);
-
-                    } break; case TRANSACTION_getRotationConfig: {
-                        caller.writeParcelable(getRotationConfig(), 0);
-
-                    } break; default: {
-                        return false;
+                        throw new RuntimeException(e);
                     }
                 }
             }
@@ -178,6 +201,7 @@ public interface BackendProxy extends IInterface {
 
         private IBinder mBinder;
 
+        @TargetApi(VERSION_CODES.HONEYCOMB)
         public Proxy(IBinder binder) {
             mBinder = binder;
         }
@@ -285,7 +309,7 @@ public interface BackendProxy extends IInterface {
 
                 if (data != null) {
                     args.writeInt(1);
-                    args.writeParcelable(data, 0);
+                    ParcelHelper.parcelData(data, args, 0);
 
                 } else {
                     args.writeInt(0);
@@ -326,7 +350,7 @@ public interface BackendProxy extends IInterface {
                 mBinder.transact(TRANSACTION_getLogEntries, args, callee, 0);
                 callee.readException();
 
-                return (SparseList<LogcatEntry>) callee.readParcelable(SparseList.class.getClassLoader());
+                return (List<LogcatEntry>) ParcelHelper.unparcelData(callee, Utils.getAppClassLoader());
 
             } finally {
                 args.recycle();
@@ -344,7 +368,7 @@ public interface BackendProxy extends IInterface {
                 mBinder.transact(Stub.TRANSACTION_getPowerConfig, args, caller, 0);
                 caller.readException();
 
-                return (PowerPlugConfig) caller.readParcelable(PowerPlugConfig.class.getClassLoader());
+                return (PowerPlugConfig) ParcelHelper.unparcelData(caller, Utils.getAppClassLoader());
 
             } finally {
                 args.recycle();
@@ -380,7 +404,7 @@ public interface BackendProxy extends IInterface {
                 mBinder.transact(Stub.TRANSACTION_getRotationConfig, args, caller, 0);
                 caller.readException();
 
-                return (RotationConfig) caller.readParcelable(RotationConfig.class.getClassLoader());
+                return (RotationConfig) ParcelHelper.unparcelData(caller, Utils.getAppClassLoader());
 
             } finally {
                 args.recycle();

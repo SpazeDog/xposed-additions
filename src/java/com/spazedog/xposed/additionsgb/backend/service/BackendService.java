@@ -121,18 +121,25 @@ public class BackendService extends BackendProxy.Stub {
 
                 } break; case Constants.BRC_LOGCAT: {
                     synchronized (mLogEntries) {
-                        if (mLogEntries.size() > 150) {
-                        /*
-                         * Truncate the list. We remove 15% of Constants.LOG_ENTRY_SIZE entries at a time to avoid having to do this each time this is called
-                         */
-                            int truncate = (int) (Constants.LOG_ENTRY_SIZE * 0.15);
+                        LogcatEntry entry = (LogcatEntry) data.getParcelable("entry");
 
-                            for (int i=0; i < truncate; i++) {
-                                mLogEntries.remove(0);
+                        if (entry != null) {
+                            if (mLogEntries.size() > 150) {
+                                /*
+                                 * Truncate the list. We remove 15% of Constants.LOG_ENTRY_SIZE entries at a time to avoid having to do this each time this is called
+                                 */
+                                int truncate = (int) (Constants.LOG_ENTRY_SIZE * 0.15);
+
+                                for (int i = 0; i < truncate; i++) {
+                                    mLogEntries.remove(0);
+                                }
                             }
-                        }
 
-                        mLogEntries.add((LogcatEntry) data.getParcelable("entry"));
+                            mLogEntries.add(entry);
+
+                        } else {
+                            Utils.log(Level.WARNING, TAG, "Received empty logcat entry\n\t\tData Size: " + data.size());
+                        }
                     }
 
                 } break; case Constants.BRC_SERVICE_RELOAD: {

@@ -27,6 +27,8 @@ import android.os.Parcel;
 import android.os.RemoteException;
 
 import com.spazedog.lib.utilsLib.HashBundle;
+import com.spazedog.lib.utilsLib.MultiParcelable.ParcelHelper;
+import com.spazedog.xposed.additionsgb.utils.Utils;
 
 public interface ListenerProxy extends IInterface {
 
@@ -98,7 +100,7 @@ public interface ListenerProxy extends IInterface {
                         HashBundle argData = null;
 
                         if (args.readInt() > 0) {
-                            argData = args.readParcelable(HashBundle.class.getClassLoader());
+                            argData = (HashBundle) ParcelHelper.unparcelData(args, Utils.getAppClassLoader());
                         }
 
                         onReceiveMsg(argType, argData);
@@ -142,7 +144,7 @@ public interface ListenerProxy extends IInterface {
 
                 if (data != null) {
                     args.writeInt(1);
-                    args.writeParcelable(data, 0);
+                    ParcelHelper.parcelData(data, args, 0);
 
                 } else {
                     args.writeInt(0);

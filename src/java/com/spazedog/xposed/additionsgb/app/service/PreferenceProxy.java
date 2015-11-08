@@ -91,46 +91,62 @@ public interface PreferenceProxy extends IInterface {
 
             } else {
                 args.enforceInterface(DESCRIPTOR);
+                int pos = caller.dataPosition();
 
-                if ((flags & IBinder.FLAG_ONEWAY) == 0 && caller != null) {
+                if (caller != null) {
                     caller.writeNoException();
                 }
 
-                switch (type) {
-                    case TRANSACTION_putConfig: {
-                        String name = args.readString();
-                        Object value = ParcelHelper.unparcelData(args, getClass().getClassLoader());
+                try {
+                    switch (type) {
+                        case TRANSACTION_putConfig: {
+                            String name = args.readString();
+                            Object value = ParcelHelper.unparcelData(args, getClass().getClassLoader());
 
-                        putConfig(name, value);
+                            putConfig(name, value);
 
-                    } break; case TRANSACTION_getIntConfig: {
-                        String name = args.readString();
-                        int defValue = args.readInt();
-                        int value = getIntConfig(name, defValue);
+                        } break; case TRANSACTION_getIntConfig: {
+                            String name = args.readString();
+                            int defValue = args.readInt();
+                            int value = getIntConfig(name, defValue);
 
-                        caller.writeInt(value);
+                            caller.writeInt(value);
 
-                    } break; case TRANSACTION_getStringConfig: {
-                        String name = args.readString();
-                        String defValue = (String) args.readValue(String.class.getClassLoader());
-                        String value = getStringConfig(name, defValue);
+                        } break; case TRANSACTION_getStringConfig: {
+                            String name = args.readString();
+                            String defValue = (String) args.readValue(String.class.getClassLoader());
+                            String value = getStringConfig(name, defValue);
 
-                        caller.writeString(value);
+                            caller.writeString(value);
 
-                    } break; case TRANSACTION_getStringListConfig: {
+                        } break; case TRANSACTION_getStringListConfig: {
                         /*
                          * We use ParcelHelper in case we have SparseList running through
                          * the default value, which is a proper parcelable class and should not
                          * be written using android's pure Parcel List writer.
                          */
-                        String name = args.readString();
-                        List<String> defValue = (List<String>) ParcelHelper.unparcelData(args, getClass().getClassLoader());
-                        List<String> value = getStringListConfig(name, defValue);
+                            String name = args.readString();
+                            List<String> defValue = (List<String>) ParcelHelper.unparcelData(args, getClass().getClassLoader());
+                            List<String> value = getStringListConfig(name, defValue);
 
-                        ParcelHelper.parcelData(value, caller, 0);
+                            ParcelHelper.parcelData(value, caller, 0);
 
-                    } break; default: {
-                        return false;
+                        } break; default: {
+                            return false;
+                        }
+                    }
+
+                } catch (Exception e) {
+                    if (caller != null) {
+                        caller.setDataPosition(pos);
+                        caller.writeException(e);
+
+                    } else {
+                        if (e instanceof RuntimeException) {
+                            throw (RuntimeException) e;
+                        }
+
+                        throw new RuntimeException(e);
                     }
                 }
             }

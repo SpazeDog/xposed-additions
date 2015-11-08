@@ -29,7 +29,7 @@ public final class Utils {
 	private static int oDebugEnabled = 0;
     private static int oUserId = -1;
 	
-	public enum Level {INFO, DEBUG, ERROR}
+	public enum Level {INFO, DEBUG, WARNING, ERROR}
 	
 	public static void log(Level level, String tag, String message) {
 		log(level, tag, message, null);
@@ -50,6 +50,7 @@ public final class Utils {
 		
 		switch (level) {
 			case DEBUG: Log.d(tag, message, e); break;
+			case WARNING: Log.w(tag, message, e); break;
 			case ERROR: Log.e(tag, message, e); break;
 			default: Log.i(tag, message, e);
 		}
@@ -97,5 +98,9 @@ public final class Utils {
         }
 
         return oUserId == 0;
+    }
+
+    public static ClassLoader getAppClassLoader() {
+        return Utils.class.getClassLoader();
     }
 }
