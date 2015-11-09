@@ -1,133 +1,139 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" xmlns:card="http://schemas.android.com/apk/res-auto"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:card="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:fillViewport="true"
-    android:textFilterEnabled="false">
+    android:layout_height="match_parent">
 
-    <LinearLayout
-        android:orientation="vertical"
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:textFilterEnabled="false">
 
-
-        <!-- ================================================
-             Plug/Unplug Settings
-        ================================================ -->
-
-        <android.support.v7.widget.CardView
-            style="@style/App.CardView"
+        <LinearLayout
+            android:orientation="vertical"
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
-            <LinearLayout
-                android:orientation="vertical"
+
+            <!-- ================================================
+                 Plug/Unplug Settings
+            ================================================ -->
+
+            <android.support.v7.widget.CardView
+                style="@style/App.CardView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
-
-                <TextView
-                    style="@style/App.CardView.Title"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/display_title_plug"/>
-
-                <ExpandableListView
-                    style="@style/App.ExpListView"
-                    android:id="@+id/display_usb_list"
-                    android:layout_height="wrap_content"
-                    android:layout_width="match_parent"/>
-
-            </LinearLayout>
-
-        </android.support.v7.widget.CardView>
-
-
-        <!-- ================================================
-             Rotation Settings
-        ================================================ -->
-
-        <android.support.v7.widget.CardView
-            style="@style/App.CardView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <LinearLayout
-                android:orientation="vertical"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <TextView
-                    style="@style/App.CardView.Title"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/display_title_rotation"/>
-
-                <RelativeLayout
-                    android:id="@+id/display_wrapper_rotation"
-                    style="@style/App.ContentPadding"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="?attr/itemSelectableBackground"
-                    android:clickable="true"
-                    android:focusable="true">
-
-                    <TextView
-                        android:id="@+id/display_name_rotation"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="@style/App.TextAppearance"
-                        android:text="@string/display_name_rotation"/>
-
-                    <TextView
-                        android:id="@+id/display_summary_rotation"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="@style/App.TextAppearance.Secondary.Small"
-                        android:text="@string/display_summary_rotation"
-                        android:layout_below="@+id/display_name_rotation"/>
-
-                    <CheckBox
-                        android:id="@+id/display_checkbox_rotation"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:focusable="false"
-                        android:clickable="false"
-                        android:layout_alignParentRight="true"
-                        android:layout_alignBaseline="@+id/display_name_rotation"/>
-
-                </RelativeLayout>
 
                 <LinearLayout
-                    android:id="@+id/display_wrapper_rotation_blacklist"
-                    style="@style/App.ContentPadding"
                     android:orientation="vertical"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="?attr/itemSelectableBackground"
-                    android:clickable="true"
-                    android:focusable="true">
+                    android:layout_height="wrap_content">
 
                     <TextView
-                        android:id="@+id/display_name_rotation_blacklist"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="@style/App.TextAppearance"
-                        android:text="@string/display_name_rotation_blacklist"/>
-
-                    <TextView
-                        android:id="@+id/display_summary_rotation_blacklist"
+                        style="@style/App.CardView.Title"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textAppearance="@style/App.TextAppearance.Secondary.Small"
-                        android:text="@string/display_summary_rotation_blacklist"/>
+                        android:text="@string/display_title_plug"/>
+
+                    <ExpandableListView
+                        style="@style/App.ExpListView"
+                        android:id="@+id/display_usb_list"
+                        android:layout_height="wrap_content"
+                        android:layout_width="match_parent"/>
 
                 </LinearLayout>
 
-            </LinearLayout>
+            </android.support.v7.widget.CardView>
 
-        </android.support.v7.widget.CardView>
 
-    </LinearLayout>
+            <!-- ================================================
+                 Rotation Settings
+            ================================================ -->
 
-</ScrollView>
+            <android.support.v7.widget.CardView
+                style="@style/App.CardView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <LinearLayout
+                    android:orientation="vertical"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        style="@style/App.CardView.Title"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/display_title_rotation"/>
+
+                    <RelativeLayout
+                        android:id="@+id/display_wrapper_rotation"
+                        style="@style/App.ContentPadding"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="?attr/itemSelectableBackground"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <TextView
+                            android:id="@+id/display_name_rotation"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="@style/App.TextAppearance"
+                            android:text="@string/display_name_rotation"/>
+
+                        <TextView
+                            android:id="@+id/display_summary_rotation"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="@style/App.TextAppearance.Secondary.Small"
+                            android:text="@string/display_summary_rotation"
+                            android:layout_below="@+id/display_name_rotation"/>
+
+                        <CheckBox
+                            android:id="@+id/display_checkbox_rotation"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:focusable="false"
+                            android:clickable="false"
+                            android:layout_alignParentRight="true"
+                            android:layout_alignBaseline="@+id/display_name_rotation"/>
+
+                    </RelativeLayout>
+
+                    <LinearLayout
+                        android:id="@+id/display_wrapper_rotation_blacklist"
+                        style="@style/App.ContentPadding"
+                        android:orientation="vertical"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="?attr/itemSelectableBackground"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <TextView
+                            android:id="@+id/display_name_rotation_blacklist"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="@style/App.TextAppearance"
+                            android:text="@string/display_name_rotation_blacklist"/>
+
+                        <TextView
+                            android:id="@+id/display_summary_rotation_blacklist"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="@style/App.TextAppearance.Secondary.Small"
+                            android:text="@string/display_summary_rotation_blacklist"/>
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </android.support.v7.widget.CardView>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</FrameLayout>

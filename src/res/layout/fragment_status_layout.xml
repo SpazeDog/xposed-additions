@@ -1,116 +1,122 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" xmlns:card="http://schemas.android.com/apk/res-auto"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:card="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:fillViewport="true"
-    android:textFilterEnabled="false">
+    android:layout_height="match_parent">
 
-    <LinearLayout
-        android:orientation="vertical"
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:textFilterEnabled="false">
 
-
-        <!-- ================================================
-             Service Status
-        ================================================ -->
-
-        <android.support.v7.widget.CardView
-            style="@style/App.CardView"
+        <LinearLayout
+            android:orientation="vertical"
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
-            <LinearLayout
-                android:orientation="vertical"
+
+            <!-- ================================================
+                 Service Status
+            ================================================ -->
+
+            <android.support.v7.widget.CardView
+                style="@style/App.CardView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
-                <TextView
-                    style="@style/App.CardView.Title"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/status_title_backend"/>
-
-                <TextView
-                    style="@style/App.ContentPadding"
-                    android:id="@+id/status_backend_service_item"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="@style/App.TextAppearance.Small"/>
-
-            </LinearLayout>
-
-        </android.support.v7.widget.CardView>
-
-
-        <!-- ================================================
-             Log Status
-        ================================================ -->
-
-        <android.support.v7.widget.CardView
-            style="@style/App.CardView"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <LinearLayout
-                android:orientation="vertical"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content">
-
-                <TextView
-                    style="@style/App.CardView.Title"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/status_title_log"/>
-
-                <RelativeLayout
-                    style="@style/App.ContentPadding"
+                <LinearLayout
+                    android:orientation="vertical"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content">
 
                     <TextView
-                        android:id="@+id/status_log_errors"
-                        android:layout_width="wrap_content"
+                        style="@style/App.CardView.Title"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textAppearance="@style/App.TextAppearance"
-                        android:text="@string/status_log_errors"/>
+                        android:text="@string/status_title_backend"/>
 
                     <TextView
-                        android:id="@+id/status_log_warnings"
+                        style="@style/App.ContentPadding"
+                        android:id="@+id/status_backend_service_item"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textAppearance="@style/App.TextAppearance"
-                        android:text="@string/status_log_warnings"
-                        android:layout_below="@+id/status_log_errors"/>
+                        android:textAppearance="@style/App.TextAppearance.Small"/>
+
+                </LinearLayout>
+
+            </android.support.v7.widget.CardView>
+
+
+            <!-- ================================================
+                 Log Status
+            ================================================ -->
+
+            <android.support.v7.widget.CardView
+                style="@style/App.CardView"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <LinearLayout
+                    android:orientation="vertical"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
 
                     <TextView
-                        android:id="@+id/status_log_errors_item"
-                        android:layout_width="wrap_content"
+                        style="@style/App.CardView.Title"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textAppearance="@style/App.TextAppearance.Small"
-                        android:textColor="@color/logColorError"
-                        android:text="0"
-                        android:layout_alignParentRight="true"
-                        android:layout_alignBaseline="@+id/status_log_errors"/>
+                        android:text="@string/status_title_log"/>
 
-                    <TextView
-                        android:id="@+id/status_log_warnings_item"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="@style/App.TextAppearance.Small"
-                        android:textColor="@color/logColorWarning"
-                        android:text="0"
-                        android:layout_alignParentRight="true"
-                        android:layout_below="@+id/status_log_errors_item"
-                        android:layout_alignBaseline="@+id/status_log_warnings"/>
+                    <RelativeLayout
+                        style="@style/App.ContentPadding"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
 
-                </RelativeLayout>
+                        <TextView
+                            android:id="@+id/status_log_errors"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="@style/App.TextAppearance"
+                            android:text="@string/status_log_errors"/>
 
-            </LinearLayout>
+                        <TextView
+                            android:id="@+id/status_log_warnings"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="@style/App.TextAppearance"
+                            android:text="@string/status_log_warnings"
+                            android:layout_below="@+id/status_log_errors"/>
 
-        </android.support.v7.widget.CardView>
+                        <TextView
+                            android:id="@+id/status_log_errors_item"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="@style/App.TextAppearance.Small"
+                            android:textColor="@color/logColorError"
+                            android:text="0"
+                            android:layout_alignParentRight="true"
+                            android:layout_alignBaseline="@+id/status_log_errors"/>
 
-    </LinearLayout>
+                        <TextView
+                            android:id="@+id/status_log_warnings_item"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textAppearance="@style/App.TextAppearance.Small"
+                            android:textColor="@color/logColorWarning"
+                            android:text="0"
+                            android:layout_alignParentRight="true"
+                            android:layout_below="@+id/status_log_errors_item"
+                            android:layout_alignBaseline="@+id/status_log_warnings"/>
 
-</ScrollView>
+                    </RelativeLayout>
+
+                </LinearLayout>
+
+            </android.support.v7.widget.CardView>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</FrameLayout>
