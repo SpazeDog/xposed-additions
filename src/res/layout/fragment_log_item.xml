@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:card="http://schemas.android.com/apk/res-auto"
-    android:orientation="vertical"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:card="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
 
@@ -29,8 +28,8 @@
                     android:text="@string/settings_title_owner"/>
 
                 <LinearLayout
-                    style="@style/App.ContentPadding"
                     android:orientation="vertical"
+                    style="@style/App.ContentPadding"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content">
 
@@ -55,4 +54,19 @@
 
     </android.support.v7.widget.CardView>
 
-</LinearLayout>
+    <!-- Margin does not work properly with alignParent*, so we use padding on a wrapper view instead -->
+    <FrameLayout
+        style="@style/App.ContentPadding"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentBottom="true">
+
+        <ImageView
+            android:id="@+id/item_icon"
+            android:layout_width="@dimen/logIconSize"
+            android:layout_height="@dimen/logIconSize"/>
+
+    </FrameLayout>
+
+</RelativeLayout>

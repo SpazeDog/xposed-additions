@@ -26,6 +26,8 @@ import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.pm.ResolveInfo;
 import android.content.pm.Signature;
+import android.content.res.Resources;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -40,10 +42,12 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.spazedog.lib.utilsLib.HashBundle;
 import com.spazedog.lib.utilsLib.SparseList;
+import com.spazedog.lib.utilsLib.utils.Conversion;
 import com.spazedog.xposed.additionsgb.R;
 import com.spazedog.xposed.additionsgb.app.ActivityMain.ActivityMainFragment;
 import com.spazedog.xposed.additionsgb.backend.LogcatMonitor.LogcatEntry;
@@ -250,6 +254,7 @@ public class FragmentLog extends ActivityMainFragment implements ServiceListener
         public TextView title;
         public TextView summary;
         public TextView time;
+        public ImageView icon;
 
         public LogViewHolder(View itemView) {
             super(itemView);
@@ -257,10 +262,26 @@ public class FragmentLog extends ActivityMainFragment implements ServiceListener
             title = (TextView) itemView.findViewById(R.id.item_title);
             summary = (TextView) itemView.findViewById(R.id.item_summary);
             time = (TextView) itemView.findViewById(R.id.item_time);
+            icon = (ImageView) itemView.findViewById(R.id.item_icon);
         }
     }
 
     private class LogAdapter extends RecyclerView.Adapter<LogViewHolder> {
+
+        Bitmap mIconDebug;
+        Bitmap mIconInfo;
+        Bitmap mIconWarning;
+        Bitmap mIconError;
+
+        public LogAdapter() {
+            Resources res = getResources();
+            float iconSize = res.getDimension(R.dimen.logIconSize);
+
+            mIconDebug = Conversion.drawableToBitmap(res.getDrawable(R.drawable.ic_bug_report_black_24dp), iconSize, iconSize);
+            mIconInfo = Conversion.drawableToBitmap(res.getDrawable(R.drawable.ic_info_black_24dp), iconSize, iconSize);
+            mIconWarning = Conversion.drawableToBitmap(res.getDrawable(R.drawable.ic_warning_black_24dp), iconSize, iconSize);
+            mIconError = Conversion.drawableToBitmap(res.getDrawable(R.drawable.ic_feedback_black_24dp), iconSize, iconSize);
+        }
 
         @Override
         public LogViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
@@ -272,21 +293,45 @@ public class FragmentLog extends ActivityMainFragment implements ServiceListener
             LogcatEntry entry = mLogEntries.get(position);
 
             int textColorId = 0;
+            Bitmap icon = null;
 
             switch (entry.Level) {
-                case Log.ERROR: textColorId = R.color.logColorError; break;
-                case Log.WARN: textColorId = R.color.logColorWarning; break;
-                case Log.INFO: textColorId = R.color.logColorInfo; break;
-                case Log.DEBUG: textColorId = R.color.logColorDebug;
+                case Log.ERROR:
+                    textColorId = R.color.logColorError;
+                    icon = mIconError;
+
+                    break;
+
+                case Log.WARN:
+                    textColorId = R.color.logColorWarning;
+                    icon = mIconWarning;
+
+                    break;
+
+                case Log.INFO:
+                    textColorId = R.color.logColorInfo;
+                    icon = mIconInfo;
+
+                    break;
+
+                case Log.DEBUG:
+                    textColorId = R.color.logColorDebug;
+                    icon = mIconDebug;
             }
 
             holder.title.setText(entry.Tag);
             holder.summary.setText(entry.Message);
             holder.time.setText(DateUtils.formatDateTime(getActivity(), entry.Time, DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_SHOW_TIME));
+            holder.icon.setImageBitmap(icon);
 
             if (textColorId > 0) {
                 holder.summary.setTextColor(getResources().getColor(textColorId));
             }
+        }
+
+        @Override
+        public void onViewRecycled(LogViewHolder holder) {
+            holder.icon.setImageDrawable(null);
         }
 
         @Override

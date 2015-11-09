@@ -15,5 +15,6 @@
     <dimen name="layoutMarginHorizontalSmall">3.5dp</dimen>
 
     <dimen name="appIconSize">48dp</dimen>
+    <dimen name="logIconSize">24dp</dimen>
 
 </resources>
