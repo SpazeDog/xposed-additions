@@ -154,8 +154,9 @@ public class BackendService extends BackendProxy.Stub {
             for (ListenerMonitor curMonitor : mListeners) {
                 try {
                     ListenerProxy proxy = curMonitor.getProxy();
+                    IBinder binder = proxy.asBinder();
 
-                    if (proxy.asBinder().pingBinder()) {
+                    if (binder != null && binder.pingBinder()) {
                         proxy.onReceiveMsg(type, data);
                     }
 
