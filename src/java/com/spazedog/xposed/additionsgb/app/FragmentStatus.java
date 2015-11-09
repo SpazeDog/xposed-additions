@@ -127,9 +127,15 @@ public class FragmentStatus extends ActivityMainFragment implements ServiceListe
             int warningCount = 0;
 
             for (LogcatEntry entry : entries) {
-                switch (entry.Level) {
-                    case Log.ERROR: errorCount++; break;
-                    case Log.WARN: warningCount++; break;
+                /*
+                 * TODO:
+                 *          Details can be found in FragmentLog
+                 */
+                if (entry != null) {
+                    switch (entry.Level) {
+                        case Log.ERROR: errorCount++; break;
+                        case Log.WARN: warningCount++; break;
+                    }
                 }
             }
 

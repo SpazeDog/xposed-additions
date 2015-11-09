@@ -236,7 +236,21 @@ public class FragmentLog extends ActivityMainFragment implements ServiceListener
             List<LogcatEntry> entries = backendMgr.getLogEntries();
 
             for (int i=entries.size()-1; i >= 0; i--) {
-                mLogEntries.add(entries.remove(i));
+                /*
+                 * TODO:
+                 *          It should not be possible to encounter NULL here, but we do.
+                 *          This is not a priority, so fix when there is time.
+                 *
+                 *          This happens randomly. It might be a data change while parceling the list
+                 *          on the server side, we might need to use a concurrency safe list.
+                 *
+                 *          Same issue exists in FragmentStatus
+                 */
+                LogcatEntry entry = entries.remove(i);
+
+                if (entry != null) {
+                    mLogEntries.add(entry);
+                }
             }
 
             mRecyclerAdapter.notifyDataSetChanged();
