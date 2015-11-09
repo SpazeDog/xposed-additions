@@ -24,9 +24,12 @@ import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.content.pm.ResolveInfo;
 import android.content.pm.Signature;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.design.widget.Snackbar;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.text.format.DateUtils;
@@ -57,6 +60,8 @@ public class FragmentLog extends ActivityMainFragment implements ServiceListener
     protected RecyclerView mRecyclerView;
     protected RecyclerView.LayoutManager mRecyclerManager;
     protected RecyclerView.Adapter mRecyclerAdapter;
+
+    protected Snackbar mSnackBar;
 
 
     /*
@@ -112,6 +117,16 @@ public class FragmentLog extends ActivityMainFragment implements ServiceListener
     }
 
     @Override
+    public void onPause() {
+        super.onPause();
+
+        if (mSnackBar != null) {
+            mSnackBar.dismiss();
+            mSnackBar = null;
+        }
+    }
+
+    @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
 
@@ -122,13 +137,24 @@ public class FragmentLog extends ActivityMainFragment implements ServiceListener
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.menu_raport:
-                Intent intent = new Intent(Intent.ACTION_SEND);
-                intent.setType("text/plain");
-                intent.putExtra(Intent.EXTRA_EMAIL, new String[] {Constants.SUPPORT_EMAIL});
+                Intent intent = new Intent(Intent.ACTION_SENDTO);
+                intent.setData(Uri.parse("mailto:" + Constants.SUPPORT_EMAIL));
                 intent.putExtra(Intent.EXTRA_SUBJECT, "XposedAdditions: Error Reporting");
                 intent.putExtra(Intent.EXTRA_TEXT, assambleLogInfo());
 
-                startActivity(Intent.createChooser(intent, getResources().getString(R.string.menu_title_rapport)));
+                List<ResolveInfo> activities = getActivity().getPackageManager().queryIntentActivities(intent, 0);
+
+                if (!activities.isEmpty()) {
+                    startActivity(Intent.createChooser(intent, getResources().getString(R.string.menu_title_rapport)));
+
+                } else {
+                    if (mSnackBar != null) {
+                        mSnackBar.dismiss();
+                    }
+
+                    mSnackBar = Snackbar.make(getView(), R.string.notify_missing_mail_client, Snackbar.LENGTH_LONG);
+                    mSnackBar.show();
+                }
 
                 return true;
         }
