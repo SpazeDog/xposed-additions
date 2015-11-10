@@ -28,12 +28,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
-import android.widget.BaseExpandableListAdapter;
 import android.widget.CheckBox;
-import android.widget.ExpandableListView;
 import android.widget.TextView;
 
 import com.spazedog.lib.utilsLib.HashBundle;
+import com.spazedog.lib.utilsLib.app.widget.ExpandableView;
+import com.spazedog.lib.utilsLib.app.widget.ExpandableView.ExpandableAdapter;
 import com.spazedog.xposed.additionsgb.R;
 import com.spazedog.xposed.additionsgb.app.ActivityMain.ActivityMainFragment;
 import com.spazedog.xposed.additionsgb.app.service.PreferenceServiceMgr;
@@ -42,12 +42,11 @@ import com.spazedog.xposed.additionsgb.backend.service.BackendService;
 import com.spazedog.xposed.additionsgb.backend.service.BackendServiceMgr;
 import com.spazedog.xposed.additionsgb.utils.Constants;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class FragmentDisplay extends ActivityMainFragment implements OnClickListener {
 
-    protected ExpandableListView mListView;
+    protected ExpandableView mListView;
     protected PowerAdapter mListAdapter;
 
     private View mRotationBlacklistWrapper;
@@ -78,10 +77,8 @@ public class FragmentDisplay extends ActivityMainFragment implements OnClickList
         mRotationBlacklist = PreferenceMgr.getStringListConfig("rotation_blacklist", null);
 
         mListAdapter = new PowerAdapter();
-        mListView = (ExpandableListView) view.findViewById(R.id.display_usb_list);
+        mListView = (ExpandableView) view.findViewById(R.id.display_usb_list);
         mListView.setAdapter(mListAdapter);
-        mListView.setOnChildClickListener(mListAdapter);
-        mListView.setOnGroupExpandListener(mListAdapter);
 
         mRotationBlacklistWrapper = view.findViewById(R.id.display_wrapper_rotation_blacklist);
         mRotationBlacklistWrapper.setOnClickListener(this);
@@ -157,7 +154,7 @@ public class FragmentDisplay extends ActivityMainFragment implements OnClickList
      * ADAPTER FOR POWER EXPANDABLE LIST VIEW
      */
 
-    private class PowerAdapter extends BaseExpandableListAdapter implements ExpandableListView.OnChildClickListener, ExpandableListView.OnGroupExpandListener {
+    private class PowerAdapter extends ExpandableAdapter {
 
         private int mPlugFlags;
         private int mUnplugFlags;
@@ -191,37 +188,12 @@ public class FragmentDisplay extends ActivityMainFragment implements OnClickList
         }
 
         @Override
-        public int getChildrenCount(int groupPosition) {
+        public int getChildCount(int groupPosition) {
             /*
              * Power Management in Android < JellyBean MR1 does not have
              * separate wireless support. Properly just identified as AC.
              */
             return VERSION.SDK_INT >= VERSION_CODES.JELLY_BEAN_MR1 ? 4 : 3;
-        }
-
-        @Override
-        public Object getGroup(int groupPosition) {
-            return null;
-        }
-
-        @Override
-        public Object getChild(int groupPosition, int childPosition) {
-            return null;
-        }
-
-        @Override
-        public long getGroupId(int groupPosition) {
-            return groupPosition + 1;
-        }
-
-        @Override
-        public long getChildId(int groupPosition, int childPosition) {
-            return (groupPosition + 1) * (childPosition + 1);
-        }
-
-        @Override
-        public boolean hasStableIds() {
-            return false;
         }
 
         @Override
@@ -250,7 +222,7 @@ public class FragmentDisplay extends ActivityMainFragment implements OnClickList
         }
 
         @Override
-        public View getChildView(int groupPosition, int childPosition, boolean isLastChild, View convertView, ViewGroup parent) {
+        public View getChildView(int groupPosition, int childPosition, View convertView, ViewGroup parent) {
             if (convertView == null) {
                 LayoutInflater inflater = LayoutInflater.from(getActivity());
                 convertView = inflater.inflate(R.layout.fragment_display_usb_item, parent, false);
@@ -296,14 +268,14 @@ public class FragmentDisplay extends ActivityMainFragment implements OnClickList
         }
 
         @Override
-        public boolean isChildSelectable(int groupPosition, int childPosition) {
+        public boolean isChildClickable(int groupPosition, int childPosition, View view) {
             int flags = groupPosition == 0 ? mPlugFlags : mUnplugFlags;
 
             return childPosition == 0 || flags != -1;
         }
 
         @Override
-        public boolean onChildClick(ExpandableListView parent, View v, int groupPosition, int childPosition, long id) {
+        public boolean onChildClick(int groupPosition, int childPosition, View v) {
             int flags = groupPosition == 0 ? mPlugFlags : mUnplugFlags;
 
             switch (childPosition) {
@@ -330,15 +302,6 @@ public class FragmentDisplay extends ActivityMainFragment implements OnClickList
             notifyDataSetChanged();
 
             return (mHasChanges = true);
-        }
-
-        @Override
-        public void onGroupExpand(int groupPosition) {
-            for (int i=0; i < getGroupCount(); i++) {
-                if (i != groupPosition) {
-                    mListView.collapseGroup(i);
-                }
-            }
         }
     }
 }

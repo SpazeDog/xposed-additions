@@ -42,15 +42,17 @@
 
     <style name="App.ExpListView">
         <item name="android:divider">@null</item>
-        <item name="android:listSelector">?attr/itemSelectableBackground</item>
-        <item name="android:groupIndicator">@null</item>
         <item name="android:paddingTop">@dimen/layoutMarginVerticalSmall</item>
         <item name="android:paddingBottom">@dimen/layoutMarginVerticalSmall</item>
     </style>
 
-    <style name="App.ExpListView.Group" parent="App.ContentPaddingVertical" />
+    <style name="App.ExpListView.Group" parent="App.ContentPaddingVertical">
+        <item name="android:background">?attr/itemSelectableBackground</item>
+    </style>
+
     <style name="App.ExpListView.Item" parent="App.ContentPaddingVertical">
         <item name="android:paddingLeft">@dimen/listItemMarginVertical</item>
+        <item name="android:background">?attr/itemSelectableBackground</item>
     </style>
 
     <style name="App.CardView.Title" parent="App.ContentPadding">

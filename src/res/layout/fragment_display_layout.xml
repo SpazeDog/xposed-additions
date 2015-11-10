@@ -36,7 +36,7 @@
                         android:layout_height="wrap_content"
                         android:text="@string/display_title_plug"/>
 
-                    <ExpandableListView
+                    <com.spazedog.lib.utilsLib.app.widget.ExpandableView
                         style="@style/App.ExpListView"
                         android:id="@+id/display_usb_list"
                         android:layout_height="wrap_content"
