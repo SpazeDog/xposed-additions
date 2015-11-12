@@ -51,6 +51,7 @@ import com.spazedog.xposed.additionsgb.utils.AndroidHelper;
 import com.spazedog.xposed.additionsgb.utils.Constants;
 import com.spazedog.xposed.additionsgb.utils.Utils;
 import com.spazedog.xposed.additionsgb.utils.Utils.Level;
+import com.spazedog.xposed.additionsgb.utils.Utils.Type;
 
 import java.util.HashSet;
 import java.util.List;
@@ -69,7 +70,7 @@ public class BackendService extends BackendProxy.Stub {
 
     private static class StateValues {
         public int UserId = 0;
-        public boolean DebugEnabled = false;
+        public int DebugFlags = 0;
         public boolean OwnerLock = false;
         public PowerPlugConfig PowerConfig;
         public RotationConfig RotationConfig;
@@ -284,7 +285,7 @@ public class BackendService extends BackendProxy.Stub {
         ServiceConnection connection = new ServiceConnection() {
             @Override
             public void onServiceConnected(ComponentName name, IBinder service) {
-                Utils.log(Level.DEBUG, TAG, "Sending Application Preference Request with flags(" + flags + ")");
+                Utils.log(Type.SERVICES, Level.DEBUG, TAG, "Sending Application Preference Request with flags(" + flags + ")");
 
                 if (mState == STATE_ACTIVE) {
                     mState = STATE_READY;
@@ -293,7 +294,7 @@ public class BackendService extends BackendProxy.Stub {
                 try {
                     PreferenceProxy proxy = PreferenceProxy.Stub.asInterface(service);
                     HashBundle data = new HashBundle();
-                    data.putInt("flags", flags);
+                    data.put("flags", flags);
 
                     if ((flags & FLAG_RELOAD_CONFIG) != 0) {
                         int powerPlug = proxy.getIntConfig("power_plug", PowerPlugConfig.PLUGGED_DEFAULT);
@@ -305,12 +306,12 @@ public class BackendService extends BackendProxy.Stub {
                         mValues.RotationConfig = new RotationConfig(rotationOverwrite, rotationBlacklist);
 
                         if (mValues.UserId == 0) {
-                            mValues.DebugEnabled = proxy.getIntConfig("enable_debug", 0) > 0 || Constants.FORCE_DEBUG;
+                            mValues.DebugFlags = proxy.getIntConfig("debug_flags", Constants.FORCE_DEBUG ? Type.ALL : Type.DISABLED);
                             mValues.OwnerLock = proxy.getIntConfig("owner_lock", 0) > 0;
                         }
 
-                        data.putBoolean("ownerLocked", mValues.OwnerLock);
-                        data.putBoolean("debugEnabled", mValues.DebugEnabled);
+                        data.put("ownerLocked", mValues.OwnerLock);
+                        data.put("debugFlags", mValues.DebugFlags);
                         data.put("powerConfig", mValues.PowerConfig);
                         data.put("rotationConfig", mValues.RotationConfig);
                     }
@@ -455,8 +456,8 @@ public class BackendService extends BackendProxy.Stub {
     }
 
     @Override
-    public boolean isDebugEnabled() throws RemoteException {
-        return mValues.DebugEnabled;
+    public int getDebugFlags() throws RemoteException {
+        return mValues.DebugFlags;
     }
 
     @Override

@@ -36,6 +36,7 @@ import com.spazedog.xposed.additionsgb.backend.service.BackendServiceMgr.Service
 import com.spazedog.xposed.additionsgb.utils.Constants;
 import com.spazedog.xposed.additionsgb.utils.Utils;
 import com.spazedog.xposed.additionsgb.utils.Utils.Level;
+import com.spazedog.xposed.additionsgb.utils.Utils.Type;
 
 public class PowerManager implements ServiceListener {
     public static final String TAG = PowerManager.class.getName();
@@ -102,7 +103,7 @@ public class PowerManager implements ServiceListener {
         switch (type) {
             case Constants.BRC_MGR_UPDATE:
                 if ((data.getInt("flags") & BackendService.FLAG_RELOAD_CONFIG) != 0) {
-                    Utils.log(Level.DEBUG, TAG, "Updating Power Config");
+                    Utils.log(Type.POWER, Level.DEBUG, TAG, "Updating Power Config");
 
                     mConfig = (PowerPlugConfig) data.getParcelable("powerConfig");
 
@@ -206,17 +207,17 @@ public class PowerManager implements ServiceListener {
 
                     int plugConfig = mIsPowered ? mConfig.Plug : mConfig.UnPlug;
 
-                    Utils.log(Level.DEBUG, TAG, "Received USB " + (mIsPowered ? "Plug" : "Unplug") + " state");
+                    Utils.log(Type.POWER, Level.DEBUG, TAG, "Received USB " + (mIsPowered ? "Plug" : "Unplug") + " state");
 
                     if (plugConfig != PowerPlugConfig.PLUGGED_DEFAULT) {
                         if (mIsPowered != mWasPowered) {
-                            Utils.log(Level.DEBUG, TAG, "Handling custom Plug/Unplug settings\n\t\tConfig: " + plugConfig + "\n\t\tPlugType: " + mPlugType);
+                            Utils.log(Type.POWER, Level.DEBUG, TAG, "Handling custom Plug/Unplug settings\n\t\tConfig: " + plugConfig + "\n\t\tPlugType: " + mPlugType);
 
                             if ((mPlugType == BATTERY_PLUGGED_AC && (plugConfig & PowerPlugConfig.PLUGGED_AC) != 0)
                                     || (mPlugType == BATTERY_PLUGGED_USB && (plugConfig & PowerPlugConfig.PLUGGED_USB) != 0)
                                     || (mPlugType == BATTERY_PLUGGED_WIRELESS && (plugConfig & PowerPlugConfig.PLUGGED_WIRELESS) != 0)) {
 
-                                Utils.log(Level.DEBUG, TAG, "Allowing screen to turn on");
+                                Utils.log(Type.POWER, Level.DEBUG, TAG, "Allowing screen to turn on");
 
                                 if (VERSION.SDK_INT >= VERSION_CODES.JELLY_BEAN_MR1) {
                                     params.setResult(true); return;
@@ -235,7 +236,7 @@ public class PowerManager implements ServiceListener {
                         }
 
                     } else {
-                        Utils.log(Level.DEBUG, TAG, "Using System Default settings");
+                        Utils.log(Type.POWER, Level.DEBUG, TAG, "Using System Default settings");
                     }
 
                 } catch (ReflectException e) {

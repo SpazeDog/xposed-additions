@@ -200,11 +200,11 @@ public class FragmentDisplay extends ActivityMainFragment implements OnClickList
         public View getGroupView(int groupPosition, boolean isExpanded, View convertView, ViewGroup parent) {
             if (convertView == null) {
                 LayoutInflater inflater = LayoutInflater.from(getActivity());
-                convertView = inflater.inflate(R.layout.fragment_display_usb_group, parent, false);
+                convertView = inflater.inflate(R.layout.expandable_list_checkbox_group, parent, false);
             }
 
-            TextView groupTitle = (TextView) convertView.findViewById(R.id.display_usb_list_title_group);
-            TextView groupSummary = (TextView) convertView.findViewById(R.id.display_usb_list_summary_group);
+            TextView groupTitle = (TextView) convertView.findViewById(R.id.expandable_list_title_group);
+            TextView groupSummary = (TextView) convertView.findViewById(R.id.expandable_list_summary_group);
 
             switch (groupPosition) {
                 case 0:
@@ -225,12 +225,12 @@ public class FragmentDisplay extends ActivityMainFragment implements OnClickList
         public View getChildView(int groupPosition, int childPosition, View convertView, ViewGroup parent) {
             if (convertView == null) {
                 LayoutInflater inflater = LayoutInflater.from(getActivity());
-                convertView = inflater.inflate(R.layout.fragment_display_usb_item, parent, false);
+                convertView = inflater.inflate(R.layout.expandable_list_checkbox_item, parent, false);
             }
 
             int flags = groupPosition == 0 ? mPlugFlags : mUnplugFlags;
-            TextView itemTitle = (TextView) convertView.findViewById(R.id.display_usb_list_title_item);
-            AppCompatCheckBox itemCheckbox = (AppCompatCheckBox) convertView.findViewById(R.id.display_usb_list_checkbox_item);
+            TextView itemTitle = (TextView) convertView.findViewById(R.id.expandable_list_title_item);
+            AppCompatCheckBox itemCheckbox = (AppCompatCheckBox) convertView.findViewById(R.id.expandable_list_checkbox_item);
 
             switch (childPosition) {
                 case 0:

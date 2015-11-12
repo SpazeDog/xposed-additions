@@ -22,6 +22,7 @@ import com.spazedog.xposed.additionsgb.backend.service.BackendServiceMgr;
 import com.spazedog.xposed.additionsgb.utils.Constants;
 import com.spazedog.xposed.additionsgb.utils.Utils;
 import com.spazedog.xposed.additionsgb.utils.Utils.Level;
+import com.spazedog.xposed.additionsgb.utils.Utils.Type;
 
 public final class SystemStateListener {
 	public static final String TAG = SystemStateListener.class.getName();
@@ -167,7 +168,7 @@ public final class SystemStateListener {
 					if (isMusicPlaying != mMusicPlaying) {
 						mMusicPlaying = isMusicPlaying;
 						
-						Utils.log(Level.DEBUG, TAG, "Alert about media change [music=" + (isMusicPlaying ? "on" : "off") + "]");
+						Utils.log(Type.STATE, Level.DEBUG, TAG, "Alert about media change [music=" + (isMusicPlaying ? "on" : "off") + "]");
 
 						mBackendMgr.sendListenerMsg(Constants.BRC_SL_MEDIA, new HashBundle("music_playing", isMusicPlaying));
 					}
@@ -177,7 +178,7 @@ public final class SystemStateListener {
 					if (inKeyguard != mInKeyguard) {
 						mInKeyguard = inKeyguard;
 						
-						Utils.log(Level.DEBUG, TAG, "Alert about keyguard state change [keyguard=" + (inKeyguard ? "on" : "off") + "]");
+						Utils.log(Type.STATE, Level.DEBUG, TAG, "Alert about keyguard state change [keyguard=" + (inKeyguard ? "on" : "off") + "]");
 
                         mBackendMgr.sendListenerMsg(Constants.BRC_SL_KEYGUARD, new HashBundle("keyguard_on", inKeyguard));
 					}
@@ -197,7 +198,7 @@ public final class SystemStateListener {
 	protected PhoneStateListener telephonyListener = new PhoneStateListener() {
 		@Override
 		public void onCallStateChanged(int state, String incomingNumber) {
-			Utils.log(Level.DEBUG, TAG, "Alert about telephony change with state id " + state);
+			Utils.log(Type.STATE, Level.DEBUG, TAG, "Alert about telephony change with state id " + state);
 			
 			HashBundle data = new HashBundle();
 			data.putInt("state", state);
@@ -216,7 +217,7 @@ public final class SystemStateListener {
 	protected MethodBridge userSwitchListener = new MethodBridge() {
         @Override
         public void bridgeBegin(BridgeParams param) {
-			Utils.log(Level.DEBUG, TAG, "Alert about an upcoming user switch from userid " + param.args[1] + " to userid " + param.args[2]);
+			Utils.log(Type.STATE, Level.DEBUG, TAG, "Alert about an upcoming user switch from userid " + param.args[1] + " to userid " + param.args[2]);
 
             HashBundle data = new HashBundle();
 			data.putBoolean("switched", false);
@@ -231,7 +232,7 @@ public final class SystemStateListener {
 		
 		@Override
         public void bridgeEnd(BridgeParams param) {
-			Utils.log(Level.DEBUG, TAG, "Alert that the current user has changed from " + param.args[1] + " to userid " + param.args[2]);
+			Utils.log(Type.STATE, Level.DEBUG, TAG, "Alert that the current user has changed from " + param.args[1] + " to userid " + param.args[2]);
 
             HashBundle data = new HashBundle();
 			data.putBoolean("switched", true);
@@ -256,7 +257,7 @@ public final class SystemStateListener {
 		@Override
         public void bridgeBegin(BridgeParams param) {
             if (mReady) {
-                Utils.log(Level.DEBUG, TAG, "Checking new activity focus change");
+                Utils.log(Type.STATE, Level.DEBUG, TAG, "Checking new activity focus change");
 
                 Object focusedActivity = mActivityManagerService.findField("mFocusedActivity").getValue();
 
@@ -279,7 +280,7 @@ public final class SystemStateListener {
 				ReflectClass activityRecord = ReflectClass.fromReceiver(param.args[0]);
 				ActivityInfo activityInfo = (ActivityInfo) activityRecord.findField("info").getValue();
 				
-				Utils.log(Level.DEBUG, TAG, "Alert about activity change in package " + activityInfo.packageName);
+				Utils.log(Type.STATE, Level.DEBUG, TAG, "Alert about activity change in package " + activityInfo.packageName);
 
                 mBackendMgr.sendListenerMsg(Constants.BRC_SL_APPFOCUS, new HashBundle("activity_info", activityInfo));
 			}
@@ -300,7 +301,7 @@ public final class SystemStateListener {
             if (mIsShowing != isShowing) {
                 mIsShowing = isShowing;
 
-                Utils.log(Level.DEBUG, TAG, "Alert about Soft Keyboard visibillity change");
+                Utils.log(Type.STATE, Level.DEBUG, TAG, "Alert about Soft Keyboard visibillity change");
 
                 mBackendMgr.sendListenerMsg(Constants.BRC_SL_SOFTKEYBOARD, new HashBundle("isShowing", mIsShowing));
             }
@@ -316,7 +317,7 @@ public final class SystemStateListener {
 			if (intent.getAction().equals(Intent.ACTION_SCREEN_OFF) || intent.getAction().equals(Intent.ACTION_SCREEN_ON)) {
 				boolean screenOn = intent.getAction().equals(Intent.ACTION_SCREEN_ON);
 				
-				Utils.log(Level.DEBUG, TAG, "Alert about screen state change [display=" + (screenOn ? "on" : "off") + "]");
+				Utils.log(Type.STATE, Level.DEBUG, TAG, "Alert about screen state change [display=" + (screenOn ? "on" : "off") + "]");
 
                 mBackendMgr.sendListenerMsg(Constants.BRC_SL_DISPLAY, new HashBundle("screen_on", screenOn));
 			}

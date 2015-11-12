@@ -37,40 +37,21 @@
                         android:layout_height="wrap_content"
                         android:text="@string/settings_title_owner"/>
 
-                    <RelativeLayout
-                        android:id="@+id/settings_wrapper_debug"
-                        style="@style/App.ContentPadding"
-                        android:layout_width="match_parent"
+
+                    <!-- ================================================
+                         Debug Settings
+                    ================================================ -->
+
+                    <com.spazedog.lib.utilsLib.app.widget.ExpandableView
+                        style="@style/App.ExpListView"
+                        android:id="@+id/settings_debug_list"
                         android:layout_height="wrap_content"
-                        android:background="?attr/itemSelectableBackground"
-                        android:clickable="true"
-                        android:focusable="true">
+                        android:layout_width="match_parent"/>
 
-                        <TextView
-                            android:id="@+id/settings_name_debug"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textAppearance="@style/App.TextAppearance"
-                            android:text="@string/settings_name_owner_debug"/>
 
-                        <TextView
-                            android:id="@+id/settings_summary_debug"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:textAppearance="@style/App.TextAppearance.Secondary.Small"
-                            android:text="@string/settings_summary_owner_debug"
-                            android:layout_below="@+id/settings_name_debug"/>
-
-                        <android.support.v7.widget.AppCompatCheckBox
-                            android:id="@+id/settings_checkbox_debug"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:focusable="false"
-                            android:clickable="false"
-                            android:layout_alignParentRight="true"
-                            android:layout_alignBaseline="@+id/settings_name_debug"/>
-
-                    </RelativeLayout>
+                    <!-- ================================================
+                         Owner Lock Settings
+                    ================================================ -->
 
                     <RelativeLayout
                         android:id="@+id/settings_wrapper_ownerlock"

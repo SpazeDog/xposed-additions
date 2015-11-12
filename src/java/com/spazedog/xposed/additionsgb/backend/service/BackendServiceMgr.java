@@ -265,16 +265,16 @@ public class BackendServiceMgr {
         } catch (NullPointerException e) {}
     }
 
-    public boolean isDebugEnabled() {
+    public int getDebugFlags() {
         try {
-            return mServiceProxy.isDebugEnabled();
+            return mServiceProxy.getDebugFlags();
 
         } catch (RemoteException e) {
             handleRemoteException(e);
 
         } catch (NullPointerException e) {}
 
-        return false;
+        return -2;
     }
 
     public List<LogcatEntry> getLogEntries() {

@@ -26,26 +26,51 @@ import java.io.File;
 
 public final class Utils {
 	
-	private static int oDebugEnabled = 0;
+	private static int oDebugFlags = -2;
     private static int oUserId = -1;
 	
 	public enum Level {INFO, DEBUG, WARNING, ERROR}
+    public class Type {
+        public final static int DISABLED = -1;
+        public final static int EXTENDED = 0x00000001;
+
+        public final static int BUTTONS = 0x00000002;
+        public final static int POWER = 0x00000004;
+        public final static int SERVICES = 0x00000008;
+        public final static int LAYOUT = 0x00000010;
+        public final static int STATE = 0x00000020;
+
+        public final static int ALL = EXTENDED|BUTTONS|POWER|SERVICES|LAYOUT|STATE;
+    }
 	
 	public static void log(Level level, String tag, String message) {
-		log(level, tag, message, null);
+		log(0, level, tag, message, null);
 	}
+
+    public static void log(int type, Level level, String tag, String message) {
+        log(type, level, tag, message, null);
+    }
+
+    public static void log(Level level, String tag, String message, Throwable e) {
+        log(0, level, tag, message, e);
+    }
 	
-	public static void log(Level level, String tag, String message, Throwable e) {
-		if (level == Level.DEBUG && !debugEnabled()) {
-			/*
-			 * If we have a DEBUG log before the service is ready, 
-			 * transform it into an INFO log instead. 
-			 */
-			if (oDebugEnabled != 0) {
-				return;
-			}
-			
-			level = Level.INFO;
+	public static void log(int type, Level level, String tag, String message, Throwable e) {
+		if (level == Level.DEBUG) {
+            if (!isDebugEnabled()) {
+                /*
+                 * If we have a DEBUG log before the service is ready,
+                 * transform it into an INFO log instead.
+                 */
+                if (oDebugFlags != -2) {
+                    return;
+                }
+
+                level = Level.INFO;
+
+            } else if ((getDebugFlags() & type) != type) {
+                return;
+            }
 		}
 		
 		switch (level) {
@@ -55,29 +80,38 @@ public final class Utils {
 			default: Log.i(tag, message, e);
 		}
 	}
+
+    public static boolean isDebugEnabled() {
+        return getDebugFlags() >= 0;
+    }
 	
-	public static boolean debugEnabled() {
+	public static int getDebugFlags() {
 		/*
 		 * We do not want to check this value against the service every time. 
 		 * Only do it until the service is ready and we can get the preference for debug settings. 
 		 */
-		if (oDebugEnabled == 0) {
-			/*
-			 * Avoid recursive calls when we start calling the service
-			 */
-			oDebugEnabled = -1;
-			
-			BackendServiceMgr backenedMgr = BackendServiceMgr.getInstance(true);
-			
-			if (backenedMgr != null && backenedMgr.isServiceReady()) {
-				oDebugEnabled = backenedMgr.isDebugEnabled() ? 1 : -1;
-				
+		if (oDebugFlags == -2) {
+			if (!Constants.FORCE_DEBUG) {
+                /*
+                 * Avoid recursive calls when we start calling the service
+                 */
+                oDebugFlags = -1;
+
+				BackendServiceMgr backenedMgr = BackendServiceMgr.getInstance(true);
+
+				if (backenedMgr != null && backenedMgr.isServiceReady()) {
+                    oDebugFlags = backenedMgr.getDebugFlags();
+
+				} else {
+                    oDebugFlags = -2;
+				}
+
 			} else {
-				oDebugEnabled = 0;
+                oDebugFlags = Type.ALL;
 			}
 		}
 		
-		return oDebugEnabled == 1;
+		return oDebugFlags;
 	}
 
     public static boolean isOwner(Context context) {

@@ -34,6 +34,7 @@ import com.spazedog.lib.utilsLib.SparseList;
 import com.spazedog.xposed.additionsgb.backend.service.BackendServiceMgr;
 import com.spazedog.xposed.additionsgb.utils.Utils;
 import com.spazedog.xposed.additionsgb.utils.Utils.Level;
+import com.spazedog.xposed.additionsgb.utils.Utils.Type;
 
 import java.util.List;
 
@@ -99,7 +100,7 @@ public class ApplicationLayout {
                 RotationConfig rotationConfig = getRotationConfig();
 
                 if (rotationConfig != null && rotationConfig.OverwriteRotation) {
-                    Utils.log(Level.DEBUG, TAG, "Overwriting rotation settings on LockScreen");
+                    Utils.log(Type.LAYOUT, Level.DEBUG, TAG, "Overwriting rotation settings on LockScreen");
 
                     params.setResult(true);
                 }
@@ -119,7 +120,7 @@ public class ApplicationLayout {
                 String packageName = activity.getPackageName();
 
                 if (activity.getRequestedOrientation() != ActivityInfo.SCREEN_ORIENTATION_USER && !mRotationConfig.BlackList.contains(packageName)) {
-                    Utils.log(Level.DEBUG, TAG, "Overwriting rotation settings on package '" + packageName + "'");
+                    Utils.log(Type.LAYOUT, Level.DEBUG, TAG, "Overwriting rotation settings on package '" + packageName + "'");
 
                     activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_USER);
                 }

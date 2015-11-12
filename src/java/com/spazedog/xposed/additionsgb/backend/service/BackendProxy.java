@@ -56,7 +56,7 @@ public interface BackendProxy extends IInterface {
     int TRANSACTION_detachListener = IBinder.FIRST_CALL_TRANSACTION+4;
     int TRANSACTION_attachListener = IBinder.FIRST_CALL_TRANSACTION+5;
     int TRANSACTION_sendListenerMsg = IBinder.FIRST_CALL_TRANSACTION+6;
-    int TRANSACTION_isDebugEnabled = IBinder.FIRST_CALL_TRANSACTION+7;
+    int TRANSACTION_getDebugFlags = IBinder.FIRST_CALL_TRANSACTION+7;
     int TRANSACTION_getLogEntries = IBinder.FIRST_CALL_TRANSACTION+8;
     int TRANSACTION_getPowerConfig = IBinder.FIRST_CALL_TRANSACTION+9;
     int TRANSACTION_isOwnerLocked = IBinder.FIRST_CALL_TRANSACTION+10;
@@ -74,7 +74,7 @@ public interface BackendProxy extends IInterface {
     void detachListener(ListenerProxy proxy) throws RemoteException;
     void attachListener(ListenerProxy proxy) throws RemoteException;
     void sendListenerMsg(int type, HashBundle data) throws RemoteException;
-    boolean isDebugEnabled() throws RemoteException;
+    int getDebugFlags() throws RemoteException;
     List<LogcatEntry> getLogEntries() throws RemoteException;
     PowerPlugConfig getPowerConfig() throws RemoteException;
     boolean isOwnerLocked() throws RemoteException;
@@ -152,8 +152,8 @@ public interface BackendProxy extends IInterface {
 
                             sendListenerMsg(argType, argData);
 
-                        } break; case TRANSACTION_isDebugEnabled: {
-                            caller.writeInt( isDebugEnabled() ? 1 : 0 );
+                        } break; case TRANSACTION_getDebugFlags: {
+                            caller.writeInt( getDebugFlags() );
 
                         } break; case TRANSACTION_getLogEntries: {
                             ParcelHelper.parcelData(getLogEntries(), caller, 0);
@@ -323,16 +323,16 @@ public interface BackendProxy extends IInterface {
         }
 
         @Override
-        public boolean isDebugEnabled() throws RemoteException {
+        public int getDebugFlags() throws RemoteException {
             Parcel args = Parcel.obtain();
             Parcel callee = Parcel.obtain();
 
             try {
                 args.writeInterfaceToken(DESCRIPTOR);
-                mBinder.transact(TRANSACTION_isDebugEnabled, args, callee, 0);
+                mBinder.transact(TRANSACTION_getDebugFlags, args, callee, 0);
                 callee.readException();
 
-                return callee.readInt() > 0;
+                return callee.readInt();
 
             } finally {
                 args.recycle();
