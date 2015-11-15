@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:card="http://schemas.android.com/apk/res-auto"
+     android:orientation="vertical"
+     android:layout_width="match_parent"
+     android:layout_height="wrap_content"
+     android:background="@color/backgroundColorPrimary"
+     style="@style/ContentPadding">
+
+    <TextView
+        style="@style/DialogTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/key_receiver_title"/>
+
+    <RelativeLayout
+        style="@style/ContentPadding"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:id="@+id/dialog_summary"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/textColorSecondary"
+            android:textSize="@dimen/textSizeSmall"
+            android:paddingBottom="@dimen/layoutMarginVertical"/>
+
+        <TextView
+            android:id="@+id/dialog_type"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/textColorPrimary"
+            android:textSize="@dimen/textSizeNormal"
+            android:text="@string/key_receiver_name_result"
+            android:layout_below="@+id/dialog_summary"
+            android:paddingTop="@dimen/layoutMarginVertical"/>
+
+        <TextView
+            android:id="@+id/dialog_type_result"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_alignBaseline="@+id/dialog_type"
+            android:textColor="@color/textColorPrimary"
+            android:textSize="@dimen/textSizeSmall"/>
+
+        <TextView
+            android:id="@+id/dialog_flags_result"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_below="@+id/dialog_type"
+            android:textColor="@color/textColorPrimary"
+            android:textSize="@dimen/textSizeSmall"/>
+
+     </RelativeLayout>
+
+    <include layout="@layout/dialog_buttons"/>
+
+</LinearLayout>

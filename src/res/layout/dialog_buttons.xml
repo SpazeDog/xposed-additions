@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="right">
+
+    <FrameLayout
+        android:id="@+id/button_negative"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/item_selectable_background"
+        android:clickable="true"
+        android:focusable="true"
+        android:minWidth="@dimen/dialogBtnMinWidth"
+        style="@style/ContentPadding">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:text="@android:string/cancel"
+            android:textColor="@color/textColorPrimary"
+            android:textSize="@dimen/textSizeNormal"/>
+
+    </FrameLayout>
+
+    <FrameLayout
+        android:id="@+id/button_positive"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:background="@drawable/item_selectable_background"
+        android:clickable="true"
+        android:focusable="true"
+        android:minWidth="@dimen/dialogBtnMinWidth"
+        style="@style/ContentPadding">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:text="@android:string/ok"
+            android:textStyle="bold"
+            android:textColor="@color/textColorAccent"
+            android:textSize="@dimen/textSizeNormal"/>
+
+    </FrameLayout>
+
+</LinearLayout>

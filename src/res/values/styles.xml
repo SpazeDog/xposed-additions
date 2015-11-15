@@ -35,4 +35,6 @@
 
     </style>
 
+    <style name="DialogTitle" parent="CardViewTitle"/>
+
 </resources>

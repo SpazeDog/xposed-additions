@@ -56,6 +56,7 @@ public final class Constants {
     public static final int MSG_FRAGMENT_DETACHMENT = MsgActivity.MSG_FRAGMENT_DETACHMENT;
     public static final int MSG_NAVIGATION_DRAWER_STATE = 1;
     public static final int MSG_DIALOG_SELECTOR = 2;
+    public static final int MSG_DIALOG_KEY_RECEIVER = 3;
 
 	/*
 	 * Result codes from 'startActivityForResult'
