@@ -11,8 +11,7 @@
         android:layout_height="@dimen/appIconSize"
         android:layout_gravity="center_vertical"
         android:adjustViewBounds="true"
-        android:paddingTop="@dimen/layoutMarginVertical"
-        android:paddingBottom="@dimen/layoutMarginVertical"/>
+        android:padding="@dimen/layoutMarginVertical"/>
 
     <LinearLayout
         android:id="@+id/item_clickable"
@@ -22,14 +21,15 @@
         android:layout_gravity="center_vertical"
         android:focusable="true"
         android:clickable="true"
-        android:background="?attr/itemSelectableBackground"
-        android:layout_marginLeft="@dimen/layoutMarginHorizontal"
+        android:background="@drawable/selectableItemBackground"
         android:paddingTop="@dimen/layoutMarginVertical">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:layout_marginLeft="@dimen/layoutMarginVertical"
+            android:layout_marginRight="@dimen/layoutMarginVertical">
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -43,14 +43,16 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:singleLine="true"
-                    android:textAppearance="@style/App.TextAppearance"/>
+                    android:textColor="@color/textColorPrimary"
+                    android:textSize="@dimen/textSizeNormal"/>
 
                 <TextView
                     android:id="@+id/item_summary"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:singleLine="true"
-                    android:textAppearance="@style/App.TextAppearance.Secondary.Small"/>
+                    android:textColor="@color/textColorSecondary"
+                    android:textSize="@dimen/textSizeSmall"/>
 
             </LinearLayout>
 
@@ -61,8 +63,7 @@
                 android:layout_gravity="center_vertical"
                 android:visibility="gone"
                 android:focusable="false"
-                android:clickable="false"
-                android:layout_marginLeft="@dimen/layoutMarginHorizontal"/>
+                android:clickable="false"/>
 
         </LinearLayout>
 
@@ -70,7 +71,7 @@
             android:id="@+id/item_divider"
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:background="?attr/listDividerColor"
+            android:background="@color/listDividerColor"
             android:layout_marginTop="@dimen/layoutMarginVertical"/>
 
     </LinearLayout>

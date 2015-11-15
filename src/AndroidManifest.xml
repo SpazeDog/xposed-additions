@@ -13,7 +13,7 @@
     <application
         android:icon="@mipmap/ic_launcher"
         android:label="Xposed Additions"
-        android:theme="@style/App.Theme.Light.Combat"
+        android:theme="@style/App.Theme"
         tools:replace="android:label">
 
         <!-- Cydia Substrate -->

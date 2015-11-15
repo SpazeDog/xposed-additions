@@ -21,7 +21,7 @@
             ================================================ -->
 
             <android.support.v7.widget.CardView
-                style="@style/App.CardView"
+                style="@style/CardView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
@@ -31,16 +31,14 @@
                     android:layout_height="wrap_content">
 
                     <TextView
-                        style="@style/App.CardView.Title"
+                        style="@style/CardViewTitle"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/display_title_plug"/>
 
-                    <com.spazedog.lib.utilsLib.app.widget.ExpandableView
-                        style="@style/App.ExpListView"
-                        android:id="@+id/display_usb_list"
-                        android:layout_height="wrap_content"
-                        android:layout_width="match_parent"/>
+                    <include
+                        layout="@layout/preference_expandable_list"
+                        android:id="@+id/display_usb_list"/>
 
                 </LinearLayout>
 
@@ -52,7 +50,7 @@
             ================================================ -->
 
             <android.support.v7.widget.CardView
-                style="@style/App.CardView"
+                style="@style/CardView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
@@ -62,71 +60,18 @@
                     android:layout_height="wrap_content">
 
                     <TextView
-                        style="@style/App.CardView.Title"
+                        style="@style/CardViewTitle"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/display_title_rotation"/>
 
-                    <RelativeLayout
-                        android:id="@+id/display_wrapper_rotation"
-                        style="@style/App.ContentPadding"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="?attr/itemSelectableBackground"
-                        android:clickable="true"
-                        android:focusable="true">
+                    <include
+                        layout="@layout/preference_checkbox"
+                        android:id="@+id/display_wrapper_rotation"/>
 
-                        <TextView
-                            android:id="@+id/display_name_rotation"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textAppearance="@style/App.TextAppearance"
-                            android:text="@string/display_name_rotation"/>
-
-                        <TextView
-                            android:id="@+id/display_summary_rotation"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:textAppearance="@style/App.TextAppearance.Secondary.Small"
-                            android:text="@string/display_summary_rotation"
-                            android:layout_below="@+id/display_name_rotation"/>
-
-                        <CheckBox
-                            android:id="@+id/display_checkbox_rotation"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:focusable="false"
-                            android:clickable="false"
-                            android:layout_alignParentRight="true"
-                            android:layout_alignBaseline="@+id/display_name_rotation"/>
-
-                    </RelativeLayout>
-
-                    <LinearLayout
-                        android:id="@+id/display_wrapper_rotation_blacklist"
-                        style="@style/App.ContentPadding"
-                        android:orientation="vertical"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:background="?attr/itemSelectableBackground"
-                        android:clickable="true"
-                        android:focusable="true">
-
-                        <TextView
-                            android:id="@+id/display_name_rotation_blacklist"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:textAppearance="@style/App.TextAppearance"
-                            android:text="@string/display_name_rotation_blacklist"/>
-
-                        <TextView
-                            android:id="@+id/display_summary_rotation_blacklist"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:textAppearance="@style/App.TextAppearance.Secondary.Small"
-                            android:text="@string/display_summary_rotation_blacklist"/>
-
-                    </LinearLayout>
+                    <include
+                        layout="@layout/preference_button"
+                        android:id="@+id/display_wrapper_rotation_blacklist"/>
 
                 </LinearLayout>
 

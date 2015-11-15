@@ -2,100 +2,37 @@
 
 <resources>
 
-    <!--
-        Used by UtilsLib Dialog Fragment -->
-    <style name="App.Dialog">
-        <item name="android:windowFrame">@null</item>
-        <item name="android:windowIsFloating">true</item>
-        <item name="android:windowContentOverlay">@null</item>
-        <item name="android:windowAnimationStyle">@android:style/Animation.Dialog</item>
-        <item name="android:windowBackground">@drawable/dialog_background</item>
-        <item name="android:colorBackgroundCacheHint">@null</item>
+    <style name="ActionBarTitle" parent="App.Theme">
+
+        <item name="android:textColor">@color/textColorActionBar</item>
+        <item name="android:textSize">@dimen/textSizeActionBar</item>
+        <item name="android:textStyle">bold</item>
+
     </style>
 
-    <style name="App.ContentPadding">
+    <style name="ContentPadding" parent="App.Theme">
+
         <item name="android:paddingTop">@dimen/layoutMarginVertical</item>
         <item name="android:paddingBottom">@dimen/layoutMarginVertical</item>
         <item name="android:paddingLeft">@dimen/layoutMarginHorizontal</item>
         <item name="android:paddingRight">@dimen/layoutMarginHorizontal</item>
+
     </style>
 
-    <style name="App.ContentPaddingVertical">
-        <item name="android:paddingTop">@dimen/layoutMarginVerticalSmall</item>
-        <item name="android:paddingBottom">@dimen/layoutMarginVerticalSmall</item>
-        <item name="android:paddingLeft">@dimen/layoutMarginHorizontal</item>
-        <item name="android:paddingRight">@dimen/layoutMarginHorizontal</item>
-    </style>
+    <style name="CardView" parent="App.Theme">
 
-    <style name="App.ActionBar">
-        <item name="android:layout_height">@dimen/actionBarHeight</item>
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:background">?attr/appColorPrimary</item>
-        <item name="titleTextAppearance">@style/App.TextAppearance.Title.ActionBar</item>
-    </style>
-
-    <style name="App.CardView">
         <item name="cardCornerRadius">2dp</item>
         <item name="cardElevation">3dp</item>
         <item name="android:layout_marginBottom">3dp</item>
+
     </style>
 
-    <style name="App.ExpListView">
-        <item name="android:divider">@null</item>
-        <item name="android:paddingTop">@dimen/layoutMarginVerticalSmall</item>
-        <item name="android:paddingBottom">@dimen/layoutMarginVerticalSmall</item>
-    </style>
+    <style name="CardViewTitle" parent="ContentPadding">
 
-    <style name="App.ExpListView.Group" parent="App.ContentPaddingVertical">
-        <item name="android:background">?attr/itemSelectableBackground</item>
-    </style>
-
-    <style name="App.ExpListView.Item" parent="App.ContentPaddingVertical">
-        <item name="android:paddingLeft">@dimen/listItemMarginVertical</item>
-        <item name="android:background">?attr/itemSelectableBackground</item>
-    </style>
-
-    <style name="App.CardView.Title" parent="App.ContentPadding">
-        <item name="android:textAppearance">@style/App.TextAppearance.Secondary</item>
         <item name="android:textStyle">bold</item>
-    </style>
+        <item name="android:textSize">@dimen/textSizeTitle</item>
+        <item name="android:textColor">@color/textColorAccent</item>
 
-    <style name="App.TextAppearance" parent="TextAppearance.AppCompat">
-        <item name="android:textColor">?attr/textColorPrimary</item>
-        <item name="android:textSize">@dimen/textSizeNormal</item>
-    </style>
-
-    <style name="App.TextAppearance.Small">
-        <item name="android:textSize">@dimen/textSizeSmall</item>
-    </style>
-
-    <style name="App.TextAppearance.Inverted">
-        <item name="android:textColor">?attr/textColorPrimaryInverted</item>
-    </style>
-
-    <style name="App.TextAppearance.Inverted.Small">
-        <item name="android:textSize">@dimen/textSizeSmall</item>
-    </style>
-
-    <style name="App.TextAppearance.Secondary">
-        <item name="android:textColor">?attr/textColorSecondary</item>
-    </style>
-
-    <style name="App.TextAppearance.Secondary.Small">
-        <item name="android:textSize">@dimen/textSizeSmall</item>
-    </style>
-
-    <style name="App.TextAppearance.Secondary.Inverted">
-        <item name="android:textColor">?attr/textColorSecondaryInverted</item>
-    </style>
-
-    <style name="App.TextAppearance.Secondary.Inverted.Small">
-        <item name="android:textSize">@dimen/textSizeSmall</item>
-    </style>
-
-    <style name="App.TextAppearance.Title.ActionBar" parent="App.TextAppearance.Inverted">
-        <item name="android:textSize">@dimen/textSizeActionBar</item>
-        <item name="android:textStyle">bold</item>
     </style>
 
 </resources>

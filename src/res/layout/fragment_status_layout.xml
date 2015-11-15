@@ -21,7 +21,7 @@
             ================================================ -->
 
             <android.support.v7.widget.CardView
-                style="@style/App.CardView"
+                style="@style/CardView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
@@ -31,17 +31,17 @@
                     android:layout_height="wrap_content">
 
                     <TextView
-                        style="@style/App.CardView.Title"
+                        style="@style/CardViewTitle"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/status_title_backend"/>
 
                     <TextView
-                        style="@style/App.ContentPadding"
+                        style="@style/ContentPadding"
                         android:id="@+id/status_backend_service_item"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:textAppearance="@style/App.TextAppearance.Small"/>
+                        android:textSize="@dimen/textSizeNormal"/>
 
                 </LinearLayout>
 
@@ -53,7 +53,7 @@
             ================================================ -->
 
             <android.support.v7.widget.CardView
-                style="@style/App.CardView"
+                style="@style/CardView"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content">
 
@@ -63,13 +63,13 @@
                     android:layout_height="wrap_content">
 
                     <TextView
-                        style="@style/App.CardView.Title"
+                        style="@style/CardViewTitle"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="@string/status_title_log"/>
 
                     <RelativeLayout
-                        style="@style/App.ContentPadding"
+                        style="@style/ContentPadding"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content">
 
@@ -77,14 +77,16 @@
                             android:id="@+id/status_log_errors"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:textAppearance="@style/App.TextAppearance"
+                            android:textSize="@dimen/textSizeNormal"
+                            android:textColor="@color/textColorPrimary"
                             android:text="@string/status_log_errors"/>
 
                         <TextView
                             android:id="@+id/status_log_warnings"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:textAppearance="@style/App.TextAppearance"
+                            android:textSize="@dimen/textSizeNormal"
+                            android:textColor="@color/textColorPrimary"
                             android:text="@string/status_log_warnings"
                             android:layout_below="@+id/status_log_errors"/>
 
@@ -92,7 +94,7 @@
                             android:id="@+id/status_log_errors_item"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:textAppearance="@style/App.TextAppearance.Small"
+                            android:textSize="@dimen/textSizeSmall"
                             android:textColor="@color/logColorError"
                             android:text="0"
                             android:layout_alignParentRight="true"
@@ -102,7 +104,7 @@
                             android:id="@+id/status_log_warnings_item"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:textAppearance="@style/App.TextAppearance.Small"
+                            android:textSize="@dimen/textSizeSmall"
                             android:textColor="@color/logColorWarning"
                             android:text="0"
                             android:layout_alignParentRight="true"

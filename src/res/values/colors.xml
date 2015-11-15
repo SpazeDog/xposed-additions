@@ -7,14 +7,17 @@
     
     <color name="appColorPrimary">#424242</color>
     <color name="appColorSecondary">#212121</color>
-    
-    <color name="accentColorPrimary">#E0E0E0</color>
-    <color name="accentColorSecondary">#BDBDBD</color>
-    <color name="accentColorControlHighlight">#40E0E0E0</color>
-    <color name="accentColorControlActivated">#D9E0E0E0</color>
+
+    <color name="accentColorPrimary">#D9607D8B</color>
+    <color name="accentColorSecondary">#D9BDBDBD</color>
+    <color name="accentColorControlHighlight">#40607D8B</color>
+    <color name="accentColorControlActivated">#8C607D8B</color>
     
     <color name="backgroundColorPrimary">#FFFFFF</color>
     <color name="backgroundColorSecondary">#FAFAFA</color>
+
+    <color name="textColorAccentEnabled">#D9607D8B</color>
+    <color name="textColorAccentDisabled">#40607D8B</color>
 
     <color name="textColorPrimaryEnabled">#D9000000</color>
     <color name="textColorPrimaryDisabled">#40000000</color>
@@ -22,17 +25,24 @@
     <color name="textColorSecondaryEnabled">#8C000000</color>
     <color name="textColorSecondaryDisabled">#1A000000</color>
     
-    <color name="textColorPrimaryInvertedEnabled">#D9FFFFFF</color>
-    <color name="textColorPrimaryInvertedDisabled">#40FFFFFF</color>
+    <color name="textColorInvertedPrimaryEnabled">#D9FFFFFF</color>
+    <color name="textColorInvertedPrimaryDisabled">#40FFFFFF</color>
     
-    <color name="textColorSecondaryInvertedEnabled">#8CFFFFFF</color>
-    <color name="textColorSecondaryInvertedDisabled">#1AFFFFFF</color>
+    <color name="textColorInvertedSecondaryEnabled">#8CFFFFFF</color>
+    <color name="textColorInvertedSecondaryDisabled">#1AFFFFFF</color>
     
     <color name="listDividerColor">#8Ccbcbcb</color>
 
-    <color name="logColorError">#ff0100</color>
-    <color name="logColorWarning">#f5970a</color>
-    <color name="logColorInfo">#008000</color>
-    <color name="logColorDebug">#0000ff</color>
+    <color name="logColorError">#8Cff0100</color>
+    <color name="logColorWarning">#8Cf5970a</color>
+    <color name="logColorInfo">#8C008000</color>
+    <color name="logColorDebug">#8C0000ff</color>
+
+    <item name="textColorAccent" type="color">@color/text_color_accent_selector</item>
+    <item name="textColorPrimary" type="color">@color/text_color_primary_selector</item>
+    <item name="textColorSecondary" type="color">@color/text_color_secondary_selector</item>
+    <item name="textColorInvertedPrimary" type="color">@color/text_color_primary_inverted_selector</item>
+    <item name="textColorInvertedSecondary" type="color">@color/text_color_secondary_inverted_selector</item>
+    <item name="textColorActionBar" type="color">@color/textColorInvertedPrimary</item>
     
 </resources>

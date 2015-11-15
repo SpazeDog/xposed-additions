@@ -128,6 +128,8 @@ public class FragmentLaunchSelector extends ActivityMainDialog {
 
     public FragmentLaunchSelector() {
         super();
+
+        setStyle(STYLE_NO_FRAME, R.style.App_Dialog);
     }
 
     @Override

@@ -4,7 +4,7 @@
     android:id="@+id/pager"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="?attr/backgroundColorPrimary">
+    android:background="@color/backgroundColorPrimary">
 
     <android.support.v4.view.PagerTabStrip
         android:id="@+id/pager_title"
@@ -13,6 +13,8 @@
         android:layout_gravity="top"
         android:paddingTop="@dimen/layoutMarginVertical"
         android:paddingBottom="@dimen/layoutMarginVertical"
-        android:textColor="?attr/textColorPrimary"/>
+        android:textColor="@color/textColorAccent"
+        android:textSize="@dimen/textSizeTitle"
+        android:textStyle="bold"/>
 
 </android.support.v4.view.ViewPager>

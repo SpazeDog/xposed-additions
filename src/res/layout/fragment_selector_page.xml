@@ -10,11 +10,8 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="gone"
-        android:paddingTop="@dimen/layoutMarginVertical"
-        android:paddingLeft="@dimen/layoutMarginHorizontal"
-        android:paddingRight="@dimen/layoutMarginHorizontal"
-        android:paddingBottom="@dimen/layoutMarginVertical"
-        android:clipToPadding="false"/>
+        android:clipToPadding="false"
+        style="@style/ContentPadding"/>
 
     <ProgressBar
         android:id="@+id/page_progress"

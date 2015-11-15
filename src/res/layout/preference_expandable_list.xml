@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<com.spazedog.lib.utilsLib.app.widget.ExpandableView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/preference_widget"
+    android:layout_height="wrap_content"
+    android:layout_width="match_parent"/>

@@ -1,24 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    style="@style/App.ExpListView.Group"
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingRight="@dimen/layoutMarginHorizontal"
-    android:paddingTop="@dimen/layoutMarginVertical"
-    android:paddingBottom="@dimen/layoutMarginVertical">
+    android:background="@drawable/selectableItemBackground"
+    style="@style/ContentPadding">
 
     <TextView
         android:id="@+id/expandable_list_title_group"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textAppearance="@style/App.TextAppearance" />
+        android:textColor="@color/textColorPrimary"
+        android:textSize="@dimen/textSizeNormal"/>
 
     <TextView
         android:id="@+id/expandable_list_summary_group"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textAppearance="@style/App.TextAppearance.Secondary.Small"/>
+        android:textColor="@color/textColorSecondary"
+        android:textSize="@dimen/textSizeSmall"/>
 
 </LinearLayout>

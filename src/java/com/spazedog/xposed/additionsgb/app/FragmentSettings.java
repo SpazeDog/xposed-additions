@@ -80,8 +80,14 @@ public class FragmentSettings extends ActivityMainFragment implements OnClickLis
              */
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
                 mOwnerlockWrapper.setOnClickListener(this);
-                mOwnerlockCheckbox = (CheckBox) mOwnerlockWrapper.findViewById(R.id.settings_checkbox_ownerlock);
+                mOwnerlockCheckbox = (CheckBox) mOwnerlockWrapper.findViewById(R.id.preference_widget);
                 mOwnerlockCheckbox.setChecked(mOwnerLock);
+
+                TextView lockTitle = (TextView) mOwnerlockWrapper.findViewById(R.id.preference_title);
+                lockTitle.setText(R.string.settings_name_owner_lock);
+
+                TextView lockSummary = (TextView) mOwnerlockWrapper.findViewById(R.id.preference_summary);
+                lockSummary.setText(R.string.settings_summary_owner_lock);
 
             } else {
                 mOwnerlockWrapper.setVisibility(View.GONE);
@@ -169,7 +175,7 @@ public class FragmentSettings extends ActivityMainFragment implements OnClickLis
         public View getGroupView(int groupPosition, boolean isExpanded, View convertView, ViewGroup parent) {
             if (convertView == null) {
                 LayoutInflater inflater = LayoutInflater.from(getActivity());
-                convertView = inflater.inflate(R.layout.expandable_list_checkbox_group, parent, false);
+                convertView = inflater.inflate(R.layout.expandable_list_group, parent, false);
             }
 
             TextView groupTitle = (TextView) convertView.findViewById(R.id.expandable_list_title_group);
@@ -185,7 +191,7 @@ public class FragmentSettings extends ActivityMainFragment implements OnClickLis
         public View getChildView(int groupPosition, int childPosition, View convertView, ViewGroup parent) {
             if (convertView == null) {
                 LayoutInflater inflater = LayoutInflater.from(getActivity());
-                convertView = inflater.inflate(R.layout.expandable_list_checkbox_item, parent, false);
+                convertView = inflater.inflate(R.layout.expandable_list_item_checkbox, parent, false);
             }
 
             TextView itemTitle = (TextView) convertView.findViewById(R.id.expandable_list_title_item);

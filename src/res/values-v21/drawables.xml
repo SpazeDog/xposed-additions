@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+
+    <item name="actionBarCombatShadow" type="drawable">@android:color/transparent</item>
+    <item name="selectableItemBackground" type="drawable">?android:attr/selectableItemBackground</item>
+
+</resources>

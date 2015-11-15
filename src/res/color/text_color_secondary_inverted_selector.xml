@@ -2,7 +2,7 @@
 
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
     
-    <item android:state_enabled="false" android:color="@color/textColorSecondaryInvertedDisabled" />
-    <item android:color="@color/textColorSecondaryInvertedEnabled" />
+    <item android:state_enabled="false" android:color="@color/textColorInvertedSecondaryDisabled" />
+    <item android:color="@color/textColorInvertedSecondaryEnabled" />
     
 </selector>

@@ -1,17 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    style="@style/App.ExpListView.Item"
     android:orientation="horizontal"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:background="@drawable/selectableItemBackground"
+    style="@style/ContentPadding"
+    android:paddingLeft="@dimen/listItemMarginVertical">
 
     <TextView
         android:id="@+id/expandable_list_title_item"
         android:layout_weight="1"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:textAppearance="@style/App.TextAppearance.Small" />
+        android:textColor="@color/textColorPrimary"
+        android:textSize="@dimen/textSizeSmall"/>
 
     <android.support.v7.widget.AppCompatCheckBox
         android:id="@+id/expandable_list_checkbox_item"

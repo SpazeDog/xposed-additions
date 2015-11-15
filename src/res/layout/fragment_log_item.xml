@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:card="http://schemas.android.com/apk/res-auto"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content">
 
     <android.support.v7.widget.CardView
-        style="@style/App.CardView"
+        style="@style/CardView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
@@ -22,31 +22,25 @@
 
                 <TextView
                     android:id="@+id/item_title"
-                    style="@style/App.CardView.Title"
+                    style="@style/CardViewTitle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/settings_title_owner"/>
 
-                <LinearLayout
-                    android:orientation="vertical"
-                    style="@style/App.ContentPadding"
+                <TextView
+                    android:id="@+id/item_summary"
+                    style="@style/ContentPadding"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content">
+                    android:layout_height="wrap_content"
+                    android:textSize="@dimen/textSizeSmall"/>
 
-                    <TextView
-                        android:id="@+id/item_summary"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="@style/App.TextAppearance.Small"
-                        android:paddingBottom="@dimen/textSizeNormal"/>
-
-                    <TextView
-                        android:id="@+id/item_time"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textAppearance="@style/App.TextAppearance"/>
-
-                </LinearLayout>
+                <TextView
+                    android:id="@+id/item_time"
+                    style="@style/ContentPadding"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="@dimen/textSizeNormal"
+                    android:textColor="@color/textColorPrimary"/>
 
             </LinearLayout>
 
@@ -56,7 +50,7 @@
 
     <!-- Margin does not work properly with alignParent*, so we use padding on a wrapper view instead -->
     <FrameLayout
-        style="@style/App.ContentPadding"
+        style="@style/ContentPadding"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentRight="true"

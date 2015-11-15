@@ -72,21 +72,47 @@ public class FragmentDisplay extends ActivityMainFragment implements OnClickList
         super.onViewCreated(view, savedInstanceState);
 
         PreferenceServiceMgr PreferenceMgr = getPreferenceMgr();
-
         mOverwriteRotation = PreferenceMgr.getIntConfig("rotation_overwrite", 0) > 0;
         mRotationBlacklist = PreferenceMgr.getStringListConfig("rotation_blacklist", null);
+
+
+        /*
+         * Setup Power Expandable list
+         */
 
         mListAdapter = new PowerAdapter();
         mListView = (ExpandableView) view.findViewById(R.id.display_usb_list);
         mListView.setAdapter(mListAdapter);
 
+
+        /*
+         * Setup Blacklist Button
+         */
+
         mRotationBlacklistWrapper = view.findViewById(R.id.display_wrapper_rotation_blacklist);
         mRotationBlacklistWrapper.setOnClickListener(this);
 
+        TextView blacklistTitle = (TextView) mRotationBlacklistWrapper.findViewById(R.id.preference_title);
+        blacklistTitle.setText(R.string.display_name_rotation_blacklist);
+
+        TextView blacklistSummary = (TextView) mRotationBlacklistWrapper.findViewById(R.id.preference_summary);
+        blacklistSummary.setText(R.string.display_summary_rotation_blacklist);
+
+
+        /*
+         * Setup Rotation checkbox
+         */
+
         mRotationWrapper = view.findViewById(R.id.display_wrapper_rotation);
         mRotationWrapper.setOnClickListener(this);
-        mRotationCheckbox = (CheckBox) view.findViewById(R.id.display_checkbox_rotation);
+        mRotationCheckbox = (CheckBox) view.findViewById(R.id.preference_widget);
         mRotationCheckbox.setChecked(mOverwriteRotation);
+
+        TextView rotationTitle = (TextView) mRotationWrapper.findViewById(R.id.preference_title);
+        rotationTitle.setText(R.string.display_name_rotation);
+
+        TextView rotationSummary = (TextView) mRotationWrapper.findViewById(R.id.preference_summary);
+        rotationSummary.setText(R.string.display_summary_rotation);
     }
 
     @Override
@@ -200,7 +226,7 @@ public class FragmentDisplay extends ActivityMainFragment implements OnClickList
         public View getGroupView(int groupPosition, boolean isExpanded, View convertView, ViewGroup parent) {
             if (convertView == null) {
                 LayoutInflater inflater = LayoutInflater.from(getActivity());
-                convertView = inflater.inflate(R.layout.expandable_list_checkbox_group, parent, false);
+                convertView = inflater.inflate(R.layout.expandable_list_group, parent, false);
             }
 
             TextView groupTitle = (TextView) convertView.findViewById(R.id.expandable_list_title_group);
@@ -225,7 +251,7 @@ public class FragmentDisplay extends ActivityMainFragment implements OnClickList
         public View getChildView(int groupPosition, int childPosition, View convertView, ViewGroup parent) {
             if (convertView == null) {
                 LayoutInflater inflater = LayoutInflater.from(getActivity());
-                convertView = inflater.inflate(R.layout.expandable_list_checkbox_item, parent, false);
+                convertView = inflater.inflate(R.layout.expandable_list_item_checkbox, parent, false);
             }
 
             int flags = groupPosition == 0 ? mPlugFlags : mUnplugFlags;
