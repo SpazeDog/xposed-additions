@@ -24,11 +24,17 @@ import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.content.pm.ResolveInfo;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import com.spazedog.lib.utilsLib.HashBundle;
 import com.spazedog.xposed.additionsgb.R;
 import com.spazedog.xposed.additionsgb.utils.Constants;
+
+import net.dinglisch.android.tasker.TaskerIntent;
+
+import java.util.List;
 
 public class UriShortcutEntryManager extends UriLauncherEntryManager {
 
@@ -38,16 +44,38 @@ public class UriShortcutEntryManager extends UriLauncherEntryManager {
 
     public class Entry extends UriLauncherEntryManager.Entry {
 
+        protected boolean mIsTasker = false;
+        protected boolean mIsTaskerEnabled = false;
+
         public Entry(ActivityInfo info) {
             super(info);
+        }
+
+        public Entry(ActivityInfo info, boolean isTasker) {
+            super(info);
+
+            mIsTasker = isTasker;
+
+            if (isTasker) {
+                mIsTaskerEnabled = TaskerIntent.testStatus(getSelecter().getContext()).equals(TaskerIntent.Status.OK);
+            }
         }
 
         @Override
         public void onClick() {
             Selecter selecter = getSelecter();
+            Intent intent = null;
 
-            Intent intent = new Intent(Intent.ACTION_CREATE_SHORTCUT);
-            intent.setComponent(new ComponentName(mEntryInfo.packageName, mEntryInfo.name));
+            if (mIsTasker && !mIsTaskerEnabled) {
+                Toast.makeText(selecter.getContext(), R.string.notify_tasker_external_disabled, Toast.LENGTH_LONG).show(); return;
+
+            } else if (mIsTasker) {
+                intent = TaskerIntent.getTaskSelectIntent();
+
+            } else {
+                intent = new Intent(Intent.ACTION_CREATE_SHORTCUT);
+                intent.setComponent(new ComponentName(mEntryInfo.packageName, mEntryInfo.name));
+            }
 
             getManager().setMsgReceiver(this);
             selecter.requestActivityResult(intent, Constants.RESULT_ACTION_PARSE_SHORTCUT);
@@ -66,11 +94,26 @@ public class UriShortcutEntryManager extends UriLauncherEntryManager {
                         Intent intent = (Intent) data.getParcelable("intent");
 
                         if (intent != null) {
-                            Intent appIntent = intent.getParcelableExtra(Intent.EXTRA_SHORTCUT_INTENT);
+                            Intent appIntent = null;
+
+                            if (mIsTasker) {
+                                appIntent = new TaskerIntent(intent.getDataString());
+
+                            } else {
+                                appIntent = intent.getParcelableExtra(Intent.EXTRA_SHORTCUT_INTENT);
+                            }
 
                             HashBundle appData = new HashBundle();
                             appData.put(Selecter.EXTRAS_TYPE, getType());
                             appData.put(Selecter.EXTRAS_URI, appIntent.toUri(Intent.URI_INTENT_SCHEME));
+
+                            /*
+                             * We need to define this as a Tasker URI, since regular URI's is launched using
+                             * startActivity() whereas Tasker Tasks is launched using sendBroadcast()
+                             */
+                            if (mIsTasker) {
+                                appData.put(Selecter.EXTRAS_PLUGIN, "tasker");
+                            }
 
                             getSelecter().sendMessage(Constants.MSG_DIALOG_SELECTER, appData);
                         }
@@ -78,6 +121,25 @@ public class UriShortcutEntryManager extends UriLauncherEntryManager {
                 }
             }
         }
+    }
+
+    @Override
+    public void onLoad() {
+        /*
+         * Inject Tasker into the Shortcut list
+         */
+        List<ResolveInfo> activityList = mSelecter.getContext().getPackageManager().queryIntentActivities(TaskerIntent.getTaskSelectIntent(), 0);
+
+        if (activityList.size() > 0) {
+            mEntries.add(
+                    new Entry(activityList.get(0).activityInfo, true)
+            );
+        }
+
+        /*
+         * Load regular shortcuts
+         */
+        super.onLoad();
     }
 
     @Override

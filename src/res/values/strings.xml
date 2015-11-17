@@ -136,4 +136,6 @@
     <string name='selecter_page_title_shortcut'>Shortcuts</string>
     <string name='selecter_page_title_activity'>Activities</string>
 
+    <string name='notify_tasker_external_disabled'>Tasker external access is disabled</string>
+
 </resources>

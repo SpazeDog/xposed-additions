@@ -22,6 +22,7 @@ public interface Selecter {
     public final String EXTRAS_URI = "uri";
     public final String EXTRAS_PKG = "package";
     public final String EXTRAS_PKGS = "packages";
+    public final String EXTRAS_PLUGIN = "plugin";
 
     public Context getContext();
     public LruCache<String, Bitmap> getImageCache();
