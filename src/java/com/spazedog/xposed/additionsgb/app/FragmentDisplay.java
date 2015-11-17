@@ -36,6 +36,7 @@ import com.spazedog.lib.utilsLib.app.widget.ExpandableView;
 import com.spazedog.lib.utilsLib.app.widget.ExpandableView.ExpandableAdapter;
 import com.spazedog.xposed.additionsgb.R;
 import com.spazedog.xposed.additionsgb.app.ActivityMain.ActivityMainFragment;
+import com.spazedog.xposed.additionsgb.app.selecter.Selecter;
 import com.spazedog.xposed.additionsgb.app.service.PreferenceServiceMgr;
 import com.spazedog.xposed.additionsgb.backend.PowerManager.PowerPlugConfig;
 import com.spazedog.xposed.additionsgb.backend.service.BackendService;
@@ -139,11 +140,11 @@ public class FragmentDisplay extends ActivityMainFragment implements OnClickList
     @Override
     public void onReceiveMessage(int type, HashBundle data, boolean isSticky) {
         switch (type) {
-            case Constants.MSG_DIALOG_SELECTOR:
-                int selectorType = data.getInt(FragmentLaunchSelector.EXTRAS_TYPE);
+            case Constants.MSG_DIALOG_SELECTER:
+                int selectorType = data.getInt(Selecter.EXTRAS_TYPE);
 
-                if (selectorType == FragmentLaunchSelector.APP_MULTI) {
-                    mRotationBlacklist = data.getStringList(FragmentLaunchSelector.EXTRAS_PKGS);
+                if (selectorType == FragmentSelecter.APP_MULTI) {
+                    mRotationBlacklist = data.getStringList(Selecter.EXTRAS_PKGS);
                     mHasChanges = true;
                 }
         }
@@ -167,10 +168,10 @@ public class FragmentDisplay extends ActivityMainFragment implements OnClickList
 
         } else {
             HashBundle args = new HashBundle();
-            args.putInt(FragmentLaunchSelector.ARGS_FLAGS, FragmentLaunchSelector.APP_MULTI);
-            args.putStringList(FragmentLaunchSelector.ARGS_SELECTED, mRotationBlacklist);
+            args.putInt(Selecter.ARGS_FLAGS, FragmentSelecter.APP_MULTI);
+            args.putStringList(Selecter.ARGS_SELECTED, mRotationBlacklist);
 
-            loadFragment(R.id.fragment_launch_selector, args, false);
+            loadFragment(R.id.fragment_selecter, args, false);
         }
     }
 

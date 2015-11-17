@@ -127,4 +127,13 @@
     <string name='key_receiver_summary_failed'>Could not connect to the Re-map engine</string>
     <string name='key_receiver_name_result'>Selected Key</string>
 
+
+    <!-- ================================================
+         Strings for FragmentSelecter
+    ================================================ -->
+
+    <string name='selecter_page_title_launcher'>Applications</string>
+    <string name='selecter_page_title_shortcut'>Shortcuts</string>
+    <string name='selecter_page_title_activity'>Activities</string>
+
 </resources>

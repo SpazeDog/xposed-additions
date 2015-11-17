@@ -3,14 +3,13 @@
 <resources>
 
     <item type="id" name="service_preferences" />
-    <item type="id" name="fragment_launch_selector" />
+    <item type="id" name="fragment_selecter" />
     <item type="id" name="fragment_log" />
     <item type="id" name="fragment_status" />
     <item type="id" name="fragment_display" />
     <item type="id" name="fragment_settings" />
     <item type="id" name="fragment_key_receiver" />
 
-    <item type="id" name="tag_data" />
     <item type="id" name="tag_holder" />
 
 </resources>
