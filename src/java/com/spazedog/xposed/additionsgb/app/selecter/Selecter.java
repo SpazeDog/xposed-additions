@@ -23,6 +23,7 @@ public interface Selecter {
     public final String EXTRAS_PKG = "package";
     public final String EXTRAS_PKGS = "packages";
     public final String EXTRAS_PLUGIN = "plugin";
+    public final String EXTRAS_KEYCODE = "key";
 
     public Context getContext();
     public LruCache<String, Bitmap> getImageCache();

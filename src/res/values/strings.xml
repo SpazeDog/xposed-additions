@@ -135,6 +135,7 @@
     <string name='selecter_page_title_launcher'>Applications</string>
     <string name='selecter_page_title_shortcut'>Shortcuts</string>
     <string name='selecter_page_title_activity'>Activities</string>
+    <string name='selecter_page_title_keycodes'>Key Codes</string>
 
     <string name='notify_tasker_external_disabled'>Tasker external access is disabled</string>
 

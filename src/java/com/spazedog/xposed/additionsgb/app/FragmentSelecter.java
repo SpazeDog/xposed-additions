@@ -39,6 +39,7 @@ import com.spazedog.lib.utilsLib.SparseMap;
 import com.spazedog.lib.utilsLib.os.ThreadHandler;
 import com.spazedog.xposed.additionsgb.R;
 import com.spazedog.xposed.additionsgb.app.ActivityMain.ActivityMainDialog;
+import com.spazedog.xposed.additionsgb.app.selecter.ActionKeyEntryManager;
 import com.spazedog.xposed.additionsgb.app.selecter.AppMultiEntryManager;
 import com.spazedog.xposed.additionsgb.app.selecter.AppSingleEntryManager;
 import com.spazedog.xposed.additionsgb.app.selecter.EntryManager;
@@ -46,6 +47,7 @@ import com.spazedog.xposed.additionsgb.app.selecter.Selecter;
 import com.spazedog.xposed.additionsgb.app.selecter.UriActivityEntryManager;
 import com.spazedog.xposed.additionsgb.app.selecter.UriLauncherEntryManager;
 import com.spazedog.xposed.additionsgb.app.selecter.UriShortcutEntryManager;
+import com.spazedog.xposed.additionsgb.utils.Utils;
 
 import java.util.Collection;
 import java.util.List;
@@ -56,11 +58,10 @@ public class FragmentSelecter extends ActivityMainDialog {
     /*
      * Flags indicating what type of URI's to create
      */
-    public static final int URI_ALL = 0x00000007;       // URI_LAUNCHER|URI_ACTIVITY|URI_SHORTCUT
     public static final int URI_LAUNCHER = 0x00000001;
     public static final int URI_ACTIVITY = 0x00000002;
     public static final int URI_SHORTCUT = 0x00000004;
-    // public static final int URI_TASKER = 0x;
+    public static final int URI_ALL = URI_LAUNCHER|URI_ACTIVITY|URI_SHORTCUT;
 
 
     /*
@@ -74,10 +75,9 @@ public class FragmentSelecter extends ActivityMainDialog {
      * Flags indicating what action selection type to create.
      */
 
-    // public static final int ACTION_ALL = 0x;         // ACTION_KEYCODE|ACTION_TASK
-    // public static final int ACTION_KEYCODE = 0x;
-    // public static final int ACTION_TASK = 0x;
-
+    public static final int ACTION_KEYCODE = 0x00004000;
+    public static final int ACTION_TASK = 0x00008000;
+    public static final int ACTION_ALL = ACTION_KEYCODE|ACTION_TASK;
 
     private Selecter mCallback = new Selecter() {
 
@@ -155,14 +155,7 @@ public class FragmentSelecter extends ActivityMainDialog {
 
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
-        List<Integer> typeList = new SparseList<Integer>();
-        for (int i=0; i < 32; i++) {
-            int type = 1 << i;
-
-            if ((mFlags & type) != 0) {
-                typeList.add(type);
-            }
-        }
+        List<Integer> typeList = Utils.splitFlags(mFlags);
 
         mEntryAdaptor = new EntryPagerAdaptor(typeList);
         mEntryView = (ViewPager) view.findViewById(R.id.pager);
@@ -285,6 +278,7 @@ public class FragmentSelecter extends ActivityMainDialog {
 
             if (manager == null) {
                 switch (type) {
+                    case ACTION_KEYCODE: manager = new ActionKeyEntryManager(mCallback, container, type); break;
                     case URI_LAUNCHER: manager = new UriLauncherEntryManager(mCallback, container, type); break;
                     case URI_ACTIVITY: manager = new UriActivityEntryManager(mCallback, container, type); break;
                     case URI_SHORTCUT: manager = new UriShortcutEntryManager(mCallback, container, type); break;

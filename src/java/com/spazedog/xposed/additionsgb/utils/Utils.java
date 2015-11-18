@@ -20,9 +20,11 @@ package com.spazedog.xposed.additionsgb.utils;
 import android.content.Context;
 import android.util.Log;
 
+import com.spazedog.lib.utilsLib.SparseList;
 import com.spazedog.xposed.additionsgb.backend.service.BackendServiceMgr;
 
 import java.io.File;
+import java.util.List;
 
 public final class Utils {
 	
@@ -136,5 +138,17 @@ public final class Utils {
 
     public static ClassLoader getAppClassLoader() {
         return Utils.class.getClassLoader();
+    }
+
+    public static List<Integer> splitFlags(int flags) {
+        List<Integer> typeList = new SparseList<Integer>();
+
+        for (int pos=0, curFlag=1; curFlag > 0; curFlag = 1 << ++pos) {
+            if ((flags & curFlag) != 0) {
+                typeList.add(curFlag);
+            }
+        }
+
+        return typeList;
     }
 }
