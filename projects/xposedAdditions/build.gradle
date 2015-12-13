@@ -1,6 +1,6 @@
 apply plugin: 'com.android.application'
 
-buildDir = '../../build/xposedAdditions'
+buildDir = "${System.properties['user.home']}/.gradle/build/${rootProject.name}/${project.name}"
 
 android {
     compileSdkVersion 22
@@ -11,8 +11,8 @@ android {
 
         minSdkVersion 9
         targetSdkVersion 22
-        versionCode 71
-        versionName "3.5.9"
+        versionCode 72
+        versionName "3.6.0"
     }
 
     sourceSets {
@@ -34,6 +34,7 @@ android {
 
     lintOptions {
         abortOnError false
+        disable 'MissingTranslation'
     }
 }
 
@@ -45,7 +46,7 @@ repositories {
 
 dependencies {
     compile fileTree(dir: '../../src/libs', include: ['*.jar'])
+    compile (name:'reflectTools-release', ext:'aar')
     compile 'com.android.support:appcompat-v7:22.2.0'
     compile 'com.android.support:support-v4:22.2.0'
-    provided files('../../XposedBridgeApi-36.jar')
 }

@@ -1,9 +1,5 @@
 package com.spazedog.xposed.additionsgb.backend.pwm.iface;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
@@ -16,16 +12,18 @@ import android.util.Log;
 import android.view.KeyEvent;
 
 import com.spazedog.lib.reflecttools.ReflectClass;
-import com.spazedog.lib.reflecttools.ReflectClass.OnErrorListener;
-import com.spazedog.lib.reflecttools.ReflectClass.OnReceiverListener;
+import com.spazedog.lib.reflecttools.ReflectClass.OnClassReceiverListener;
 import com.spazedog.lib.reflecttools.ReflectConstructor;
+import com.spazedog.lib.reflecttools.ReflectException;
 import com.spazedog.lib.reflecttools.ReflectField;
+import com.spazedog.lib.reflecttools.ReflectMember.Result;
 import com.spazedog.lib.reflecttools.ReflectMethod;
-import com.spazedog.lib.reflecttools.utils.ReflectConstants.Match;
-import com.spazedog.lib.reflecttools.utils.ReflectException;
-import com.spazedog.lib.reflecttools.utils.ReflectMember;
 import com.spazedog.xposed.additionsgb.Common;
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public abstract class IMediatorSetup {
 	
@@ -40,24 +38,36 @@ public abstract class IMediatorSetup {
 	 */
 	public static final class SDK {
 		private static Integer calcSamsungAPI() {
-			ReflectClass spwm = ReflectClass.forName("com.android.internal.policy.impl.sec.SamsungPhoneWindowManager", Match.SUPPRESS);
-			
-			if (spwm.exists()) {
-				return spwm.findMethod("performSystemKeyFeedback", Match.SUPPRESS, KeyEvent.class).exists() ? 1 : 
-					spwm.findMethod("performSystemKeyFeedback", Match.SUPPRESS, KeyEvent.class, Boolean.TYPE, Boolean.TYPE).exists() ? 2 : 0;
-			}
-			
-			return 0;
+            try {
+                ReflectClass spwm = ReflectClass.fromName("com.android.internal.policy.impl.sec.SamsungPhoneWindowManager");
+
+                try {
+                    spwm.findMethod("performSystemKeyFeedback", KeyEvent.class); return 1;
+
+                } catch (ReflectException e) {
+                    try {
+                        spwm.findMethod("performSystemKeyFeedback", KeyEvent.class, Boolean.TYPE, Boolean.TYPE); return 2;
+
+                    } catch (ReflectException ei) {
+                        return 0;
+                    }
+                }
+
+            } catch (ReflectException e) {
+                return 0;
+            }
 		}
 		
 		private static Integer calcInputDeviceAIP() {
-			ReflectClass id = ReflectClass.forName("android.view.InputDevice", Match.SUPPRESS);
-			
-			if (id.exists() && id.findMethod("isExternal", Match.SUPPRESS, KeyEvent.class).exists()) {
-				return 2;
-			}
-			
-			return 1;
+            try {
+                ReflectClass id = ReflectClass.fromName("android.view.InputDevice");
+                id.findMethod("isExternal", KeyEvent.class);
+
+                return 2;
+
+            } catch (ReflectException e) {
+                return 1;
+            }
 		}
 		
 		/*
@@ -96,7 +106,7 @@ public abstract class IMediatorSetup {
 		 * In older versions it can only be done using forceUserActivityLocked() from the PowerManagerService using reflection.
 		 */
 		public static final Integer MANAGER_POWER_VERSION = android.os.Build.VERSION.SDK_INT < 17 ? 1 : 
-			(android.os.Build.VERSION.SDK_INT < 18 ? 2 : (android.os.Build.VERSION.SDK_INT < 21 ? 3 : 4));
+			(android.os.Build.VERSION.SDK_INT < 18 ? 2 : (android.os.Build.VERSION.SDK_INT < 21 ? 3 : (android.os.Build.VERSION.SDK_INT < 23 ? 4 : 5)));
 		
 		/*
 		 * Some of the character map values are missing in API below 11, such as VirtualKey for an example.
@@ -182,11 +192,11 @@ public abstract class IMediatorSetup {
 	
 	protected IMediatorSetup(ReflectClass pwm, XServiceManager xServiceManager) {
 		mXServiceManager = xServiceManager;
-		mContext = pwm.findFieldDeep("mContext").getValueToInstance();
+		mContext = (ReflectClass) pwm.findField("mContext").getValue(Result.INSTANCE);
 		mPhoneWindowManager = pwm;
 		
 		try {
-			mHandler = (Handler) pwm.findFieldDeep("mHandler").getValue();
+			mHandler = (Handler) pwm.findField("mHandler").getValue();
 			
 		} catch (ReflectException e) {
 			mHandler = new Handler();
@@ -195,7 +205,7 @@ public abstract class IMediatorSetup {
 		/*
 		 * Get all needed original property values
 		 */
-		ReflectClass wmp = ReflectClass.forName("android.view.WindowManagerPolicy");
+		ReflectClass wmp = ReflectClass.fromName("android.view.WindowManagerPolicy");
 		
 		ORIGINAL.FLAG_INJECTED = (Integer) wmp.findField("FLAG_INJECTED").getValue();
 		ORIGINAL.FLAG_VIRTUAL = (Integer) wmp.findField("FLAG_VIRTUAL").getValue();
@@ -205,14 +215,14 @@ public abstract class IMediatorSetup {
 			ORIGINAL.FLAG_INTERACTIVE = (Integer) ((wmp.findField("FLAG_INTERACTIVE").getValue()));
 		}
 		
-		ORIGINAL.QUEUEING_ALLOW = (Integer) wmp.findFieldDeep("ACTION_PASS_TO_USER").getValue();
+		ORIGINAL.QUEUEING_ALLOW = (Integer) wmp.findField("ACTION_PASS_TO_USER").getValue();
 		ORIGINAL.QUEUEING_REJECT = 0;
 		
 		ORIGINAL.DISPATCHING_ALLOW = SDK.METHOD_INTERCEPT_VERSION == 1 ? false : 0;
 		ORIGINAL.DISPATCHING_REJECT = SDK.METHOD_INTERCEPT_VERSION == 1 ? true : -1;
 		
 		if (SDK.MANAGER_HARDWAREINPUT_VERSION > 1) {
-			ORIGINAL.INPUT_MODE_ASYNC = (Integer) ReflectClass.forName("android.hardware.input.InputManager").findField("INJECT_INPUT_EVENT_MODE_ASYNC").getValue();
+			ORIGINAL.INPUT_MODE_ASYNC = (Integer) ReflectClass.fromName("android.hardware.input.InputManager").findField("INJECT_INPUT_EVENT_MODE_ASYNC").getValue();
 		}
 		
 		/*
@@ -223,37 +233,29 @@ public abstract class IMediatorSetup {
 			 * The instance of com.android.internal.policy.impl.sec.SamsungPhoneWindowManager
 			 * is located at com.android.internal.policy.impl.PhoneWindowManager$mSPWM
 			 */
-			mSamsungPhoneWindowManager = pwm.findField("mSPWM").getValueToInstance();
+			mSamsungPhoneWindowManager = (ReflectClass) pwm.findField("mSPWM").getValue(Result.INSTANCE);
 			
 			if (SDK.SAMSUNG_FEEDBACK_VERSION == 1) {
-				mMethods.put("samsung.performSystemKeyFeedback", mSamsungPhoneWindowManager.findMethod("performSystemKeyFeedback", Match.DEFAULT, KeyEvent.class));
+				mMethods.put("samsung.performSystemKeyFeedback", mSamsungPhoneWindowManager.findMethod("performSystemKeyFeedback", KeyEvent.class));
 				
 			} else {
-				mMethods.put("samsung.performSystemKeyFeedback", mSamsungPhoneWindowManager.findMethod("performSystemKeyFeedback", Match.DEFAULT, KeyEvent.class, Boolean.TYPE, Boolean.TYPE));
+				mMethods.put("samsung.performSystemKeyFeedback", mSamsungPhoneWindowManager.findMethod("performSystemKeyFeedback", KeyEvent.class, Boolean.TYPE, Boolean.TYPE));
 			}
 		}
 		
 		/*
 		 * Get the regular haptic feedback method
 		 */
-		mMethods.put("performHapticFeedback", pwm.findMethodDeep("performHapticFeedbackLw", Match.BEST, "android.view.WindowManagerPolicy$WindowState", Integer.TYPE, Boolean.TYPE));
+		mMethods.put("performHapticFeedback", pwm.findMethod("performHapticFeedbackLw", "android.view.WindowManagerPolicy$WindowState", Integer.TYPE, Boolean.TYPE));
 		
 		/*
 		 * Locate KeyGuard Tools
 		 */
-		mKeyguardMediator = pwm.findFieldDeep( SDK.MANAGER_KEYGUARD_VERSION > 1 ? "mKeyguardDelegate" : "mKeyguardMediator" ).getValueToInstance();
-		mKeyguardMediator.setOnErrorListener(new OnErrorListener(){
-			@Override
-			public void onError(ReflectMember<?> member) {
-				member.getReflectClass().setReceiver(
-						mPhoneWindowManager.findField( SDK.MANAGER_KEYGUARD_VERSION > 1 ? "mKeyguardDelegate" : "mKeyguardMediator" ).getValue()
-				);
-			}
-		});
+		mKeyguardMediator = (ReflectClass) pwm.findField( SDK.MANAGER_KEYGUARD_VERSION > 1 ? "mKeyguardDelegate" : "mKeyguardMediator" ).getValue(Result.INSTANCE);
 		
 		if (SDK.MANAGER_KEYGUARD_VERSION > 2) {
             try {
-                mMethods.put("KeyguardMediator.isShowing", mKeyguardMediator.findMethodDeep("isShowingAndNotOccluded"));
+                mMethods.put("KeyguardMediator.isShowing", mKeyguardMediator.findMethod("isShowingAndNotOccluded"));
 
             } catch (ReflectException e) {
                 /*
@@ -263,28 +265,28 @@ public abstract class IMediatorSetup {
                  *          the method within 'PhoneWindowManager'. We can revisit this ones the 'M' release is published,
                  *          which might need additional work as well.
                  */
-                mMethods.put("KeyguardMediator.isShowing", mPhoneWindowManager.findMethodDeep("isKeyguardShowingAndNotOccluded"));
+                mMethods.put("KeyguardMediator.isShowing", mPhoneWindowManager.findMethod("isKeyguardShowingAndNotOccluded"));
             }
 		
 		} else {
-			mMethods.put("KeyguardMediator.isShowing", mKeyguardMediator.findMethodDeep("isShowingAndNotHidden"));
+			mMethods.put("KeyguardMediator.isShowing", mKeyguardMediator.findMethod("isShowingAndNotHidden"));
 		}
 		
-		mMethods.put("KeyguardMediator.isLocked", mKeyguardMediator.findMethodDeep("isShowing"));
-		mMethods.put("KeyguardMediator.isRestricted", mKeyguardMediator.findMethodDeep("isInputRestricted"));
-		mMethods.put("KeyguardMediator.dismiss", mKeyguardMediator.findMethodDeep("keyguardDone", Match.DEFAULT, Boolean.TYPE, Boolean.TYPE));
+		mMethods.put("KeyguardMediator.isLocked", mKeyguardMediator.findMethod("isShowing"));
+		mMethods.put("KeyguardMediator.isRestricted", mKeyguardMediator.findMethod("isInputRestricted"));
+		mMethods.put("KeyguardMediator.dismiss", mKeyguardMediator.findMethod("keyguardDone", Boolean.TYPE, Boolean.TYPE));
 		
 		/*
 		 * Get the Activity Management tools
 		 */
-		mActivityManager = ReflectClass.forReceiver(((Context) mContext.getReceiver()).getSystemService(Context.ACTIVITY_SERVICE));
-		mActivityManagerService = ReflectClass.forName("android.app.ActivityManagerNative").findMethod("getDefault").invokeToInstance();
+		mActivityManager = ReflectClass.fromReceiver(((Context) mContext.getReceiver()).getSystemService(Context.ACTIVITY_SERVICE));
+		mActivityManagerService = (ReflectClass) ReflectClass.fromName("android.app.ActivityManagerNative").findMethod("getDefault").invoke(Result.INSTANCE);
 		
 		/*
 		 * Get the Power Management tools
 		 */
-		mPowerManager = ReflectClass.forReceiver(((Context) mContext.getReceiver()).getSystemService(Context.POWER_SERVICE));
-		mPowerManagerService = mPowerManager.findField("mService").getValueToInstance();
+		mPowerManager = ReflectClass.fromReceiver(((Context) mContext.getReceiver()).getSystemService(Context.POWER_SERVICE));
+		mPowerManagerService = (ReflectClass) mPowerManager.findField("mService").getValue(Result.INSTANCE);
 		mWakelock = ((PowerManager) mPowerManager.getReceiver()).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "HookedPhoneWindowManager");
 		
 		/*
@@ -292,71 +294,77 @@ public abstract class IMediatorSetup {
 		 */
 		
 		if (SDK.MANAGER_POWER_VERSION > 3) {
-			mMethods.put("goToSleep", mPowerManagerService.findMethodDeep("goToSleep", Match.DEFAULT, Long.TYPE, Integer.TYPE, Integer.TYPE));
+			mMethods.put("goToSleep", mPowerManagerService.findMethod("goToSleep", Long.TYPE, Integer.TYPE, Integer.TYPE));
 			
 		} else if (SDK.MANAGER_POWER_VERSION > 1) { 
-			mMethods.put("goToSleep", mPowerManagerService.findMethodDeep("goToSleep", Match.DEFAULT, Long.TYPE, Integer.TYPE));
+			mMethods.put("goToSleep", mPowerManagerService.findMethod("goToSleep", Long.TYPE, Integer.TYPE));
 			
 		} else {
-			mMethods.put("goToSleep", mPowerManagerService.findMethodDeep("goToSleep", Match.DEFAULT, Long.TYPE));
+			mMethods.put("goToSleep", mPowerManagerService.findMethod("goToSleep", Long.TYPE));
 		}
 		
 		if (SDK.MANAGER_POWER_VERSION == 1) {
-			mMethods.put("userActivity", mPowerManagerService.findMethodDeep("userActivity", Match.DEFAULT, Long.TYPE, Boolean.TYPE));
-			mMethods.put("forceUserActivityLocked", mPowerManagerService.findMethodDeep("forceUserActivityLocked"));
+			mMethods.put("userActivity", mPowerManagerService.findMethod("userActivity", Long.TYPE, Boolean.TYPE));
+			mMethods.put("forceUserActivityLocked", mPowerManagerService.findMethod("forceUserActivityLocked"));
 			
 		} else {
-			mMethods.put("userActivity", mPowerManagerService.findMethodDeep("userActivity", Match.DEFAULT, Long.TYPE, Integer.TYPE, Integer.TYPE));
-			mMethods.put("wakeUp", mPowerManagerService.findMethodDeep("wakeUp", Match.DEFAULT, Long.TYPE));
+			mMethods.put("userActivity", mPowerManagerService.findMethod("userActivity", Long.TYPE, Integer.TYPE, Integer.TYPE));
+
+            if (SDK.MANAGER_POWER_VERSION < 5) {
+                mMethods.put("wakeUp", mPowerManagerService.findMethod("wakeUp", Long.TYPE));
+
+            } else {
+                mMethods.put("wakeUp", mPowerManagerService.findMethod("wakeUp", Long.TYPE, String.class, String.class));
+            }
 		}
 		
 		/*
 		 * Get Input Injection tools
 		 */
-		mWindowManagerService = pwm.findFieldDeep("mWindowManager").getValueToInstance();
+		mWindowManagerService = (ReflectClass) pwm.findField("mWindowManager").getValue(Result.INSTANCE);
 		
 		if (SDK.MANAGER_HARDWAREINPUT_VERSION > 1) {
-			mInputManager = ReflectClass.forName("android.hardware.input.InputManager").findMethod("getInstance").invokeForReceiver();
-			mMethods.put("injectInputEvent", mInputManager.findMethodDeep("injectInputEvent", Match.DEFAULT, KeyEvent.class, Integer.TYPE));
+			mInputManager = (ReflectClass) ReflectClass.fromName("android.hardware.input.InputManager").findMethod("getInstance").invoke(Result.INSTANCE);
+			mMethods.put("injectInputEvent", mInputManager.findMethod("injectInputEvent", KeyEvent.class, Integer.TYPE));
 		
 		} else {
-			mMethods.put("injectInputEvent", mWindowManagerService.findMethodDeep("injectInputEventNoWait", Match.DEFAULT, KeyEvent.class));
+			mMethods.put("injectInputEvent", mWindowManagerService.findMethod("injectInputEventNoWait", KeyEvent.class));
 		}
 		
 		/*
 		 * Get a hidden method to check internal/external state of devices
 		 */
 		if (SDK.INPUT_DEVICESTORAGE_VERSION > 1) {
-			mMethods.put("isDeviceExternal", ReflectClass.forName("android.view.InputDevice").findMethod("isExternal"));
+			mMethods.put("isDeviceExternal", ReflectClass.fromName("android.view.InputDevice").findMethod("isExternal"));
 		}
 		
 		/*
 		 * Get Audio tools
 		 */
-		mAudioManager = ReflectClass.forReceiver(((Context) mContext.getReceiver()).getSystemService(Context.AUDIO_SERVICE));
+		mAudioManager = ReflectClass.fromReceiver(((Context) mContext.getReceiver()).getSystemService(Context.AUDIO_SERVICE));
 		
 		/*
 		 * Get Multi User tools
 		 */
 		if (SDK.MANAGER_MULTIUSER_VERSION > 0) {
-			mConstructors.put("UserHandle", ReflectClass.forName("android.os.UserHandle").findConstructor(Match.BEST, Integer.TYPE));
-			mFields.put("UserHandle.current", ReflectClass.forName("android.os.UserHandle").findField("USER_CURRENT"));
-			mMethods.put("startActivityAsUser", mContext.findMethodDeep("startActivityAsUser", Match.BEST, Intent.class, "android.os.UserHandle"));
-			mMethods.put("sendBroadcastAsUser", mContext.findMethodDeep("sendBroadcastAsUser", Match.BEST, Intent.class, "android.os.UserHandle"));
+			mConstructors.put("UserHandle", ReflectClass.fromName("android.os.UserHandle").findConstructor(Integer.TYPE));
+			mFields.put("UserHandle.current", ReflectClass.fromName("android.os.UserHandle").findField("USER_CURRENT"));
+			mMethods.put("startActivityAsUser", mContext.findMethod("startActivityAsUser", Intent.class, "android.os.UserHandle"));
+			mMethods.put("sendBroadcastAsUser", mContext.findMethod("sendBroadcastAsUser", Intent.class, "android.os.UserHandle"));
 		}
 		
 		/*
 		 * Get Tools for displaying Global Actions Menu
 		 */
 		try {
-			mMethods.put("closeSystemDialogs", mActivityManagerService.findMethodDeep("closeSystemDialogs", Match.BEST, String.class));
+			mMethods.put("closeSystemDialogs", mActivityManagerService.findMethod("closeSystemDialogs", String.class));
 			
 			try {
 				if (android.os.Build.VERSION.SDK_INT >= 21) {
-					mMethods.put("showGlobalActionsDialog", mPhoneWindowManager.findMethodDeep("showGlobalActions"));
+					mMethods.put("showGlobalActionsDialog", mPhoneWindowManager.findMethod("showGlobalActions"));
 					
 				} else {
-					mMethods.put("showGlobalActionsDialog", mPhoneWindowManager.findMethodDeep("showGlobalActionsDialog"));
+					mMethods.put("showGlobalActionsDialog", mPhoneWindowManager.findMethod("showGlobalActionsDialog"));
 				}
 				
 				mXServiceManager.putBoolean("variable:remap.support.global_actions", true);
@@ -366,7 +374,7 @@ public abstract class IMediatorSetup {
 					/*
 					 * Support for ROM's like SlimKat that uses a 'boolean pokeWakeLock' parameter
 					 */
-					mMethods.put("showGlobalActionsDialog.custom", mPhoneWindowManager.findMethodDeep("showGlobalActionsDialog", Match.BEST, Boolean.TYPE));
+					mMethods.put("showGlobalActionsDialog.custom", mPhoneWindowManager.findMethod("showGlobalActionsDialog", Boolean.TYPE));
 					mXServiceManager.putBoolean("variable:remap.support.global_actions", true);
 					
 				} catch (ReflectException ei) {
@@ -374,32 +382,28 @@ public abstract class IMediatorSetup {
 				}
 			}
 			
-			mRecentApplicationsDialog = ReflectClass.forName( SDK.MANAGER_RECENT_DIALOG_VERSION > 1 ? "com.android.internal.statusbar.IStatusBarService" : "com.android.internal.policy.impl.RecentApplicationsDialog" );
-			mRecentApplicationsDialog.setOnReceiverListener(new OnReceiverListener(){
-				@Override
-				public Object onReceiver(ReflectMember<?> member) {
-					Object recentAppsService;
-					
-					if (SDK.MANAGER_RECENT_DIALOG_VERSION > 1) {
-						recentAppsService = member.getReflectClass().bindInterface("statusbar").getReceiver();
-						
-					} else {
-						recentAppsService = member.getReflectClass().newInstance(((Context) mContext.getReceiver()));
-					}
-					
-					member.getReflectClass().setReceiver(recentAppsService);
-					
-					return recentAppsService;
-				}
-			});
-			mRecentApplicationsDialog.setOnErrorListener(new OnErrorListener(){
-				@Override
-				public void onError(ReflectMember<?> member) {
-					member.getReflectClass().setReceiver(null);
-				}
-			});
+			mRecentApplicationsDialog = ReflectClass.fromName(SDK.MANAGER_RECENT_DIALOG_VERSION > 1 ? "com.android.internal.statusbar.IStatusBarService" : "com.android.internal.policy.impl.RecentApplicationsDialog");
+            mRecentApplicationsDialog.setReceiverListener(new OnClassReceiverListener() {
+                @Override
+                public Object onRequestReceiver(ReflectClass reflectClass) {
+                    Object receiver = reflectClass.getReceiver();
+
+                    if (receiver == null) {
+                        if (SDK.MANAGER_RECENT_DIALOG_VERSION > 1) {
+                            receiver = reflectClass.bindInterface("statusbar").getReceiver();
+
+                        } else {
+                            receiver = reflectClass.invokeConstructor(((Context) mContext.getReceiver()));
+                        }
+
+                        reflectClass.setReceiver(receiver);
+                    }
+
+                    return receiver;
+                }
+            });
 			
-			mMethods.put("toggleRecentApps", mRecentApplicationsDialog.findMethodDeep( SDK.MANAGER_RECENT_DIALOG_VERSION > 1 ? "toggleRecentApps" : "show" ));
+			mMethods.put("toggleRecentApps", mRecentApplicationsDialog.findMethod( SDK.MANAGER_RECENT_DIALOG_VERSION > 1 ? "toggleRecentApps" : "show"));
 			mXServiceManager.putBoolean("variable:remap.support.recent_dialog", true);
 			
 		} catch (ReflectException e) {
@@ -413,7 +417,7 @@ public abstract class IMediatorSetup {
 			/*
 			 * This does not exists in all Gingerbread versions
 			 */
-			mMethods.put("takeScreenshot", mPhoneWindowManager.findMethodDeep("takeScreenshot"));
+			mMethods.put("takeScreenshot", mPhoneWindowManager.findMethod("takeScreenshot"));
 			mXServiceManager.putBoolean("variable:remap.support.screenshot", true);
 			
 		} catch (ReflectException e) {}
@@ -421,18 +425,18 @@ public abstract class IMediatorSetup {
 		/*
 		 * Get Rotation Tools
 		 */
-		mMethods.put("getRotation", mWindowManagerService.findMethodDeep("getRotation"));
+		mMethods.put("getRotation", mWindowManagerService.findMethod("getRotation"));
 		if (SDK.MANAGER_ROTATION_VERSION > 1) {
-			mMethods.put("freezeRotation", mWindowManagerService.findMethodDeep("freezeRotation", Match.BEST, Integer.TYPE));
-			mMethods.put("thawRotation", mWindowManagerService.findMethodDeep("thawRotation"));
+			mMethods.put("freezeRotation", mWindowManagerService.findMethod("freezeRotation", Integer.TYPE));
+			mMethods.put("thawRotation", mWindowManagerService.findMethod("thawRotation"));
 		}
 		
 		/*
 		 * Find tools to handle wake keys
 		 */
 		try {
-			mMethods.put("isWakeKeyWhenScreenOff", mPhoneWindowManager.findMethodDeep("isWakeKeyWhenScreenOff", Match.BEST, Integer.TYPE));
-			
+			mMethods.put("isWakeKeyWhenScreenOff", mPhoneWindowManager.findMethod("isWakeKeyWhenScreenOff", Integer.TYPE));
+
 		} catch (ReflectException e) {}
 		
 		/*
@@ -445,8 +449,8 @@ public abstract class IMediatorSetup {
 		/*
 		 * 
 		 */
-		mMethods.put("forceStopPackage", mActivityManagerService.findMethodDeep("forceStopPackage", Match.BEST, SDK.MANAGER_MULTIUSER_VERSION > 0 ? new Object[]{String.class, Integer.TYPE} : new Object[]{String.class}));
-		
+		mMethods.put("forceStopPackage", mActivityManagerService.findMethod("forceStopPackage", SDK.MANAGER_MULTIUSER_VERSION > 0 ? new Object[]{String.class, Integer.TYPE} : new Object[]{String.class}));
+
 		mReady = true;
 	}
 	
@@ -463,7 +467,7 @@ public abstract class IMediatorSetup {
 			 * their name. In these cases we don't care about consistency. If you are going to borrow from others, 
 			 * then make sure to keep compatibility.
 			 */
-			ReflectClass torchConstants = ReflectClass.forName("com.android.internal.util.cm.TorchConstants");
+			ReflectClass torchConstants = ReflectClass.fromName("com.android.internal.util.cm.TorchConstants");
 			mTorchIntent = new Intent((String) torchConstants.findField("ACTION_TOGGLE_STATE").getValue());
 			
 			if(Common.debug()) Log.d(TAG + "$torchLocator()", "Found CyanogenMod Intent");

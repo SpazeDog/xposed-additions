@@ -24,12 +24,11 @@ import android.view.InputEvent;
 import android.view.KeyEvent;
 
 import com.spazedog.lib.reflecttools.ReflectClass;
-import com.spazedog.lib.reflecttools.utils.ReflectException;
+import com.spazedog.lib.reflecttools.ReflectException;
+import com.spazedog.lib.reflecttools.bridge.MethodBridge;
 import com.spazedog.xposed.additionsgb.Common;
 
 import java.lang.reflect.Field;
-
-import de.robv.android.xposed.XC_MethodHook;
 
 public class InputManager {
 	public static final String TAG = InputManager.class.getName();
@@ -53,17 +52,17 @@ public class InputManager {
 
         try {
             // Gingerbread
-            ReflectClass.forName("com.android.server.InputManager").inject("nativeInjectInputEvent", hook.hook_injectInputEvent);
+            ReflectClass.fromName("com.android.server.InputManager").bridge("nativeInjectInputEvent", hook.hook_injectInputEvent);
 
         } catch (ReflectException e) {
             try {
                 // ICS
-                ReflectClass.forName("com.android.server.wm.InputManager").inject("nativeInjectInputEvent", hook.hook_injectInputEvent);
+                ReflectClass.fromName("com.android.server.wm.InputManager").bridge("nativeInjectInputEvent", hook.hook_injectInputEvent);
 
             } catch (ReflectException e2) {
                 try {
                     // Jellybean+
-                    ReflectClass.forName("com.android.server.input.InputManagerService").inject("nativeInjectInputEvent", hook.hook_injectInputEvent);
+                    ReflectClass.fromName("com.android.server.input.InputManagerService").bridge("nativeInjectInputEvent", hook.hook_injectInputEvent);
 
                 } catch (ReflectException e3) {
                     Log.e(TAG, e3.getMessage(), e3);
@@ -72,12 +71,12 @@ public class InputManager {
         }
 	}
 
-	protected XC_MethodHook hook_injectInputEvent = new XC_MethodHook() {
+	protected MethodBridge hook_injectInputEvent = new MethodBridge() {
 		@Override
-		protected final void beforeHookedMethod(final MethodHookParam param) {
-            InputEvent event = (InputEvent) (param.args[1] instanceof InputEvent ? param.args[1] : param.args[0]);
+        public void bridgeEnd(BridgeParams params) {
+            InputEvent event = (InputEvent) (params.args[1] instanceof InputEvent ? params.args[1] : params.args[0]);
 
-			if (param.args[0] instanceof KeyEvent) {
+			if (params.args[0] instanceof KeyEvent) {
                 KeyEvent keyEvent = (KeyEvent) event;
                 int keyFlags = keyEvent.getFlags();
 

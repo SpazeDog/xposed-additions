@@ -53,7 +53,8 @@ public class XServiceManager {
 	private IXService mService;
 	
 	private Boolean mIsUnlocked;
-	
+
+    private Boolean isActive;
 	private Boolean isReady;
 	
 	private Map<String, Object> mData = new HashMap<String, Object>();
@@ -101,8 +102,12 @@ public class XServiceManager {
 			}
 		}
 	};
+
+    public static synchronized XServiceManager getInstance() {
+        return getInstance(false);
+    }
 	
-	public static synchronized XServiceManager getInstance() {
+	public static synchronized XServiceManager getInstance(boolean suppress) {
 		XServiceManager instance = oInstance.get();
 		
 		if (instance == null || instance.mService == null) {
@@ -112,7 +117,7 @@ public class XServiceManager {
 			
 			for (String serviceName : new String[]{Common.XSERVICE_NAME, Common.XSERVICE_NAME_COMBAT}) {
 				try {
-					ReflectClass service = ReflectClass.forClass(IXService.class).bindInterface(serviceName);
+					ReflectClass service = ReflectClass.fromClass(IXService.class).bindInterface(serviceName);
 					
 					if (service != null) {
 						instance.mService = (IXService) service.getReceiver();
@@ -127,7 +132,9 @@ public class XServiceManager {
 					}
 					
 				} catch (Throwable e) {
-					Log.e(TAG, e.getMessage(), e);
+                    if (!suppress) {
+                        Log.e(TAG, e.getMessage(), e);
+                    }
 				}
 			}
 			
@@ -142,7 +149,7 @@ public class XServiceManager {
 	private synchronized void handleRemoteException(RemoteException e) {
 		for (String serviceName : new String[]{Common.XSERVICE_NAME, Common.XSERVICE_NAME_COMBAT}) {
 			try {
-				ReflectClass service = ReflectClass.forClass(IXService.class).bindInterface(serviceName);
+				ReflectClass service = ReflectClass.fromClass(IXService.class).bindInterface(serviceName);
 				
 				if (service != null) {
 					mService = (IXService) service.getReceiver();
@@ -459,6 +466,21 @@ public class XServiceManager {
 		
 		return mIsUnlocked != null && mIsUnlocked;
 	}
+
+	public Boolean isServiceActive() {
+		if (isActive == null) {
+			try {
+				if (mService.isActive()) {
+					isActive = true;
+				}
+
+			} catch (RemoteException e) {
+				handleRemoteException(e);
+			}
+		}
+
+		return isReady != null && isReady;
+	}
 	
 	public Boolean isServiceReady() {
 		if (isReady == null) {
@@ -514,4 +536,15 @@ public class XServiceManager {
 		
 		return null;
 	}
+
+    public List<String> getLogEntries() {
+        try {
+            return mService.getLogEntries();
+
+        } catch (RemoteException e) {
+            handleRemoteException(e);
+        }
+
+        return new ArrayList<String>();
+    }
 }

@@ -19,11 +19,6 @@
 
 package com.spazedog.xposed.additionsgb.backend.service;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -41,13 +36,18 @@ import android.os.RemoteException;
 import android.util.Log;
 
 import com.spazedog.lib.reflecttools.ReflectClass;
-import com.spazedog.lib.reflecttools.utils.ReflectConstants.Match;
+import com.spazedog.lib.reflecttools.ReflectException;
+import com.spazedog.lib.reflecttools.bridge.MethodBridge;
 import com.spazedog.xposed.additionsgb.Common;
 import com.spazedog.xposed.additionsgb.IServicePreferences;
+import com.spazedog.xposed.additionsgb.backend.LogcatMonitor;
 import com.spazedog.xposed.additionsgb.utils.SettingsHelper.SettingsData;
 import com.spazedog.xposed.additionsgb.utils.SettingsHelper.Type;
 
-import de.robv.android.xposed.XC_MethodHook;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public final class XService extends IXService.Stub {
 	public static final String TAG = XService.class.getName();
@@ -58,101 +58,65 @@ public final class XService extends IXService.Stub {
 	private Context mContextModule;
 	
 	private SettingsData mData = new SettingsData();
-	
+
+    private Boolean mIsActive = false;
 	private Boolean mIsReady = false;
 	
 	private Integer mVersion = 0;
 	
 	private Set<IBinder> mListeners = new HashSet<IBinder>();
+    private List<String> mLog = new ArrayList<String>();
 	
 	private static class PREFERENCE {
 		private static int UID = 1000;
 		private static int GID = 1000;
 	}
 	
-	public static void init() {
+	public static void init(Context context) {
 		Log.d(TAG, "Adding Service Hooks on SDK version " + Build.VERSION.SDK_INT);
-		
-		/*
-		 * Plug in the service into Android's service manager
-		 */
-		if (Build.VERSION.SDK_INT < 21) {
-			Log.d(TAG, "Attaching hook to ActivityManagerService");
-			
-			XService hooks = new XService();
-			ReflectClass ams = ReflectClass.forName("com.android.server.am.ActivityManagerService");
-			
-			ams.inject("main", hooks.hook_main);
-			ams.inject("systemReady", hooks.hook_systemReady);
-			ams.inject("shutdown", hooks.hook_shutdown);
-			
-		} else {
-			Log.d(TAG, "Attaching hook to ActivityThread to get a proper ClassLoader");
-			
-			/*
-			 * On API 21 we cannot access certain classes with the boot class loader. 
-			 * So we need to go another way. 
-			 */
-			
-			ReflectClass at = ReflectClass.forName("android.app.ActivityThread");
-			at.inject("systemMain", new XC_MethodHook() {
-				@Override
-				protected final void afterHookedMethod(final MethodHookParam param) {
-					Log.d(TAG, "Attaching hook to ActivityManagerService and SystemServer");
-					
-					XService hooks = new XService();
-					ReflectClass ams = ReflectClass.forName("com.android.server.am.ActivityManagerService", Thread.currentThread().getContextClassLoader());
-					ReflectClass ss = ReflectClass.forName("com.android.server.SystemServer", Thread.currentThread().getContextClassLoader());
-					
-					ss.inject("startBootstrapServices", hooks.hook_main);
-					ams.inject("systemReady", hooks.hook_systemReady);
-					ams.inject("shutdown", hooks.hook_shutdown);
-				}
-			});
-		}
+
+        try {
+            XService hooks = new XService();
+            ReflectClass ams = ReflectClass.fromName("com.android.server.am.ActivityManagerService");
+
+            ams.bridge("systemReady", hooks.hook_systemReady);
+
+            hooks.instantiate(context);
+
+        } catch (ReflectException e) {
+            Log.e(TAG, e.getMessage(), e);
+        }
 	}
-	
-	protected XC_MethodHook hook_main = new XC_MethodHook() {
-		@Override
-		protected final void afterHookedMethod(final MethodHookParam param) {
-			Log.d(TAG, "Entering Service Main hook");
-			
-			if (Build.VERSION.SDK_INT < 21) {
-				/*
-				 * The original com.android.server.am.ActivityManagerService.main() method
-				 * will return the system context, which XposedBridge will have stored in param.getResult().
-				 * This is why we inject this as an After Hook.
-				 */
-				mContextSystem = (Context) param.getResult();
-				
-				ReflectClass.forName("android.os.ServiceManager")
-				.findMethod("addService", Match.BEST, String.class, IBinder.class)
-				.invoke(Common.XSERVICE_NAME, XService.this);
-				
+
+    protected void instantiate(Context context) {
+		Log.i(TAG, "Starting Settings Service");
+
+        mContextSystem = context;
+
+		try {
+			if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+				ReflectClass.fromName("android.os.ServiceManager")
+						.invokeMethod("addService", Common.XSERVICE_NAME, this);
+
 			} else {
-				/*
-				 * The original android.app.ActivityThread method will return a new instance of itself. 
-				 * This instance contains the system context.
-				 */
-				mContextSystem = (Context) ReflectClass.forReceiver(param.thisObject).findField("mSystemContext").getValue();
-				
-				/*
-				 * Set the class loader for the server process. 
-				 * 
-				 * TODO: Maybe this should just be added as standard to ReflectTools
-				 */
-				ReflectClass.setClassLoader(Thread.currentThread().getContextClassLoader());
-				
-				ReflectClass.forName("android.os.ServiceManager")
-				.findMethod("addService", Match.BEST, String.class, IBinder.class, Boolean.TYPE)
-				.invoke(Common.XSERVICE_NAME, XService.this, true);
-			}
+				ReflectClass.fromName("android.os.ServiceManager")
+						.invokeMethod("addService", Common.XSERVICE_NAME, this, true);
+            }
+
+            /*
+             * Get any logs printed before the service could receive them
+             */
+            mLog = LogcatMonitor.buildLog();
+            mIsActive = true;
+
+		} catch (ReflectException e) {
+			Log.e(TAG, e.getMessage(), e);
 		}
-	};
+    }
 	
-	protected XC_MethodHook hook_systemReady = new XC_MethodHook() {
+	protected MethodBridge hook_systemReady = new MethodBridge() {
 		@Override
-		protected final void afterHookedMethod(final MethodHookParam param) {
+        public void bridgeEnd(BridgeParams params) {
 			if(Common.DEBUG) Log.d(TAG, "Starting the service");
 			
 			try {
@@ -176,17 +140,8 @@ public final class XService extends IXService.Stub {
 			intentFilter.addDataScheme("package");
 			
 			mContextSystem.registerReceiver(applicationNotifier, intentFilter);
-			
+
 			pokeAppPreferenceService(PokeType.RESTORE_SETTINGS);
-		}
-	};
-	
-	protected XC_MethodHook hook_shutdown = new XC_MethodHook() {
-		@Override
-		protected final void beforeHookedMethod(final MethodHookParam param) {
-			if(Common.DEBUG) Log.d(TAG, "Stopping the service");
-			
-			//pokeAppPreferenceService(PokeType.SAVE_SETTINGS);
 		}
 	};
 	
@@ -414,6 +369,11 @@ public final class XService extends IXService.Stub {
 		return mContextSystem.getPackageManager()
 				.checkSignatures(Common.PACKAGE_NAME, Common.PACKAGE_NAME_PRO) == PackageManager.SIGNATURE_MATCH;
 	}
+
+    @Override
+    public boolean isActive() {
+        return mIsActive;
+    }
 	
 	@Override
 	public boolean isReady() {
@@ -450,14 +410,32 @@ public final class XService extends IXService.Stub {
 	@Override
 	public void sendBroadcast(String action, Bundle data) {
 		synchronized(mListeners) {
-			for (IBinder listener : mListeners) {
-				if (listener != null && listener.pingBinder()) {
-					try {
-						IXServiceChangeListener.Stub.asInterface(listener).onBroadcastReceive(action, data);
-						
-					} catch (RemoteException e) {}
-				}
-			}
+            if ("logcat.entry".equals(action)) {
+                String log = data.getString("log");
+
+                if (!"".equals(log)) {
+                    mLog.add(log);
+                }
+
+                if (mLog.size() > Common.MAX_LOG_ENTRIES) {
+                    int trunc = (int) (mLog.size() * 0.15);
+
+                    for (int i=0; i < trunc; i++) {
+                        mLog.remove(0);
+                    }
+                }
+
+            } else {
+                for (IBinder listener : mListeners) {
+                    if (listener != null && listener.pingBinder()) {
+                        try {
+                            IXServiceChangeListener.Stub.asInterface(listener).onBroadcastReceive(action, data);
+
+                        } catch (RemoteException e) {
+                        }
+                    }
+                }
+            }
 		}
 	}
 	
@@ -515,4 +493,9 @@ public final class XService extends IXService.Stub {
 	public SettingsData getSettingsData() {
 		return mData;
 	}
+
+    @Override
+    public List<String> getLogEntries() {
+        return mLog;
+    }
 }

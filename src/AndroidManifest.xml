@@ -1,4 +1,6 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+<?xml version="1.0" encoding="utf-8"?>
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools"
     package="com.spazedog.xposed.additionsgb" >
     
     <uses-permission android:name="net.dinglisch.android.tasker.PERMISSION_RUN_TASKS"/>
@@ -7,10 +9,17 @@
     
     <uses-feature android:name="android.hardware.camera" />
 
+    <!-- Cydia Substrate -->
+    <uses-permission android:name="cydia.permission.SUBSTRATE"/>
+
     <application
         android:icon="@mipmap/ic_launcher"
         android:label="Xposed Additions"
-        android:theme="@style/AppTheme" >
+        android:theme="@style/AppTheme"
+        tools:replace="android:label">
+
+        <!-- Cydia Substrate -->
+        <meta-data android:name="com.saurik.substrate.main" android:value="com.spazedog.xposed.additionsgb.backend.XposedInjector"/>
         
         <meta-data android:value="true" android:name="xposedmodule" />
         <meta-data android:value="30+" android:name="xposedminversion" />

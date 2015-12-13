@@ -1,12 +1,5 @@
 package com.spazedog.xposed.additionsgb;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
@@ -15,48 +8,66 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.spazedog.xposed.additionsgb.backend.LogcatMonitor;
+import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
 public class ActivityViewerLog extends Activity {
-	
-	@Override
+
+    private List<String> mLog;
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+
+        if (mLog != null) {
+            outState.putStringArrayList("mLog", (ArrayList<String>) mLog);
+        }
+    }
+
+    @Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		
 		setContentView(R.layout.error_log_view);
-		
-		File[] files = new File[]{Common.LogFile.STORED, Common.LogFile.MAIN};
-		StringBuilder builder = new StringBuilder();
-		
-		for (File file : files) {
-			if (file.exists()) {
-				BufferedReader reader = null;
 
-				try {
-					reader = new BufferedReader(new FileReader(file));
-					String line;
-					
-					while ((line = reader.readLine()) != null) {
-						builder.append(line);
-						builder.append("\n");
-					}
-					
-				}  catch (IOException e) {} finally {
-					try {
-						reader.close();
-						
-					} catch (Throwable e) {}
-				}
-			}
-		}
-		
-		TextView view = (TextView) findViewById(R.id.content);
-		view.setText( builder.toString() );
+        StringBuilder builder = new StringBuilder();
+
+        if (savedInstanceState != null && savedInstanceState.containsKey("mLog")) {
+            mLog = savedInstanceState.getStringArrayList("mLog");
+
+        } else {
+            XServiceManager manager = XServiceManager.getInstance();
+
+            if (manager != null && manager.isServiceReady()) {
+                mLog = manager.getLogEntries();
+
+            } else {
+                mLog = LogcatMonitor.buildLog();
+            }
+        }
+
+        for (String entry : mLog) {
+            if (builder.length() > 0) {
+                builder.append("\n");
+            }
+
+            builder.append(entry);
+        }
+
+        TextView view = (TextView) findViewById(R.id.content);
+        view.setText(builder);
 		
 		if (Build.VERSION.SDK_INT >= 14) {
 			Toolbar bar = (Toolbar) findViewById(R.id.toolbar);

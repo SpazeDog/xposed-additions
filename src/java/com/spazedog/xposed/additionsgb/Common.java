@@ -19,14 +19,6 @@
 
 package com.spazedog.xposed.additionsgb;
 
-import java.io.File;
-import java.lang.ref.WeakReference;
-import java.text.Collator;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-
 import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -55,6 +47,14 @@ import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
 import com.spazedog.xposed.additionsgb.configs.Actions;
 import com.spazedog.xposed.additionsgb.configs.Settings;
 
+import java.io.File;
+import java.lang.ref.WeakReference;
+import java.text.Collator;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+
 
 public final class Common {
 	public static final Boolean DEBUG = false;
@@ -70,13 +70,7 @@ public final class Common {
 	public static final String TORCH_INTENT_ACTION = PACKAGE_NAME + ".TOGGLE_FLASHLIGHT";
 	
 	public static final String PREFERENCE_FILE = "config";
-	
-	public static class LogFile {
-		public static final Long SIZE = 1024L*512;
-		public static final File LOCK = new File(Environment.getDataDirectory(), "data/" + PACKAGE_NAME + "/cache/error.log.lock");
-		public static final File MAIN = new File(Environment.getDataDirectory(), "data/" + PACKAGE_NAME + "/cache/error.main.log");
-		public static final File STORED = new File(Environment.getDataDirectory(), "data/" + PACKAGE_NAME + "/cache/error.stored.log");
-	}
+    public static final int MAX_LOG_ENTRIES = 250;
 	
 	public static String actionType(String action) {
 		return action == null ? null : 
@@ -90,7 +84,7 @@ public final class Common {
 		String type = actionType(action);
 		
 		if ("dispatch".equals(type)) {
-			return keyToString( Integer.parseInt(action) );
+			return keyToString(Integer.parseInt(action));
 			
 		} else if ("launcher".equals(type)) {
 			try {

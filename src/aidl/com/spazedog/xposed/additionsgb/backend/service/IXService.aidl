@@ -44,7 +44,8 @@ interface IXService {
 	void apply();
 	
 	boolean isUnlocked();
-	
+
+	boolean isActive();
 	boolean isReady();
 	
 	int getVersion();
@@ -55,4 +56,6 @@ interface IXService {
 	
 	void setSettingsData(in SettingsHelper.SettingsData data);
 	SettingsHelper.SettingsData getSettingsData();
+
+	List<String> getLogEntries();
 }

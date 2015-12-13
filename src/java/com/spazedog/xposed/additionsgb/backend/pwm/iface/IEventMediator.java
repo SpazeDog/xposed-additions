@@ -1,11 +1,5 @@
 package com.spazedog.xposed.additionsgb.backend.pwm.iface;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import net.dinglisch.android.tasker.TaskerIntent;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.ActivityManager;
@@ -28,14 +22,21 @@ import android.view.Surface;
 import android.widget.Toast;
 
 import com.spazedog.lib.reflecttools.ReflectClass;
-import com.spazedog.lib.reflecttools.utils.ReflectException;
-import com.spazedog.lib.reflecttools.utils.ReflectConstants.Match;
+import com.spazedog.lib.reflecttools.ReflectException;
+import com.spazedog.lib.reflecttools.bridge.MethodBridge;
+import com.spazedog.lib.reflecttools.bridge.MethodBridge.BridgeOriginal;
 import com.spazedog.xposed.additionsgb.Common;
 import com.spazedog.xposed.additionsgb.backend.InputManager;
 import com.spazedog.xposed.additionsgb.backend.pwm.PhoneWindowManager;
-import com.spazedog.xposed.additionsgb.backend.pwm.iface.IMediatorSetup.SDK;
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
 import com.spazedog.xposed.additionsgb.configs.Settings;
+
+import net.dinglisch.android.tasker.TaskerIntent;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public abstract class IEventMediator extends IMediatorSetup {
 	
@@ -44,6 +45,17 @@ public abstract class IEventMediator extends IMediatorSetup {
 	
 	private Map<Integer, Boolean> mDeviceIds = new HashMap<Integer, Boolean>();
 	private ArrayList<String> mDeviceTypes;
+
+    private BridgeOriginal mBridgeFeedback;
+    private BridgeOriginal mBridgeFeedbackSamsung;
+
+    public void addQuickWorkaround(BridgeOriginal orig) {
+        mBridgeFeedback = orig;
+    }
+
+    public void addQuickWorkaroundSamsung(BridgeOriginal orig) {
+        mBridgeFeedbackSamsung = orig;
+    }
 	
 	private Runnable mPowerHardResetRunnable = new Runnable(){
 		@Override
@@ -130,7 +142,7 @@ public abstract class IEventMediator extends IMediatorSetup {
 						 */
 						validated = device == null || (Boolean) mMethods.get("isDeviceExternal").invokeReceiver(device);
 						
-					} catch (ReflectException e) { 
+					} catch (ReflectException e) {
 						Log.e(TAG, e.getMessage(), e);
 					}
 					
@@ -200,6 +212,9 @@ public abstract class IEventMediator extends IMediatorSetup {
 		}
 	}
 
+    /*
+     * bidge and bidgeSammy is a quick work-around in order to implement ReflectTools 3 into code not designed for it.
+     */
 	public void performHapticFeedback(Object keyEvent, Integer type, Integer policyFlags) {
 		try {
 			if (type == HapticFeedbackConstants.VIRTUAL_KEY) {
@@ -208,18 +223,18 @@ public abstract class IEventMediator extends IMediatorSetup {
 				
 				if (forcedKeys == null || !forcedKeys.contains(""+keyCode)) {
 					if (SDK.SAMSUNG_FEEDBACK_VERSION == 1) {
-						mMethods.get("samsung.performSystemKeyFeedback").invokeOriginal(keyEvent); return;
+                        mBridgeFeedbackSamsung.invoke(mSamsungPhoneWindowManager.getReceiver(), keyEvent); return;
 						
 					} else if (SDK.SAMSUNG_FEEDBACK_VERSION == 2) {
-						mMethods.get("samsung.performSystemKeyFeedback").invokeOriginal(keyEvent, false, true); return;
+                        mBridgeFeedbackSamsung.invoke(mSamsungPhoneWindowManager.getReceiver(), keyEvent, false, true); return;
 						
 					} else if ((policyFlags & ORIGINAL.FLAG_VIRTUAL) == 0) {
-						return;
+                        return;
 					}
 				}
 			}
-			
-			mMethods.get("performHapticFeedback").invokeOriginal(null, type, false);
+
+            mBridgeFeedback.invoke(mPhoneWindowManager.getReceiver(), null, type, false);
 			
 		} catch (ReflectException e) {
 			Log.e(TAG, e.getMessage(), e);
@@ -229,7 +244,10 @@ public abstract class IEventMediator extends IMediatorSetup {
 	@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
 	public void pokeUserActivity(Long time, Boolean forced) {
 		if (forced) {
-			if (SDK.MANAGER_POWER_VERSION > 1) {
+            if (SDK.MANAGER_POWER_VERSION > 4) {
+                mMethods.get("wakeUp").invoke(time, "android.policy:POWER", mContext.invokeMethod("getOpPackageName"));
+
+            } else if (SDK.MANAGER_POWER_VERSION > 1) {
 				mMethods.get("wakeUp").invoke(time);
 				
 			} else {

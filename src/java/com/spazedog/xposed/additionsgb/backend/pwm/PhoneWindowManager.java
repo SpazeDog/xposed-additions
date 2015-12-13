@@ -6,6 +6,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Build;
+import android.os.Build.VERSION;
+import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.HapticFeedbackConstants;
@@ -13,7 +15,9 @@ import android.view.KeyEvent;
 import android.view.ViewConfiguration;
 
 import com.spazedog.lib.reflecttools.ReflectClass;
-import com.spazedog.lib.reflecttools.utils.ReflectException;
+import com.spazedog.lib.reflecttools.ReflectException;
+import com.spazedog.lib.reflecttools.bridge.MethodBridge;
+import com.spazedog.lib.reflecttools.bridge.MethodBridge.BridgeOriginal;
 import com.spazedog.xposed.additionsgb.Common;
 import com.spazedog.xposed.additionsgb.backend.InputManager;
 import com.spazedog.xposed.additionsgb.backend.pwm.EventManager.State;
@@ -23,7 +27,7 @@ import com.spazedog.xposed.additionsgb.backend.pwm.iface.IMediatorSetup.SDK;
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager;
 import com.spazedog.xposed.additionsgb.backend.service.XServiceManager.XServiceBroadcastListener;
 
-import de.robv.android.xposed.XC_MethodHook;
+import java.lang.reflect.Member;
 
 public final class PhoneWindowManager {
 	public static final String TAG = PhoneWindowManager.class.getName();
@@ -45,13 +49,17 @@ public final class PhoneWindowManager {
 	 */
 	public static void init() {
 		ReflectClass pwm = null;
+
+		Log.i(TAG, "Instantiating Remap Engine", null);
 		
 		try {
 			/*
-			 * Start by getting the PhoneWindowManager class and
-			 * create an instance of our own. 
+			 * It has been quite consistent for many years,
+			 * but in Marshmallow it finally got moved to the server namespace where it belongs.
 			 */
-			pwm = ReflectClass.forName("com.android.internal.policy.impl.PhoneWindowManager");
+			pwm = VERSION.SDK_INT > VERSION_CODES.LOLLIPOP_MR1 ? ReflectClass.fromName("com.android.server.policy.PhoneWindowManager")
+                                                               : ReflectClass.fromName("com.android.internal.policy.impl.PhoneWindowManager");
+
 			PhoneWindowManager instance = new PhoneWindowManager();
 			
 			/*
@@ -60,19 +68,10 @@ public final class PhoneWindowManager {
 			 * the first thing to be invoked once the system is ready
 			 * to use it. 
 			 */
-			pwm.inject("init", instance.hook_init);
+			pwm.bridge("init", instance.hook_init);
 			
 		} catch (ReflectException e) {
 			Log.e(TAG, e.getMessage(), e);
-			
-			if (pwm != null) {
-				/*
-				 * Do not keep hooks on any kind of errors.
-				 * Broken methods and such can result in system crash
-				 * and boot loops. 
-				 */
-				pwm.removeInjections();
-			}
 		}
 	}
 	
@@ -84,79 +83,78 @@ public final class PhoneWindowManager {
 	 * 		- ICS: PhoneWindowManager.init(Context, IWindowManager, WindowManagerFuncs, LocalPowerManager)
 	 * 		- JellyBean: PhoneWindowManager.init(Context, IWindowManager, WindowManagerFuncs)
 	 */
-	private final XC_MethodHook hook_init = new XC_MethodHook() {
+	private final MethodBridge hook_init = new MethodBridge() {
 		@Override
-		protected final void afterHookedMethod(final MethodHookParam param) {
+		public void bridgeEnd(BridgeParams params) {
+            Log.i(TAG, "Setting up boot completed receiver", null);
+
+			final Object receiver = params.receiver;
+
 			/*
 			 * Some Android services and such will not be ready yet.
 			 * Let's wait until everything is up and running. 
 			 */
-			((Context) param.args[0]).registerReceiver(
+			((Context) params.args[0]).registerReceiver(
 				new BroadcastReceiver() {
 					@Override
 					public void onReceive(Context context, Intent intent) {
+                        Log.i(TAG, "Configuring Remap Engine", null);
+
 						/*
 						 * Let's get an instance of our own Service Manager and
 						 * make sure that the related service is running, before continuing.
 						 */
 						mXServiceManager = XServiceManager.getInstance();
-						
+
 						if (mXServiceManager != null) {
 							ReflectClass pwm = null;
-							
+
 							try {
 								/*
 								 * Now we need to initialize our own Mediator. 
 								 * And once again, do not continue without it as
 								 * it contains all of our tools. 
 								 */
-								pwm = ReflectClass.forReceiver(param.thisObject);
+								pwm = ReflectClass.fromReceiver(receiver);
 								mEventManager = new EventManager(pwm, mXServiceManager);
-								
+
 								if (mEventManager.isReady()) {
 									/*
 									 * Add the remaining PhoneWindowManager hooks
 									 */
-									pwm.inject("interceptKeyBeforeQueueing", hook_interceptKeyBeforeQueueing);
-									pwm.inject("interceptKeyBeforeDispatching", hook_interceptKeyBeforeDispatching);
-									pwm.inject("performHapticFeedbackLw", hook_performHapticFeedbackLw);
-									
+									pwm.bridge("interceptKeyBeforeQueueing", hook_interceptKeyBeforeQueueing);
+									pwm.bridge("interceptKeyBeforeDispatching", hook_interceptKeyBeforeDispatching);
+									pwm.bridge("performHapticFeedbackLw", hook_performHapticFeedbackLw);
+
 									if (SDK.SAMSUNG_FEEDBACK_VERSION > 0) {
-										ReflectClass spwm = ReflectClass.forName("com.android.internal.policy.impl.sec.SamsungPhoneWindowManager");
-										spwm.inject("performSystemKeyFeedback", hook_performHapticFeedbackLw);
+										ReflectClass spwm = ReflectClass.fromName("com.android.internal.policy.impl.sec.SamsungPhoneWindowManager");
+										spwm.bridge("performSystemKeyFeedback", hook_performHapticFeedbackLw);
 									}
-									
+
 									/*
 									 * Add hooks to the ViewConfiguration class for this process,
 									 * allowing us to control key timeout values that will affect the original class.
 									 */
-									ReflectClass wc = ReflectClass.forName("android.view.ViewConfiguration");
-		
-									wc.inject("getLongPressTimeout", hook_viewConfigTimeouts);
-									wc.inject("getGlobalActionKeyTimeout", hook_viewConfigTimeouts);
+									ReflectClass wc = ReflectClass.fromName("android.view.ViewConfiguration");
+
+									wc.bridge("getLongPressTimeout", hook_viewConfigTimeouts);
+									wc.bridge("getGlobalActionKeyTimeout", hook_viewConfigTimeouts);
 									
 									/*
 									 * Add listener to receive broadcasts from the XService
 									 */
 									mXServiceManager.addBroadcastListener(listener_XServiceBroadcast);
 								}
-								
+
 							} catch (Throwable e) {
 								Log.e(TAG, e.getMessage(), e);
-								
-								if (pwm != null) {
-									/*
-									 * On error, disable this part of the module.
-									 */
-									pwm.removeInjections();
-								}
 							}
-							
+
 						} else {
 							Log.e(TAG, "XService has not been started", null);
 						}
 					}
-					
+
 				}, new IntentFilter("android.intent.action.BOOT_COMPLETED")
 			);
 		}
@@ -191,11 +189,11 @@ public final class PhoneWindowManager {
 	 * 		- android.view.ViewConfiguration.getLongPressTimeout
 	 * 		- android.view.ViewConfiguration.getGlobalActionKeyTimeout
 	 */
-	private final XC_MethodHook hook_viewConfigTimeouts = new XC_MethodHook() {
+	private final MethodBridge hook_viewConfigTimeouts = new MethodBridge() {
 		@Override
-		protected final void afterHookedMethod(final MethodHookParam param) {
+        public void bridgeEnd(BridgeParams params) {
 			if (mEventManager.hasState(State.REPEATING) && mEventManager.isDownEvent()) {
-				param.setResult(10);
+                params.setResult(10);
 			}
 		}
 	};
@@ -208,16 +206,16 @@ public final class PhoneWindowManager {
 	 * 		- ICS & Above: PhoneWindowManager.interceptKeyBeforeQueueing(KeyEvent event, Integer policyFlags, Boolean isScreenOn)
 	 * 		- Lollipop & Above PhoneWindowManager.interceptKeyBeforeQueueing(KeyEvent event, Integer policyFlags)
 	 */
-	protected final XC_MethodHook hook_interceptKeyBeforeQueueing = new XC_MethodHook() {
+	protected final MethodBridge hook_interceptKeyBeforeQueueing = new MethodBridge() {
 		@Override
-		protected final void beforeHookedMethod(final MethodHookParam param) {
+        public void bridgeBegin(BridgeParams params) {
 			Integer methodVersion = SDK.METHOD_INTERCEPT_VERSION;
-			KeyEvent keyEvent = methodVersion == 1 ? null : (KeyEvent) param.args[0];
-			Integer keyCode = (Integer) (methodVersion == 1 ? param.args[3] : keyEvent.getKeyCode());
+			KeyEvent keyEvent = methodVersion == 1 ? null : (KeyEvent) params.args[0];
+			Integer keyCode = (Integer) (methodVersion == 1 ? params.args[3] : keyEvent.getKeyCode());
 			Object keyObject = keyEvent == null ? keyCode : keyEvent;
-			Integer action = (Integer) (methodVersion == 1 ? param.args[1] : keyEvent.getAction());
-            Integer keyFlags = keyEvent == null ? (Integer) param.args[2] : keyEvent.getFlags();
-			Integer policyFlags = (Integer) (methodVersion == 1 ? param.args[5] : param.args[1]);
+			Integer action = (Integer) (methodVersion == 1 ? params.args[1] : keyEvent.getAction());
+            Integer keyFlags = keyEvent == null ? (Integer) params.args[2] : keyEvent.getFlags();
+			Integer policyFlags = (Integer) (methodVersion == 1 ? params.args[5] : params.args[1]);
 			Integer policyFlagsPos = methodVersion == 1 ? 5 : 1;
 			Integer repeatCount = (Integer) (methodVersion == 1 ? 0 : keyEvent.getRepeatCount());
 			Integer metaState = (Integer) (methodVersion == 1 ? 0 : keyEvent.getMetaState());
@@ -225,14 +223,14 @@ public final class PhoneWindowManager {
 			Boolean down = action == KeyEvent.ACTION_DOWN;
 			String tag = TAG + "#Queueing/" + (down ? "Down " : "Up ") + keyCode + "(" + mEventManager.getTapCount() + "," + repeatCount+ "):";
 			
-			Long downTime = methodVersion == 1 ? (((Long) param.args[0]) / 1000) / 1000 : keyEvent.getDownTime();
+			Long downTime = methodVersion == 1 ? (((Long) params.args[0]) / 1000) / 1000 : keyEvent.getDownTime();
 			Long eventTime = android.os.SystemClock.uptimeMillis();
 			
 			if (android.os.Build.VERSION.SDK_INT >= 21) {
 				isScreenOn = (policyFlags & ORIGINAL.FLAG_INTERACTIVE) != 0;
 				
 			} else {
-				isScreenOn = (Boolean) (methodVersion == 1 ? param.args[6] : param.args[2]);
+				isScreenOn = (Boolean) (methodVersion == 1 ? params.args[6] : params.args[2]);
 			}
 			
 			if (down && mEventManager.getKeyCount() > 0) {
@@ -281,14 +279,14 @@ public final class PhoneWindowManager {
 						 * the original methods themselves seams to be handling this just fine, but a few 
 						 * stock ROM's are treating these as both new and repeated events. 
 						 */
-						param.setResult(ORIGINAL.QUEUEING_ALLOW);
+                        params.setResult(ORIGINAL.QUEUEING_ALLOW);
 						
 					} else if ((policyFlags & ORIGINAL.FLAG_INJECTED) != 0) {
                         if ((keyFlags & EventKey.FLAG_CUSTOM) == EventKey.FLAG_CUSTOM) {
                             /*
                              * Some ROM's disables features on injected keys. So let's remove the flag.
                              */
-                            param.args[policyFlagsPos] = policyFlags & ~ORIGINAL.FLAG_INJECTED;
+                            params.args[policyFlagsPos] = policyFlags & ~ORIGINAL.FLAG_INJECTED;
                         }
 					}
 					
@@ -317,8 +315,8 @@ public final class PhoneWindowManager {
 						 */
 						mXServiceManager.sendBroadcast("keyIntercepter:keyCode", bundle);
 					}
-					
-					param.setResult(ORIGINAL.QUEUEING_REJECT);
+
+                    params.setResult(ORIGINAL.QUEUEING_REJECT);
 					
 				} else if (mEventManager.validateDeviceType(keyObject)) {
 					/*
@@ -357,14 +355,14 @@ public final class PhoneWindowManager {
 					}
 					
 					if(Common.debug()) Log.d(tag, "Parsing the event to the queue (" + mEventManager.mState.name() + ")");
-					
-					param.setResult(ORIGINAL.QUEUEING_ALLOW);
+
+                    params.setResult(ORIGINAL.QUEUEING_ALLOW);
 				}
 			}
 		}
 		
 		@Override
-		protected final void afterHookedMethod(final MethodHookParam param) {
+        public void bridgeEnd(BridgeParams params) {
 			mActiveQueueing = false;
 		}
 	};
@@ -376,18 +374,18 @@ public final class PhoneWindowManager {
 	 * 		- Gingerbread: PhoneWindowManager.interceptKeyBeforeDispatching(WindowState win, Integer action, Integer flags, Integer keyCode, Integer scanCode, Integer metaState, Integer repeatCount, Integer policyFlags)
 	 * 		- ICS & Above: PhoneWindowManager.interceptKeyBeforeDispatching(WindowState win, KeyEvent event, Integer policyFlags)
 	 */	
-	protected XC_MethodHook hook_interceptKeyBeforeDispatching = new XC_MethodHook() {
+	protected MethodBridge hook_interceptKeyBeforeDispatching = new MethodBridge() {
 		@TargetApi(Build.VERSION_CODES.HONEYCOMB_MR1)
 		@Override
-		protected final void beforeHookedMethod(final MethodHookParam param) {
+        public void bridgeBegin(BridgeParams params) {
 			Integer methodVersion = SDK.METHOD_INTERCEPT_VERSION;
-			KeyEvent keyEvent = methodVersion == 1 ? null : (KeyEvent) param.args[1];
-			Integer keyCode = (Integer) (methodVersion == 1 ? param.args[3] : keyEvent.getKeyCode());
-			Integer action = (Integer) (methodVersion == 1 ? param.args[1] : keyEvent.getAction());
-            Integer keyFlags = keyEvent == null ? (Integer) param.args[2] : keyEvent.getFlags();
-			Integer policyFlags = (Integer) (methodVersion == 1 ? param.args[7] : param.args[2]);
+			KeyEvent keyEvent = methodVersion == 1 ? null : (KeyEvent) params.args[1];
+			Integer keyCode = (Integer) (methodVersion == 1 ? params.args[3] : keyEvent.getKeyCode());
+			Integer action = (Integer) (methodVersion == 1 ? params.args[1] : keyEvent.getAction());
+            Integer keyFlags = keyEvent == null ? (Integer) params.args[2] : keyEvent.getFlags();
+			Integer policyFlags = (Integer) (methodVersion == 1 ? params.args[7] : params.args[2]);
 			Integer policyFlagsPos = methodVersion == 1 ? 7 : 2;
-			Integer repeatCount = (Integer) (methodVersion == 1 ? param.args[6] : keyEvent.getRepeatCount());
+			Integer repeatCount = (Integer) (methodVersion == 1 ? params.args[6] : keyEvent.getRepeatCount());
 			Boolean down = action == KeyEvent.ACTION_DOWN;
 			EventKey key = mEventManager.getKey(keyCode);
 			String tag = TAG + "#Dispatching/" + (down ? "Down " : "Up ") + keyCode + "(" + mEventManager.getTapCount() + "," + repeatCount+ "):";
@@ -429,7 +427,7 @@ public final class PhoneWindowManager {
 				}
 				
 				if ((policyFlags & ORIGINAL.FLAG_INJECTED) != 0 && (keyFlags & EventKey.FLAG_CUSTOM) != 0) {
-					param.args[policyFlagsPos] = policyFlags & ~ORIGINAL.FLAG_INJECTED;
+                    params.args[policyFlagsPos] = policyFlags & ~ORIGINAL.FLAG_INJECTED;
 				}
 				
 			} else if (key != null) {
@@ -458,8 +456,8 @@ public final class PhoneWindowManager {
 									 * Applications can ONLY start tracking from the original event object.
 									 */
 									if(Common.debug()) Log.d(tag, "Parsing event to the dispatcher");
-									
-									param.setResult(ORIGINAL.DISPATCHING_ALLOW); 
+
+                                    params.setResult(ORIGINAL.DISPATCHING_ALLOW);
 									
 									return;
 								}
@@ -502,8 +500,8 @@ public final class PhoneWindowManager {
 				}
 				
 				if(Common.debug()) Log.d(tag, "Disabling default dispatching (" + mEventManager.mState.name() + ")");
-				
-				param.setResult(ORIGINAL.DISPATCHING_REJECT);
+
+                params.setResult(ORIGINAL.DISPATCHING_REJECT);
 				
 			} else if (Common.debug()) {
 				Log.d(tag, "This key is not handled by the module");
@@ -511,19 +509,29 @@ public final class PhoneWindowManager {
 		}
 		
 		@Override
-		protected final void afterHookedMethod(final MethodHookParam param) {
+        public void bridgeEnd(BridgeParams params) {
 			mActiveDispatching = false;
 		}
 	};
 	
-	protected XC_MethodHook hook_performHapticFeedbackLw = new XC_MethodHook() {
+	protected MethodBridge hook_performHapticFeedbackLw = new MethodBridge() {
 		@Override
-		protected final void beforeHookedMethod(final MethodHookParam param) {
+        public void bridgeBegin(BridgeParams params) {
 			if (mActiveQueueing || mActiveDispatching) {
-				if (param.method.getName().equals("performSystemKeyFeedback") || (Integer) param.args[1] == HapticFeedbackConstants.VIRTUAL_KEY) {
-					param.setResult(true);
+				if (params.method.getName().equals("performSystemKeyFeedback") || (Integer) params.args[1] == HapticFeedbackConstants.VIRTUAL_KEY) {
+                    params.setResult(true);
 				}
 			}
 		}
-	};
+
+        @Override
+        public void bridgeAttached(Member member, BridgeOriginal original) {
+            if (member.getName().equals("performSystemKeyFeedback")) {
+                mEventManager.addQuickWorkaroundSamsung(original);
+
+            } else {
+                mEventManager.addQuickWorkaround(original);
+            }
+        }
+    };
 }
