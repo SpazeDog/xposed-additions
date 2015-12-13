@@ -9,4 +9,5 @@
     android:minHeight="?attr/actionBarSize"
     app:navigationContentDescription="@string/abc_action_bar_up_description"
     android:background="?attr/colorPrimary"
+    app:titleTextAppearance="@style/AppTheme.Toolbar.Title"
     />
