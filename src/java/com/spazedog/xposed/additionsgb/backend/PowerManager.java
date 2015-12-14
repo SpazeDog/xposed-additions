@@ -101,7 +101,7 @@ public class PowerManager implements ServiceListener {
     @Override
     public void onReceiveMsg(int type, HashBundle data) {
         switch (type) {
-            case Constants.BRC_MGR_UPDATE:
+            case Constants.BRC_SERVICE_RELOAD:
                 if ((data.getInt("flags") & BackendService.FLAG_RELOAD_CONFIG) != 0) {
                     Utils.log(Type.POWER, Level.DEBUG, TAG, "Updating Power Config");
 
