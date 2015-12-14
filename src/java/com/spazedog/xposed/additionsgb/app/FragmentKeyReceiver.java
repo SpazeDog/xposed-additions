@@ -154,10 +154,7 @@ public class FragmentKeyReceiver extends ActivityMainDialog implements ServiceLi
 
     @Override
     public void onClick(View v) {
-        if (v == mNegBtn) {
-            dismiss();
-
-        } else if (v == mPosBtn) {
+        if (v == mPosBtn) {
             if (mKeyCode > 0) {
                 HashBundle data = new HashBundle();
                 data.put("keyCode", mKeyCode);
@@ -166,5 +163,7 @@ public class FragmentKeyReceiver extends ActivityMainDialog implements ServiceLi
                 sendMessage(Constants.MSG_DIALOG_KEY_RECEIVER, data, false);
             }
         }
+
+        dismiss();
     }
 }
