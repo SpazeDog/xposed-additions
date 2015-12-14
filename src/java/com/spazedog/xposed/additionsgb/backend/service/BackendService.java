@@ -241,7 +241,9 @@ public class BackendService extends BackendProxy.Stub {
 		 	 * Move temp log to this instance
 		 	 */
             synchronized (mLogEntries) {
-                for (LogcatEntry entry : LogcatMonitor.getLogEntries(true)) {
+                List<LogcatEntry> logs = LogcatMonitor.buildLog();
+
+                for (LogcatEntry entry : logs) {
                     mLogEntries.add(entry);
                 }
             }

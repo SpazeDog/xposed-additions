@@ -30,6 +30,8 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Build.VERSION;
+import android.os.Build.VERSION_CODES;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v7.widget.LinearLayoutManager;
@@ -41,20 +43,25 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.spazedog.lib.rootfw4.RootFW;
+import com.spazedog.lib.rootfw4.Shell.Result;
 import com.spazedog.lib.utilsLib.HashBundle;
 import com.spazedog.lib.utilsLib.SparseList;
 import com.spazedog.lib.utilsLib.utils.Conversion;
 import com.spazedog.xposed.additionsgb.R;
 import com.spazedog.xposed.additionsgb.app.ActivityMain.ActivityMainFragment;
+import com.spazedog.xposed.additionsgb.backend.LogcatMonitor;
 import com.spazedog.xposed.additionsgb.backend.LogcatMonitor.LogcatEntry;
 import com.spazedog.xposed.additionsgb.backend.service.BackendServiceMgr;
 import com.spazedog.xposed.additionsgb.backend.service.BackendServiceMgr.ServiceListener;
 import com.spazedog.xposed.additionsgb.utils.Constants;
 
+import java.io.File;
 import java.util.List;
 
 public class FragmentLog extends ActivityMainFragment implements ServiceListener {
@@ -66,6 +73,68 @@ public class FragmentLog extends ActivityMainFragment implements ServiceListener
     protected RecyclerView.Adapter mRecyclerAdapter;
 
     protected Snackbar mSnackBar;
+
+    protected void forceGrantPermission() {
+        boolean force = false;
+
+        /*
+         * Logcat was restricted in 4.1.1, which is the same API number as in 4.1.0
+         */
+        if (((VERSION.SDK_INT == VERSION_CODES.JELLY_BEAN && VERSION.CODENAME.startsWith("4.1.1")) || VERSION.SDK_INT >= VERSION_CODES.JELLY_BEAN_MR1)
+                && getActivity().checkCallingOrSelfPermission("android.permission.READ_LOGS") != PackageManager.PERMISSION_GRANTED) {
+
+            BackendServiceMgr backendMgr = getBackendMgr();
+
+            if (backendMgr == null || !backendMgr.isServiceReady()) {
+                String[] locations = new String[]{"/system/xbin/su", "/system/bin/su"};
+
+                for (String path : locations) {
+                    if (new File(path).exists()) {
+                        force = true;
+                        break;
+                    }
+                }
+
+                if (!force && RootFW.connect(false)) {
+                    String pathEnv = RootFW.getEnv("PATH");
+
+                    if (pathEnv != null) {
+                        locations = pathEnv.split(":");
+
+                        for (String path : locations) {
+                            if (new File(path + "/su").exists()) {
+                                force = true;
+                                break;
+                            }
+                        }
+                    }
+
+                    RootFW.disconnect();
+                }
+            }
+        }
+
+        if (force) {
+            mSnackBar = Snackbar.make(getView(), "Need Read Logs permission", Snackbar.LENGTH_INDEFINITE).setAction("Grant", new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (RootFW.connect(true)) {
+                        Result result = RootFW.execute("pm grant '" + Constants.PACKAGE_NAME + "' android.permission.READ_LOGS");
+
+                        if (result.wasSuccessful()) {
+                            mSnackBar.dismiss();
+                            mSnackBar = null;
+
+                            updateLogcatEntries();
+                        }
+                    }
+                }
+
+            });
+
+            mSnackBar.show();
+        }
+    }
 
 
     /*
@@ -118,6 +187,13 @@ public class FragmentLog extends ActivityMainFragment implements ServiceListener
         if (backendMgr != null) {
             backendMgr.detachListener(this);
         }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        forceGrantPermission();
     }
 
     @Override
@@ -231,30 +307,34 @@ public class FragmentLog extends ActivityMainFragment implements ServiceListener
 
     private void updateLogcatEntries() {
         BackendServiceMgr backendMgr = getBackendMgr();
+        List<LogcatEntry> entries = null;
 
         if (backendMgr != null && backendMgr.isServiceActive()) {
-            List<LogcatEntry> entries = backendMgr.getLogEntries();
+            entries = backendMgr.getLogEntries();
 
-            for (int i=entries.size()-1; i >= 0; i--) {
-                /*
-                 * TODO:
-                 *          It should not be possible to encounter NULL here, but we do.
-                 *          This is not a priority, so fix when there is time.
-                 *
-                 *          This happens randomly. It might be a data change while parceling the list
-                 *          on the server side, we might need to use a concurrency safe list.
-                 *
-                 *          Same issue exists in FragmentStatus
-                 */
-                LogcatEntry entry = entries.remove(i);
-
-                if (entry != null) {
-                    mLogEntries.add(entry);
-                }
-            }
-
-            mRecyclerAdapter.notifyDataSetChanged();
+        } else {
+            entries = LogcatMonitor.buildLog();
         }
+
+        for (int i=entries.size()-1; i >= 0; i--) {
+            /*
+             * TODO:
+             *          It should not be possible to encounter NULL here, but we do.
+             *          This is not a priority, so fix when there is time.
+             *
+             *          This happens randomly. It might be a data change while parceling the list
+             *          on the server side, we might need to use a concurrency safe list.
+             *
+             *          Same issue exists in FragmentStatus
+             */
+            LogcatEntry entry = entries.remove(i);
+
+            if (entry != null) {
+                mLogEntries.add(entry);
+            }
+        }
+
+        mRecyclerAdapter.notifyDataSetChanged();
     }
 
 

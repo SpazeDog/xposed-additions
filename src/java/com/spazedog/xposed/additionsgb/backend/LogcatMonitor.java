@@ -19,6 +19,7 @@
 
 package com.spazedog.xposed.additionsgb.backend;
 
+import android.annotation.SuppressLint;
 import android.os.Parcel;
 import android.os.Process;
 import android.util.Log;
@@ -34,13 +35,88 @@ import com.spazedog.xposed.additionsgb.utils.Constants;
 import com.spazedog.xposed.additionsgb.utils.Utils;
 import com.spazedog.xposed.additionsgb.utils.Utils.Level;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.util.List;
 
 public class LogcatMonitor {
 	public static final String TAG = LogcatMonitor.class.getName();
 
-    private static List<LogcatEntry> oLogEntries = new SparseList<LogcatEntry>();
+    public static List<LogcatEntry> buildLog() {
+        List<LogcatEntry> ret = new SparseList<LogcatEntry>();
 
+        try {
+            String[] command = new String[] { "logcat", "-v", "tag", "-d" };
+            java.lang.Process process = Runtime.getRuntime().exec(command);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+            String line, log = "";
+            boolean group = false;
+            boolean child;
+            int i=0;
+
+            while ((line = reader.readLine()) != null) {
+                /*
+                 * <TYPE>/<TAG>: <LOG>
+                 *
+                 * We need to get to the <LOG> part.
+                 * <TAG> some time has space, so we need to account for this.
+                 * This will work in 99.9% of all cases and I have never seen the 0.1%
+                 */
+                int cpos = line.indexOf(":");
+                int spos = line.indexOf(" ", cpos)+1;
+
+                if (spos == line.length()) {
+                    continue;
+                }
+
+                child = Character.isWhitespace(line.charAt(spos));
+
+                if (!child) {
+                    i++;
+
+                    /*
+                     * We do not know where the log starts, as it get's truncated when reaching a specific size.
+                     * It might now begin with a complete log entry. This is to ensure that we skip
+                     * incomplete entries. Also it is used to skip all entries that is not errors.
+                     */
+                    group = true;
+
+                    /*
+                     * We can only read a line at a time.
+                     * Just because the headline does not contain this package name,
+                     * does not mean that the log does not relate to it.
+                     * We need to collect the whole part of each log before we can decide.
+                     */
+                    if (!log.isEmpty() && log.contains(Constants.PACKAGE_NAME)) {
+                        if (ret.size() > Constants.LOG_ENTRY_SIZE) {
+                            ret.remove(0);
+                        }
+
+                        ret.add(new LogcatEntry(log));
+                    }
+
+                    if (group) {
+                        log = line;
+                    }
+
+                } else if (group) {
+                    log += "\r\n\t\t";
+                    log += line.substring(spos).trim();
+                }
+            }
+
+            if (!log.isEmpty() && log.contains(Constants.PACKAGE_NAME)) {
+                ret.add(new LogcatEntry(log));
+            }
+
+        } catch (Throwable e) {
+            Log.e(TAG, e.getMessage(), e);
+        }
+
+        return ret;
+    }
+
+    @SuppressLint("ParcelCreator")
     public static class LogcatEntry extends MultiParcelableBuilder {
 
         public final long Time;
@@ -49,6 +125,28 @@ public class LogcatMonitor {
         public final int Level;
         public final String Tag;
         public final String Message;
+
+        public LogcatEntry(String entry) {
+            char type = entry.charAt(0);
+
+            switch (type) {
+                case 'D': Level = Log.DEBUG; break;
+                case 'W': Level = Log.WARN; break;
+                case 'E': Level = Log.ERROR; break;
+                default: Level = Log.INFO;
+            }
+
+            int cpos = entry.indexOf(":");
+            int spos = entry.indexOf(" ", cpos);
+
+            String tag = entry.substring(2, spos-1);
+
+            Tag = tag.startsWith(Constants.PACKAGE_NAME) ? ("XposedAdditions: " + tag.substring(tag.lastIndexOf(".")+1).trim()) : tag.trim();
+            Message = entry.substring(spos+1);
+            Time = System.currentTimeMillis();
+            Pid = 0;
+            Uid = 0;
+        }
 
         public LogcatEntry(int pid, int uid, int level, String tag, String message) {
             Time = System.currentTimeMillis();
@@ -97,26 +195,6 @@ public class LogcatMonitor {
 			Utils.log(Level.ERROR, TAG, e.getMessage(), e);
 		}
 	}
-
-    public static List<LogcatEntry> getLogEntries() {
-        return getLogEntries(false);
-    }
-
-    public static List<LogcatEntry> getLogEntries(boolean clearLog) {
-        synchronized (oLogEntries) {
-            List<LogcatEntry> logsEntries = new SparseList<LogcatEntry>();
-
-            for (LogcatEntry entry : oLogEntries) {
-                logsEntries.add(entry);
-            }
-
-            if (clearLog) {
-                oLogEntries.clear();
-            }
-
-            return logsEntries;
-        }
-    }
 	
 	/**
 	 * The restrictions in Lollipop+ makes it almost impossible to write logs to a file. 
@@ -139,19 +217,6 @@ public class LogcatMonitor {
 
                     if (manager != null && manager.isServiceActive()) {
                         manager.sendListenerMsg(Constants.BRC_LOGCAT, new HashBundle("entry", new LogcatEntry(Process.myPid(), Process.myUid(), priority, tag, message)));
-
-                    } else if (Process.myUid() <= Process.SYSTEM_UID) {
-                        /*
-                         * TODO:
-                         *      This is not working properly. Depending on Android version, it differs which processes will inherit the data.
-                         *      It does however assemble the system process log, but we need a better way so that we are able to display the log data
-                         *      in the apps log viewer if the service is not started for some reason.
-                         */
-                        synchronized (oLogEntries) {
-                            if (oLogEntries.size() < Constants.LOG_ENTRY_SIZE) {
-                                oLogEntries.add(new LogcatEntry(Process.myPid(), Process.myUid(), priority, tag, message));
-                            }
-                        }
                     }
 
                     mBusy = false;

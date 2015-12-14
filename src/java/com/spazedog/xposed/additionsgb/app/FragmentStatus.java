@@ -31,6 +31,7 @@ import com.spazedog.lib.utilsLib.HashBundle;
 import com.spazedog.xposed.additionsgb.BuildConfig;
 import com.spazedog.xposed.additionsgb.R;
 import com.spazedog.xposed.additionsgb.app.ActivityMain.ActivityMainFragment;
+import com.spazedog.xposed.additionsgb.backend.LogcatMonitor;
 import com.spazedog.xposed.additionsgb.backend.LogcatMonitor.LogcatEntry;
 import com.spazedog.xposed.additionsgb.backend.service.BackendServiceMgr;
 import com.spazedog.xposed.additionsgb.backend.service.BackendServiceMgr.ServiceListener;
@@ -119,29 +120,33 @@ public class FragmentStatus extends ActivityMainFragment implements ServiceListe
 
     private void updateLogCount() {
         BackendServiceMgr backendMgr = getBackendMgr();
+        List<LogcatEntry> entries = null;
 
         if (backendMgr != null && backendMgr.isServiceActive()) {
-            List<LogcatEntry> entries = backendMgr.getLogEntries();
+            entries = backendMgr.getLogEntries();
 
-            int errorCount = 0;
-            int warningCount = 0;
+        } else {
+            entries = LogcatMonitor.buildLog();
+        }
 
-            for (LogcatEntry entry : entries) {
-                /*
-                 * TODO:
-                 *          Details can be found in FragmentLog
-                 */
-                if (entry != null) {
-                    switch (entry.Level) {
-                        case Log.ERROR: errorCount++; break;
-                        case Log.WARN: warningCount++; break;
-                    }
+        int errorCount = 0;
+        int warningCount = 0;
+
+        for (LogcatEntry entry : entries) {
+            /*
+             * TODO:
+             *          Details can be found in FragmentLog
+             */
+            if (entry != null) {
+                switch (entry.Level) {
+                    case Log.ERROR: errorCount++; break;
+                    case Log.WARN: warningCount++; break;
                 }
             }
-
-            mLogErrorView.setText("" + errorCount);
-            mLogWarningView.setText("" + warningCount);
         }
+
+        mLogErrorView.setText("" + errorCount);
+        mLogWarningView.setText("" + warningCount);
     }
 
     @Override

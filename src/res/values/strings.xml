@@ -47,7 +47,9 @@
     ================================================ -->
 
     <string name='menu_title_rapport'>Send Rapport</string>
+    <string name='btn_title_grant'>Grant</string>
     <string name='notify_missing_mail_client'>You do not have any E-Mail clients installed</string>
+    <string name='notify_grant_log_permission'>Full log requires READ_LOGS permission</string>
 
 
     <!-- ================================================
