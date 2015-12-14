@@ -61,6 +61,8 @@ public interface BackendProxy extends IInterface {
     int TRANSACTION_getPowerConfig = IBinder.FIRST_CALL_TRANSACTION+9;
     int TRANSACTION_isOwnerLocked = IBinder.FIRST_CALL_TRANSACTION+10;
     int TRANSACTION_getRotationConfig = IBinder.FIRST_CALL_TRANSACTION+11;
+    int TRANSACTION_registerFeature = IBinder.FIRST_CALL_TRANSACTION+12;
+    int TRANSACTION_hasFeature = IBinder.FIRST_CALL_TRANSACTION+13;
 
 
     /*
@@ -79,6 +81,8 @@ public interface BackendProxy extends IInterface {
     PowerPlugConfig getPowerConfig() throws RemoteException;
     boolean isOwnerLocked() throws RemoteException;
     RotationConfig getRotationConfig() throws RemoteException;
+    void registerFeature(String name) throws RemoteException;
+    boolean hasFeature(String name) throws RemoteException;
 
     /*
      * =================================================
@@ -166,6 +170,12 @@ public interface BackendProxy extends IInterface {
 
                         } break; case TRANSACTION_getRotationConfig: {
                             ParcelHelper.parcelData(getRotationConfig(), caller, 0);
+
+                        } break; case TRANSACTION_registerFeature: {
+                            registerFeature((String) args.readValue(Utils.getAppClassLoader()));
+
+                        } break; case TRANSACTION_hasFeature: {
+                            caller.writeInt( hasFeature( (String) args.readValue(Utils.getAppClassLoader()) ) ? 1 : 0 );
 
                         } break; default: {
                             return false;
@@ -405,6 +415,39 @@ public interface BackendProxy extends IInterface {
                 caller.readException();
 
                 return (RotationConfig) ParcelHelper.unparcelData(caller, Utils.getAppClassLoader());
+
+            } finally {
+                args.recycle();
+                caller.recycle();
+            }
+        }
+
+        @Override
+        public void registerFeature(String name) throws RemoteException {
+            Parcel args = Parcel.obtain();
+
+            try {
+                args.writeInterfaceToken(DESCRIPTOR);
+                args.writeValue(name);
+                mBinder.transact(Stub.TRANSACTION_getRotationConfig, args, null, 0);
+
+            } finally {
+                args.recycle();
+            }
+        }
+
+        @Override
+        public boolean hasFeature(String name) throws RemoteException {
+            Parcel args = Parcel.obtain();
+            Parcel caller = Parcel.obtain();
+
+            try {
+                args.writeInterfaceToken(DESCRIPTOR);
+                args.writeValue(name);
+                mBinder.transact(Stub.TRANSACTION_getRotationConfig, args, caller, 0);
+                caller.readException();
+
+                return caller.readInt() > 0;
 
             } finally {
                 args.recycle();

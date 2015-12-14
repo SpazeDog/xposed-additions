@@ -161,10 +161,10 @@ public class BackendServiceMgr {
                  * but it might be used for more in the future.
                  */
                 if (type == -1 && Binder.getCallingUid() == Process.SYSTEM_UID) {
-                    type = Constants.BRC_MGR_UPDATE;
+                    type = Constants.BRC_SERVICE_RELOAD;
 
                 } else if (type == -1) {
-                    Utils.log(Level.ERROR, TAG, "Received message from service outside the system process"); return;
+                    Utils.log(Level.ERROR, TAG, "Received message from service outside of the system process"); return;
                 }
 
                 Handler handler = getHandler();
@@ -312,6 +312,28 @@ public class BackendServiceMgr {
     public boolean isOwnerLocked() {
         try {
             return mServiceProxy.isOwnerLocked();
+
+        } catch (RemoteException e) {
+            handleRemoteException(e);
+
+        } catch (NullPointerException e) {}
+
+        return false;
+    }
+
+    public void registerFeature(String name) {
+        try {
+            mServiceProxy.registerFeature(name);
+
+        } catch (RemoteException e) {
+            handleRemoteException(e);
+
+        } catch (NullPointerException e) {}
+    }
+
+    public boolean hasFeature(String name) {
+        try {
+            return mServiceProxy.hasFeature(name);
 
         } catch (RemoteException e) {
             handleRemoteException(e);

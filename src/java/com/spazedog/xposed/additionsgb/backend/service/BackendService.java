@@ -85,6 +85,7 @@ public class BackendService extends BackendProxy.Stub {
     private int mState = 0;
 
     private Context mContext;
+    private List<String> mFeatureList = new SparseList<String>();
     private StateValues mValues = new StateValues();
 
     private BackendService() {}
@@ -420,13 +421,16 @@ public class BackendService extends BackendProxy.Stub {
         sendListenerMsg(type, data, false);
     }
 
-    public void sendListenerMsg(int type, HashBundle data, boolean system) throws RemoteException {
+    private void sendListenerMsg(int type, HashBundle data, boolean system) throws RemoteException {
         synchronized (mListeners) {
             if (type == -1 && !system) {
                 Utils.log(Level.ERROR, TAG, "Only the service can send messages as service to it's listeners\n\t\tPID: " + Binder.getCallingPid() + "\n\t\tUID: " + Binder.getCallingUid() + "\n\t\tMsg Type: " + type);
 
             } else if (type < 0 && Binder.getCallingUid() != mSystemUID) {
                 Utils.log(Level.ERROR, TAG, "Msg types below 0 can only be sent by the system\n\t\tPID: " + Binder.getCallingPid() + "\n\t\tUID: " + Binder.getCallingUid() + "\n\t\tMsg Type: " + type);
+
+            } else if (type > 0 && !checkPermission(Constants.PERMISSION_SETTINGS_RW)) {
+                Utils.log(Level.ERROR, TAG, "Msg types above 0 can only be sent by someone holding the permissions 'permissions.additionsgb.settings.rw'\n\t\tPID: " + Binder.getCallingPid() + "\n\t\tUID: " + Binder.getCallingUid() + "\n\t\tMsg Type: " + type);
 
             } else {
                 mListenerHandler.obtainMessage(type, system ? 1 : 0, 0, data).sendToTarget();
@@ -478,5 +482,15 @@ public class BackendService extends BackendProxy.Stub {
     @Override
     public RotationConfig getRotationConfig() throws RemoteException {
         return mValues.RotationConfig;
+    }
+
+    @Override
+    public void registerFeature(String name) throws RemoteException {
+        mFeatureList.add(name);
+    }
+
+    @Override
+    public boolean hasFeature(String name) throws RemoteException {
+        return mFeatureList.contains(name);
     }
 }
