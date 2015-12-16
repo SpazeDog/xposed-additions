@@ -115,7 +115,7 @@ public class FragmentLog extends ActivityMainFragment implements ServiceListener
         }
 
         if (force) {
-            mSnackBar = Snackbar.make(getView(), "Need Read Logs permission", Snackbar.LENGTH_INDEFINITE).setAction("Grant", new OnClickListener() {
+            mSnackBar = Snackbar.make(getView(), R.string.notify_grant_log_permission, Snackbar.LENGTH_INDEFINITE).setAction(R.string.btn_title_grant, new OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     if (RootFW.connect(true)) {
