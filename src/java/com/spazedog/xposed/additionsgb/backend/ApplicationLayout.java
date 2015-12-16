@@ -85,18 +85,15 @@ public class ApplicationLayout {
         }
     }
 
-    private RotationConfig mRotationConfig;
-
     private RotationConfig getRotationConfig() {
-        if (mRotationConfig == null) {
-            BackendServiceMgr backendMgr = BackendServiceMgr.getInstance();
+        RotationConfig settings = null;
+        BackendServiceMgr backendMgr = BackendServiceMgr.getInstance();
 
-            if (backendMgr != null && backendMgr.isServiceReady()) {
-                mRotationConfig = null;
-            }
+        if (backendMgr != null && backendMgr.isServiceReady()) {
+            settings = null;
         }
 
-        return mRotationConfig;
+        return settings;
     }
 
     public MethodBridge shouldEnableScreenRotation = new MethodBridge() {
@@ -125,7 +122,7 @@ public class ApplicationLayout {
                 Activity activity = (Activity) context;
                 String packageName = activity.getPackageName();
 
-                if (activity.getRequestedOrientation() != ActivityInfo.SCREEN_ORIENTATION_USER && !mRotationConfig.BlackList.contains(packageName)) {
+                if (activity.getRequestedOrientation() != ActivityInfo.SCREEN_ORIENTATION_USER && !rotationConfig.BlackList.contains(packageName)) {
                     Utils.log(Type.LAYOUT, Level.DEBUG, TAG, "Overwriting rotation settings on package '" + packageName + "'");
 
                     activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_USER);
