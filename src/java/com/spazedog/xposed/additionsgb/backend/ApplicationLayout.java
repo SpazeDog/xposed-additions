@@ -72,7 +72,13 @@ public class ApplicationLayout {
             ApplicationLayout instance = new ApplicationLayout();
 
             ReflectClass.fromName("android.os.SystemProperties").bridge("getBoolean", instance.shouldEnableScreenRotation);
-            ReflectClass.fromName("com.android.internal.policy.impl.PhoneWindow").bridge("generateLayout", instance.generateLayout);
+
+            try {
+                ReflectClass.fromName("com.android.internal.policy.impl.PhoneWindow").bridge("generateLayout", instance.generateLayout);    // SDK < 23
+
+            } catch (ReflectException e) {
+                ReflectClass.fromName("com.android.internal.policy.PhoneWindow").bridge("generateLayout", instance.generateLayout);         // SDK >= 23
+            }
 
         } catch (ReflectException e) {
             Utils.log(Level.ERROR, TAG, e.getMessage(), e);
