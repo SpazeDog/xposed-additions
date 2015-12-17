@@ -25,6 +25,7 @@ import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.os.Parcel;
 import android.view.Window;
+import android.view.WindowManager.LayoutParams;
 
 import com.spazedog.lib.reflecttools.ReflectClass;
 import com.spazedog.lib.reflecttools.ReflectException;
@@ -41,19 +42,22 @@ import java.util.List;
 public class ApplicationLayout {
     public static final String TAG = ApplicationLayout.class.getName();
 
-    public static class RotationConfig extends MultiParcelableBuilder {
+    public static class LayoutConfig extends MultiParcelableBuilder {
 
         public final boolean OverwriteRotation;
         public final List<String> BlackList;
+        public final List<String> LaunchSelection;
 
-        public RotationConfig(boolean overwriteRotation, List<String> blackList) {
+        public LayoutConfig(boolean overwriteRotation, List<String> blackList, List<String> launchSelection) {
             OverwriteRotation = overwriteRotation;
             BlackList = blackList != null ? blackList : new SparseList<String>();
+            LaunchSelection = launchSelection != null ? launchSelection : new SparseList<String>();
         }
 
-        public RotationConfig(Parcel source) {
+        public LayoutConfig(Parcel source) {
             OverwriteRotation = (Boolean) unparcelData(source, null);
             BlackList = (List<String>) unparcelData(source, getClass().getClassLoader());
+            LaunchSelection = (List<String>) unparcelData(source, getClass().getClassLoader());
         }
 
         @Override
@@ -62,6 +66,7 @@ public class ApplicationLayout {
 
             parcelData(OverwriteRotation, out, flags);
             parcelData(BlackList, out, flags);
+            parcelData(LaunchSelection, out, flags);
         }
     }
 
@@ -85,12 +90,12 @@ public class ApplicationLayout {
         }
     }
 
-    private RotationConfig getRotationConfig() {
-        RotationConfig settings = null;
+    private LayoutConfig getLayoutConfig() {
+        LayoutConfig settings = null;
         BackendServiceMgr backendMgr = BackendServiceMgr.getInstance();
 
         if (backendMgr != null && backendMgr.isServiceReady()) {
-            settings = null;
+            settings = backendMgr.getLayoutConfig();
         }
 
         return settings;
@@ -100,7 +105,7 @@ public class ApplicationLayout {
         @Override
         public void bridgeBegin(BridgeParams params) {
             if (params.args.length > 0 && "lockscreen.rot_override".equals(params.args[0])) {
-                RotationConfig rotationConfig = getRotationConfig();
+                LayoutConfig rotationConfig = getLayoutConfig();
 
                 if (rotationConfig != null && rotationConfig.OverwriteRotation) {
                     Utils.log(Type.LAYOUT, Level.DEBUG, TAG, "Overwriting rotation settings on LockScreen");
@@ -116,16 +121,41 @@ public class ApplicationLayout {
         public void bridgeEnd(BridgeParams params) {
             Window window = (Window) params.receiver;
             Context context = window.getContext();
-            RotationConfig rotationConfig = getRotationConfig();
+            LayoutConfig layoutConfig = getLayoutConfig();
 
-            if (context instanceof Activity && rotationConfig != null && rotationConfig.OverwriteRotation) {
+            if (context instanceof Activity && layoutConfig != null) {
                 Activity activity = (Activity) context;
                 String packageName = activity.getPackageName();
 
-                if (activity.getRequestedOrientation() != ActivityInfo.SCREEN_ORIENTATION_USER && !rotationConfig.BlackList.contains(packageName)) {
+                /*
+                 * Force Rotation
+                 */
+                if (layoutConfig.OverwriteRotation && activity.getRequestedOrientation() != ActivityInfo.SCREEN_ORIENTATION_USER && !layoutConfig.BlackList.contains(packageName)) {
                     Utils.log(Type.LAYOUT, Level.DEBUG, TAG, "Overwriting rotation settings on package '" + packageName + "'");
 
                     activity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_USER);
+                }
+
+                /*
+                 * Allow application to turn on screen and launch on top of the lockscreen
+                 */
+                if (layoutConfig.LaunchSelection.contains(packageName)) {
+                    BackendServiceMgr backendMgr = BackendServiceMgr.getInstance();
+                    int flags = 0;
+
+                    if (!backendMgr.stateScreenOn()) {
+                        flags |= (LayoutParams.FLAG_KEEP_SCREEN_ON|LayoutParams.FLAG_TURN_SCREEN_ON);
+                    }
+
+                    if (backendMgr.stateScreenLocked()) {
+                        flags |= (LayoutParams.FLAG_SHOW_WHEN_LOCKED|LayoutParams.FLAG_DISMISS_KEYGUARD);
+                    }
+
+                    if (flags > 0) {
+                        Utils.log(Type.LAYOUT, Level.DEBUG, TAG, "Allowing package '" + packageName + "' to launch on top of lockscreen");
+
+                        window.addFlags(flags);
+                    }
                 }
             }
         }

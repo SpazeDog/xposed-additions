@@ -47,6 +47,7 @@ import com.spazedog.xposed.additionsgb.app.selecter.Selecter;
 import com.spazedog.xposed.additionsgb.app.selecter.UriActivityEntryManager;
 import com.spazedog.xposed.additionsgb.app.selecter.UriLauncherEntryManager;
 import com.spazedog.xposed.additionsgb.app.selecter.UriShortcutEntryManager;
+import com.spazedog.xposed.additionsgb.utils.Constants;
 import com.spazedog.xposed.additionsgb.utils.Utils;
 
 import java.util.Collection;
@@ -93,6 +94,10 @@ public class FragmentSelecter extends ActivityMainDialog {
 
         @Override
         public void sendMessage(int type, HashBundle data) {
+            if (type == Constants.MSG_DIALOG_SELECTER) {
+                data.putInt(Selecter.EXTRAS_RESPONSE, mRequest);
+            }
+
             FragmentSelecter.this.sendMessage(type, data, false);
         }
 
@@ -108,6 +113,7 @@ public class FragmentSelecter extends ActivityMainDialog {
     };
 
 
+    protected int mRequest = 0;
     protected int mFlags = 0;
     protected LruCache<String, Bitmap> mImageCache;
     protected EntryPagerAdaptor mEntryAdaptor;
@@ -136,6 +142,7 @@ public class FragmentSelecter extends ActivityMainDialog {
 
         HashBundle bundle = getArgs();
         mFlags = bundle.getInt(Selecter.ARGS_FLAGS, URI_ALL);
+        mRequest = bundle.getInt(Selecter.ARGS_REQUEST, 0);
 
         mImageCache = new LruCache<String, Bitmap>( Math.round(0.15f * Runtime.getRuntime().maxMemory() / 1024) ) {
             @Override

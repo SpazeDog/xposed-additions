@@ -43,7 +43,7 @@ import com.spazedog.lib.utilsLib.HashBundle;
 import com.spazedog.lib.utilsLib.SparseList;
 import com.spazedog.lib.utilsLib.os.ThreadHandler;
 import com.spazedog.xposed.additionsgb.app.service.PreferenceProxy;
-import com.spazedog.xposed.additionsgb.backend.ApplicationLayout.RotationConfig;
+import com.spazedog.xposed.additionsgb.backend.ApplicationLayout.LayoutConfig;
 import com.spazedog.xposed.additionsgb.backend.LogcatMonitor;
 import com.spazedog.xposed.additionsgb.backend.LogcatMonitor.LogcatEntry;
 import com.spazedog.xposed.additionsgb.backend.PowerManager.PowerPlugConfig;
@@ -53,10 +53,8 @@ import com.spazedog.xposed.additionsgb.utils.Utils;
 import com.spazedog.xposed.additionsgb.utils.Utils.Level;
 import com.spazedog.xposed.additionsgb.utils.Utils.Type;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 public class BackendService extends BackendProxy.Stub {
@@ -73,7 +71,7 @@ public class BackendService extends BackendProxy.Stub {
         public int DebugFlags = 0;
         public boolean OwnerLock = false;
         public PowerPlugConfig PowerConfig;
-        public RotationConfig RotationConfig;
+        public LayoutConfig LayoutConfig;
     }
 
     private List<LogcatEntry> mLogEntries = new SparseList<LogcatEntry>();
@@ -89,6 +87,15 @@ public class BackendService extends BackendProxy.Stub {
     private StateValues mValues = new StateValues();
 
     private BackendService() {}
+
+    /*
+     * State Listener Values
+     *
+     *      TODO: Remove class 'StateValues'
+     */
+
+    private boolean mStateLockscreenLocked = false;
+    private boolean mStateDisplayOn = true;
 
 
     /*
@@ -304,9 +311,10 @@ public class BackendService extends BackendProxy.Stub {
                         int powerUnplug = proxy.getIntConfig("power_unplug", PowerPlugConfig.PLUGGED_DEFAULT);
                         boolean rotationOverwrite = proxy.getIntConfig("rotation_overwrite", 0) > 0;
                         List<String> rotationBlacklist = proxy.getStringListConfig("rotation_blacklist", null);
+                        List<String> launchSelection = proxy.getStringListConfig("launch_selection", null);
 
                         mValues.PowerConfig = new PowerPlugConfig(powerPlug, powerUnplug);
-                        mValues.RotationConfig = new RotationConfig(rotationOverwrite, rotationBlacklist);
+                        mValues.LayoutConfig = new LayoutConfig(rotationOverwrite, rotationBlacklist, launchSelection);
 
                         if (mValues.UserId == 0) {
                             mValues.DebugFlags = proxy.getIntConfig("debug_flags", Constants.FORCE_DEBUG ? Type.ALL : Type.DISABLED);
@@ -316,7 +324,7 @@ public class BackendService extends BackendProxy.Stub {
                         data.put("ownerLocked", mValues.OwnerLock);
                         data.put("debugFlags", mValues.DebugFlags);
                         data.put("powerConfig", mValues.PowerConfig);
-                        data.put("rotationConfig", mValues.RotationConfig);
+                        data.put("layoutConfig", mValues.LayoutConfig);
                     }
 
                     sendListenerMsg(-1, data, true);
@@ -435,6 +443,15 @@ public class BackendService extends BackendProxy.Stub {
                 Utils.log(Level.ERROR, TAG, "Msg types above 0 can only be sent by someone holding the permissions 'permissions.additionsgb.settings.rw'\n\t\tPID: " + Binder.getCallingPid() + "\n\t\tUID: " + Binder.getCallingUid() + "\n\t\tMsg Type: " + type);
 
             } else {
+                switch (type) {
+                    case Constants.BRC_SL_KEYGUARD: {
+                        mStateLockscreenLocked = data.getBoolean("keyguard_on", false);
+
+                    } break; case Constants.BRC_SL_DISPLAY: {
+                        mStateDisplayOn = data.getBoolean("screen_on", false);
+                    }
+                }
+
                 mListenerHandler.obtainMessage(type, system ? 1 : 0, 0, data).sendToTarget();
             }
         }
@@ -482,8 +499,8 @@ public class BackendService extends BackendProxy.Stub {
     }
 
     @Override
-    public RotationConfig getRotationConfig() throws RemoteException {
-        return mValues.RotationConfig;
+    public LayoutConfig getLayoutConfig() throws RemoteException {
+        return mValues.LayoutConfig;
     }
 
     @Override
@@ -494,5 +511,15 @@ public class BackendService extends BackendProxy.Stub {
     @Override
     public boolean hasFeature(String name) throws RemoteException {
         return mFeatureList.contains(name);
+    }
+
+    @Override
+    public boolean stateScreenLocked() throws RemoteException {
+        return mStateLockscreenLocked;
+    }
+
+    @Override
+    public boolean stateScreenOn() throws RemoteException {
+        return mStateDisplayOn;
     }
 }

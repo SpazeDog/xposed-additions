@@ -50,6 +50,7 @@ public class FragmentDisplay extends ActivityMainFragment implements OnClickList
     protected ExpandableView mListView;
     protected PowerAdapter mListAdapter;
 
+    private View mLaunchWrapper;
     private View mRotationBlacklistWrapper;
     private View mRotationWrapper;
     private CheckBox mRotationCheckbox;
@@ -57,6 +58,10 @@ public class FragmentDisplay extends ActivityMainFragment implements OnClickList
     private boolean mHasChanges = false;
     private boolean mOverwriteRotation = false;
     private List<String> mRotationBlacklist;
+    private List<String> mLaunchSelection;
+
+    private static final int REQUEST_ROTATION = 1;
+    private static final int REQUEST_LAUNCH = 2;
 
 
     /*
@@ -75,6 +80,7 @@ public class FragmentDisplay extends ActivityMainFragment implements OnClickList
         PreferenceServiceMgr PreferenceMgr = getPreferenceMgr();
         mOverwriteRotation = PreferenceMgr.getIntConfig("rotation_overwrite", 0) > 0;
         mRotationBlacklist = PreferenceMgr.getStringListConfig("rotation_blacklist", null);
+        mLaunchSelection = PreferenceMgr.getStringListConfig("launch_selection", null);
 
 
         /*
@@ -106,7 +112,7 @@ public class FragmentDisplay extends ActivityMainFragment implements OnClickList
 
         mRotationWrapper = view.findViewById(R.id.display_wrapper_rotation);
         mRotationWrapper.setOnClickListener(this);
-        mRotationCheckbox = (CheckBox) view.findViewById(R.id.preference_widget);
+        mRotationCheckbox = (CheckBox) mRotationWrapper.findViewById(R.id.preference_widget);
         mRotationCheckbox.setChecked(mOverwriteRotation);
 
         TextView rotationTitle = (TextView) mRotationWrapper.findViewById(R.id.preference_title);
@@ -114,6 +120,20 @@ public class FragmentDisplay extends ActivityMainFragment implements OnClickList
 
         TextView rotationSummary = (TextView) mRotationWrapper.findViewById(R.id.preference_summary);
         rotationSummary.setText(R.string.display_summary_rotation);
+
+
+        /*
+         * Setup Launch Selection
+         */
+
+        mLaunchWrapper = view.findViewById(R.id.display_wrapper_launch_selection);
+        mLaunchWrapper.setOnClickListener(this);
+
+        TextView launchTitle = (TextView) mLaunchWrapper.findViewById(R.id.preference_title);
+        launchTitle.setText(R.string.display_name_launch_selection);
+
+        TextView launchSummary = (TextView) mLaunchWrapper.findViewById(R.id.preference_summary);
+        launchSummary.setText(R.string.display_summary_launch_selection);
     }
 
     @Override
@@ -124,6 +144,7 @@ public class FragmentDisplay extends ActivityMainFragment implements OnClickList
             PreferenceServiceMgr PreferenceMgr = getPreferenceMgr();
             PreferenceMgr.putConfig("rotation_overwrite", mOverwriteRotation ? 1 : 0);
             PreferenceMgr.putConfig("rotation_blacklist", mRotationBlacklist);
+            PreferenceMgr.putConfig("launch_selection", mLaunchSelection);
         }
 
         if (mListAdapter.saveChanges() || mHasChanges) {
@@ -144,7 +165,15 @@ public class FragmentDisplay extends ActivityMainFragment implements OnClickList
                 int selectorType = data.getInt(Selecter.EXTRAS_TYPE);
 
                 if (selectorType == FragmentSelecter.APP_MULTI) {
-                    mRotationBlacklist = data.getStringList(Selecter.EXTRAS_PKGS);
+                    int request = data.getInt(Selecter.EXTRAS_RESPONSE);
+
+                    if (request == REQUEST_LAUNCH) {
+                        mLaunchSelection = data.getStringList(Selecter.EXTRAS_PKGS);
+
+                    } else {
+                        mRotationBlacklist = data.getStringList(Selecter.EXTRAS_PKGS);
+                    }
+
                     mHasChanges = true;
                 }
         }
@@ -159,9 +188,10 @@ public class FragmentDisplay extends ActivityMainFragment implements OnClickList
     public void onClick(View v) {
         /*
          * mRotationBlacklistWrapper is just a dialog request.
-         * No changes are made unless it returns something
+         * No changes are made unless it returns something.
+         * The same with mLaunchWrapper.
          */
-        mHasChanges = v != mRotationBlacklistWrapper;
+        mHasChanges = v != mRotationBlacklistWrapper && v != mLaunchWrapper;
 
         if (v == mRotationWrapper) {
             mRotationCheckbox.setChecked( (mOverwriteRotation = !mOverwriteRotation) );
@@ -169,7 +199,15 @@ public class FragmentDisplay extends ActivityMainFragment implements OnClickList
         } else {
             HashBundle args = new HashBundle();
             args.putInt(Selecter.ARGS_FLAGS, FragmentSelecter.APP_MULTI);
-            args.putStringList(Selecter.ARGS_SELECTED, mRotationBlacklist);
+
+            if (v == mLaunchWrapper) {
+                args.putInt(Selecter.ARGS_REQUEST, REQUEST_LAUNCH);
+                args.putStringList(Selecter.ARGS_SELECTED, mLaunchSelection);
+
+            } else {
+                args.putInt(Selecter.ARGS_REQUEST, REQUEST_ROTATION);
+                args.putStringList(Selecter.ARGS_SELECTED, mRotationBlacklist);
+            }
 
             loadFragment(R.id.fragment_selecter, args, false);
         }

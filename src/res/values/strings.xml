@@ -100,6 +100,10 @@
     <string name='display_summary_rotation'>Force all apps to allow rotation</string>
     <string name='display_summary_rotation_blacklist'>Do not overwrite rotation on selected apps</string>
 
+    <string name='display_title_launch'>Application Launch</string>
+    <string name='display_name_launch_selection'>Bypass Lockscreen</string>
+    <string name='display_summary_launch_selection'>Allow selected apps to launch on top of the lockscreen</string>
+
 
     <!-- ================================================
          Strings for FragmentSettings

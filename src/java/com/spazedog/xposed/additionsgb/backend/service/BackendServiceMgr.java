@@ -26,6 +26,7 @@ import android.os.Process;
 import com.spazedog.lib.reflecttools.ReflectClass;
 import com.spazedog.lib.reflecttools.ReflectException;
 import com.spazedog.lib.utilsLib.HashBundle;
+import com.spazedog.xposed.additionsgb.backend.ApplicationLayout.LayoutConfig;
 import com.spazedog.xposed.additionsgb.backend.LogcatMonitor.LogcatEntry;
 import com.spazedog.xposed.additionsgb.backend.PowerManager.PowerPlugConfig;
 import com.spazedog.xposed.additionsgb.utils.Constants;
@@ -309,9 +310,45 @@ public class BackendServiceMgr {
         return null;
     }
 
+    public LayoutConfig getLayoutConfig() {
+        try {
+            return mServiceProxy.getLayoutConfig();
+
+        } catch (RemoteException e) {
+            handleRemoteException(e);
+
+        } catch (NullPointerException e) {}
+
+        return null;
+    }
+
     public boolean isOwnerLocked() {
         try {
             return mServiceProxy.isOwnerLocked();
+
+        } catch (RemoteException e) {
+            handleRemoteException(e);
+
+        } catch (NullPointerException e) {}
+
+        return false;
+    }
+
+    public boolean stateScreenLocked() {
+        try {
+            return mServiceProxy.stateScreenLocked();
+
+        } catch (RemoteException e) {
+            handleRemoteException(e);
+
+        } catch (NullPointerException e) {}
+
+        return false;
+    }
+
+    public boolean stateScreenOn() {
+        try {
+            return mServiceProxy.stateScreenOn();
 
         } catch (RemoteException e) {
             handleRemoteException(e);

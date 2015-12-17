@@ -14,6 +14,7 @@ public interface Selecter {
      */
     public final String ARGS_FLAGS = "flags";
     public final String ARGS_SELECTED = "selected";
+    public final String ARGS_REQUEST = "request";
 
     /*
      * Extras Keys from the HashMap parsed via the message system from this dialog
@@ -24,6 +25,7 @@ public interface Selecter {
     public final String EXTRAS_PKGS = "packages";
     public final String EXTRAS_PLUGIN = "plugin";
     public final String EXTRAS_KEYCODE = "key";
+    public final String EXTRAS_RESPONSE = "response";
 
     public Context getContext();
     public LruCache<String, Bitmap> getImageCache();

@@ -27,16 +27,13 @@ import android.os.IBinder;
 import android.os.IInterface;
 import android.os.Parcel;
 import android.os.RemoteException;
-import android.os.StrictMode;
 
 import com.spazedog.lib.utilsLib.HashBundle;
 import com.spazedog.lib.utilsLib.MultiParcelable.ParcelHelper;
-import com.spazedog.lib.utilsLib.SparseList;
-import com.spazedog.xposed.additionsgb.backend.ApplicationLayout.RotationConfig;
+import com.spazedog.xposed.additionsgb.backend.ApplicationLayout.LayoutConfig;
 import com.spazedog.xposed.additionsgb.backend.LogcatMonitor.LogcatEntry;
 import com.spazedog.xposed.additionsgb.backend.PowerManager.PowerPlugConfig;
 import com.spazedog.xposed.additionsgb.utils.Utils;
-import com.spazedog.xposed.additionsgb.utils.Utils.Level;
 
 import java.util.List;
 
@@ -60,9 +57,11 @@ public interface BackendProxy extends IInterface {
     int TRANSACTION_getLogEntries = IBinder.FIRST_CALL_TRANSACTION+8;
     int TRANSACTION_getPowerConfig = IBinder.FIRST_CALL_TRANSACTION+9;
     int TRANSACTION_isOwnerLocked = IBinder.FIRST_CALL_TRANSACTION+10;
-    int TRANSACTION_getRotationConfig = IBinder.FIRST_CALL_TRANSACTION+11;
+    int TRANSACTION_getLayoutConfig = IBinder.FIRST_CALL_TRANSACTION+11;
     int TRANSACTION_registerFeature = IBinder.FIRST_CALL_TRANSACTION+12;
     int TRANSACTION_hasFeature = IBinder.FIRST_CALL_TRANSACTION+13;
+    int TRANSACTION_stateScreenLocked = IBinder.FIRST_CALL_TRANSACTION+14;
+    int TRANSACTION_stateScreenOn = IBinder.FIRST_CALL_TRANSACTION+15;
 
 
     /*
@@ -80,9 +79,11 @@ public interface BackendProxy extends IInterface {
     List<LogcatEntry> getLogEntries() throws RemoteException;
     PowerPlugConfig getPowerConfig() throws RemoteException;
     boolean isOwnerLocked() throws RemoteException;
-    RotationConfig getRotationConfig() throws RemoteException;
+    LayoutConfig getLayoutConfig() throws RemoteException;
     void registerFeature(String name) throws RemoteException;
     boolean hasFeature(String name) throws RemoteException;
+    boolean stateScreenLocked() throws RemoteException;
+    boolean stateScreenOn() throws RemoteException;
 
     /*
      * =================================================
@@ -168,14 +169,20 @@ public interface BackendProxy extends IInterface {
                         } break; case TRANSACTION_isOwnerLocked: {
                             caller.writeInt(isOwnerLocked() ? 1 : 0);
 
-                        } break; case TRANSACTION_getRotationConfig: {
-                            ParcelHelper.parcelData(getRotationConfig(), caller, 0);
+                        } break; case TRANSACTION_getLayoutConfig: {
+                            ParcelHelper.parcelData(getLayoutConfig(), caller, 0);
 
                         } break; case TRANSACTION_registerFeature: {
                             registerFeature((String) args.readValue(Utils.getAppClassLoader()));
 
                         } break; case TRANSACTION_hasFeature: {
                             caller.writeInt( hasFeature( (String) args.readValue(Utils.getAppClassLoader()) ) ? 1 : 0 );
+
+                        } break; case TRANSACTION_stateScreenLocked: {
+                            caller.writeInt( stateScreenLocked() ? 1 : 0 );
+
+                        } break; case TRANSACTION_stateScreenOn: {
+                            caller.writeInt( stateScreenOn() ? 1 : 0 );
 
                         } break; default: {
                             return false;
@@ -405,16 +412,16 @@ public interface BackendProxy extends IInterface {
         }
 
         @Override
-        public RotationConfig getRotationConfig() throws RemoteException {
+        public LayoutConfig getLayoutConfig() throws RemoteException {
             Parcel args = Parcel.obtain();
             Parcel caller = Parcel.obtain();
 
             try {
                 args.writeInterfaceToken(DESCRIPTOR);
-                mBinder.transact(Stub.TRANSACTION_getRotationConfig, args, caller, 0);
+                mBinder.transact(Stub.TRANSACTION_getLayoutConfig, args, caller, 0);
                 caller.readException();
 
-                return (RotationConfig) ParcelHelper.unparcelData(caller, Utils.getAppClassLoader());
+                return (LayoutConfig) ParcelHelper.unparcelData(caller, Utils.getAppClassLoader());
 
             } finally {
                 args.recycle();
@@ -429,7 +436,7 @@ public interface BackendProxy extends IInterface {
             try {
                 args.writeInterfaceToken(DESCRIPTOR);
                 args.writeValue(name);
-                mBinder.transact(Stub.TRANSACTION_getRotationConfig, args, null, 0);
+                mBinder.transact(Stub.TRANSACTION_registerFeature, args, null, 0);
 
             } finally {
                 args.recycle();
@@ -444,7 +451,43 @@ public interface BackendProxy extends IInterface {
             try {
                 args.writeInterfaceToken(DESCRIPTOR);
                 args.writeValue(name);
-                mBinder.transact(Stub.TRANSACTION_getRotationConfig, args, caller, 0);
+                mBinder.transact(Stub.TRANSACTION_hasFeature, args, caller, 0);
+                caller.readException();
+
+                return caller.readInt() > 0;
+
+            } finally {
+                args.recycle();
+                caller.recycle();
+            }
+        }
+
+        @Override
+        public boolean stateScreenLocked() throws RemoteException {
+            Parcel args = Parcel.obtain();
+            Parcel caller = Parcel.obtain();
+
+            try {
+                args.writeInterfaceToken(DESCRIPTOR);
+                mBinder.transact(Stub.TRANSACTION_stateScreenLocked, args, caller, 0);
+                caller.readException();
+
+                return caller.readInt() > 0;
+
+            } finally {
+                args.recycle();
+                caller.recycle();
+            }
+        }
+
+        @Override
+        public boolean stateScreenOn() throws RemoteException {
+            Parcel args = Parcel.obtain();
+            Parcel caller = Parcel.obtain();
+
+            try {
+                args.writeInterfaceToken(DESCRIPTOR);
+                mBinder.transact(Stub.TRANSACTION_stateScreenOn, args, caller, 0);
                 caller.readException();
 
                 return caller.readInt() > 0;
