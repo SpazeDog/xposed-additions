@@ -19,33 +19,28 @@ package com.spazedog.xposed.additionsgb.utils;
 
 
 import com.spazedog.lib.utilsLib.app.MsgActivity;
-import com.spazedog.lib.utilsLib.app.logic.ActivityLogic;
 
 public final class Constants {
 
     public static final String SUPPORT_EMAIL = "d.bergloev@gmail.com";
-	public static final String PACKAGE_NAME = "com.spazedog.xposed.additionsgb";
-	public static final String PERMISSION_SETTINGS_RW = "permissions.additionsgb.settings.rw";
-	public static final String SERVICE_MODULE_BACKEND = "user.additionsgb.backend.service";
-	public static final String SERVICE_APP_PREFERENCES = "app.additionsgb.preferences.service.BIND";
-    public static final int LOG_ENTRY_SIZE = 150;
+    public static final String PACKAGE_NAME = "com.spazedog.xposed.additionsgb";
+    public static final String PERMISSION_SETTINGS_RW = "permissions.additionsgb.settings.rw";
+    public static final String SERVICE_MODULE_BACKEND = "user.additionsgb.backend.service";
+    public static final String SERVICE_APP_PREFERENCES = "app.additionsgb.preferences.service.BIND";
+    public static final int LOG_ENTRY_SIZE = 250;
 
-	public static final boolean FORCE_DEBUG = true;
+    public static final boolean FORCE_DEBUG = false;
 
     /*
      * Type codes from sendListenerMsg in the BackendService and Mgr
      */
-    public static final int BRC_MGR_UPDATE = 512;           // Used by BackendServiceMgr to alert local listeners about config changes, properly triggered by 'BRC_SERVICE_RELOAD'
+    public static final int BRC_LOGCAT = 0;                 // New Logcat Entry sent by LogcatMonitor to the service. Uses a special type number without permission checks since logs can be sent from anywhere
 
     public static final int BRC_SERVICE_RELOAD = 1;         // Request the service to reload settings from PreferenceService, used by BackendServiceMgr
-    public static final int BRC_LOGCAT = 1024;              // New Logcat Entry sent by LogcatMonitor to the service
-    public static final int BRC_SL_MEDIA = -1024;           // State update sent by SystemStateListener to the service
-    public static final int BRC_SL_KEYGUARD = -1025;        // State update sent by SystemStateListener to the service
-    public static final int BRC_SL_TELEPHONY = -1026;       // State update sent by SystemStateListener to the service
-    public static final int BRC_SL_USERSWITCH = -1027;      // State update sent by SystemStateListener to the service
-    public static final int BRC_SL_APPFOCUS = -1028;        // State update sent by SystemStateListener to the service
-    public static final int BRC_SL_SOFTKEYBOARD = -1029;    // State update sent by SystemStateListener to the service
-    public static final int BRC_SL_DISPLAY = -1030;         // State update sent by SystemStateListener to the service
+    public static final int BRC_PWM_EVENT_REQUEST = 2;      // Request PWM to send all keys pressed via the backend msg service to allow capturing them
+    public static final int BRC_PWM_EVENT_RESPONSE = -2;    // Response from PWM to the request 'BRC_PWM_EVENT_REQUEST'
+    public static final int BRC_ATTACH_PROXY = -10;         // Used for now by SystemStateMonitor to attach itself to the service
+
 
     /**
      * Type codes from 'sendMessage', the internal Activity/Fragment message system from UtilsLib
@@ -58,8 +53,8 @@ public final class Constants {
     public static final int MSG_DIALOG_SELECTER = 2;
     public static final int MSG_DIALOG_KEY_RECEIVER = 3;
 
-	/*
-	 * Result codes from 'startActivityForResult'
-	 */
-	public static final int RESULT_ACTION_PARSE_SHORTCUT = 1024;											// Used by FragmentLaunchSelector
+    /*
+     * Result codes from 'startActivityForResult'
+     */
+    public static final int RESULT_ACTION_PARSE_SHORTCUT = 1024;											// Used by FragmentLaunchSelector
 }

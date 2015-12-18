@@ -20,6 +20,7 @@
 package com.spazedog.xposed.additionsgb.backend;
 
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.ActivityInfo;
@@ -33,6 +34,7 @@ import com.spazedog.lib.reflecttools.bridge.MethodBridge;
 import com.spazedog.lib.utilsLib.MultiParcelableBuilder;
 import com.spazedog.lib.utilsLib.SparseList;
 import com.spazedog.xposed.additionsgb.backend.service.BackendServiceMgr;
+import com.spazedog.xposed.additionsgb.backend.ssl.SystemStateProxy.SystemState;
 import com.spazedog.xposed.additionsgb.utils.Utils;
 import com.spazedog.xposed.additionsgb.utils.Utils.Level;
 import com.spazedog.xposed.additionsgb.utils.Utils.Type;
@@ -42,6 +44,7 @@ import java.util.List;
 public class ApplicationLayout {
     public static final String TAG = ApplicationLayout.class.getName();
 
+    @SuppressLint("ParcelCreator")
     public static class LayoutConfig extends MultiParcelableBuilder {
 
         public final boolean OverwriteRotation;
@@ -56,8 +59,8 @@ public class ApplicationLayout {
 
         public LayoutConfig(Parcel source) {
             OverwriteRotation = (Boolean) unparcelData(source, null);
-            BlackList = (List<String>) unparcelData(source, getClass().getClassLoader());
-            LaunchSelection = (List<String>) unparcelData(source, getClass().getClassLoader());
+            BlackList = (List<String>) unparcelData(source, Utils.getAppClassLoader());
+            LaunchSelection = (List<String>) unparcelData(source, Utils.getAppClassLoader());
         }
 
         @Override
@@ -141,20 +144,24 @@ public class ApplicationLayout {
                  */
                 if (layoutConfig.LaunchSelection.contains(packageName)) {
                     BackendServiceMgr backendMgr = BackendServiceMgr.getInstance();
-                    int flags = 0;
+                    SystemState systemState = backendMgr.getSystemState();
 
-                    if (!backendMgr.stateScreenOn()) {
-                        flags |= (LayoutParams.FLAG_KEEP_SCREEN_ON|LayoutParams.FLAG_TURN_SCREEN_ON);
-                    }
+                    if (systemState != null) {
+                        int flags = 0;
 
-                    if (backendMgr.stateScreenLocked()) {
-                        flags |= (LayoutParams.FLAG_SHOW_WHEN_LOCKED|LayoutParams.FLAG_DISMISS_KEYGUARD);
-                    }
+                        if (!systemState.isScreenOn()) {
+                            flags |= (LayoutParams.FLAG_KEEP_SCREEN_ON | LayoutParams.FLAG_TURN_SCREEN_ON);
+                        }
 
-                    if (flags > 0) {
-                        Utils.log(Type.LAYOUT, Level.DEBUG, TAG, "Allowing package '" + packageName + "' to launch on top of lockscreen");
+                        if (systemState.isScreenLocked()) {
+                            flags |= (LayoutParams.FLAG_SHOW_WHEN_LOCKED | LayoutParams.FLAG_DISMISS_KEYGUARD);
+                        }
 
-                        window.addFlags(flags);
+                        if (flags > 0) {
+                            Utils.log(Type.LAYOUT, Level.DEBUG, TAG, "Allowing package '" + packageName + "' to launch on top of lockscreen");
+
+                            window.addFlags(flags);
+                        }
                     }
                 }
             }

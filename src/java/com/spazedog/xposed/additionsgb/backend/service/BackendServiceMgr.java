@@ -29,6 +29,7 @@ import com.spazedog.lib.utilsLib.HashBundle;
 import com.spazedog.xposed.additionsgb.backend.ApplicationLayout.LayoutConfig;
 import com.spazedog.xposed.additionsgb.backend.LogcatMonitor.LogcatEntry;
 import com.spazedog.xposed.additionsgb.backend.PowerManager.PowerPlugConfig;
+import com.spazedog.xposed.additionsgb.backend.ssl.SystemStateProxy.SystemState;
 import com.spazedog.xposed.additionsgb.utils.Constants;
 import com.spazedog.xposed.additionsgb.utils.Utils;
 import com.spazedog.xposed.additionsgb.utils.Utils.Level;
@@ -162,7 +163,7 @@ public class BackendServiceMgr {
                  * but it might be used for more in the future.
                  */
                 if (type == -1 && Binder.getCallingUid() == Process.SYSTEM_UID) {
-                    type = Constants.BRC_SERVICE_RELOAD;
+                    type = data.getInt("type", -1);
 
                 } else if (type == -1) {
                     Utils.log(Level.ERROR, TAG, "Received message from service outside of the system process"); return;
@@ -334,30 +335,6 @@ public class BackendServiceMgr {
         return false;
     }
 
-    public boolean stateScreenLocked() {
-        try {
-            return mServiceProxy.stateScreenLocked();
-
-        } catch (RemoteException e) {
-            handleRemoteException(e);
-
-        } catch (NullPointerException e) {}
-
-        return false;
-    }
-
-    public boolean stateScreenOn() {
-        try {
-            return mServiceProxy.stateScreenOn();
-
-        } catch (RemoteException e) {
-            handleRemoteException(e);
-
-        } catch (NullPointerException e) {}
-
-        return false;
-    }
-
     public void registerFeature(String name) {
         try {
             mServiceProxy.registerFeature(name);
@@ -378,5 +355,17 @@ public class BackendServiceMgr {
         } catch (NullPointerException e) {}
 
         return false;
+    }
+
+    public SystemState getSystemState() {
+        try {
+            return mServiceProxy.getSystemState();
+
+        } catch (RemoteException e) {
+            handleRemoteException(e);
+
+        } catch (NullPointerException e) {}
+
+        return null;
     }
 }

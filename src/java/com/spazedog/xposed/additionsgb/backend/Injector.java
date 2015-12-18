@@ -4,6 +4,7 @@ import android.content.Context;
 
 import com.spazedog.lib.reflecttools.bridge.InitBridge;
 import com.spazedog.xposed.additionsgb.backend.service.BackendService;
+import com.spazedog.xposed.additionsgb.backend.ssl.SystemStateMonitor;
 
 public class Injector extends InitBridge {
 
@@ -25,7 +26,7 @@ public class Injector extends InitBridge {
 		 * Load all modules
 		 */
         BackendService.init(systemContext);
-        SystemStateListener.init(systemContext);
+        SystemStateMonitor.init(systemContext);
         InputManager.init();
         PowerManager.init();
         ApplicationLayout.init();

@@ -41,12 +41,17 @@ import com.spazedog.lib.reflecttools.ReflectException;
 import com.spazedog.lib.reflecttools.bridge.MethodBridge;
 import com.spazedog.lib.utilsLib.HashBundle;
 import com.spazedog.lib.utilsLib.SparseList;
+import com.spazedog.lib.utilsLib.os.ProxyStorage;
+import com.spazedog.lib.utilsLib.os.ProxyStorage.ProxyWrapper;
 import com.spazedog.lib.utilsLib.os.ThreadHandler;
 import com.spazedog.xposed.additionsgb.app.service.PreferenceProxy;
 import com.spazedog.xposed.additionsgb.backend.ApplicationLayout.LayoutConfig;
 import com.spazedog.xposed.additionsgb.backend.LogcatMonitor;
 import com.spazedog.xposed.additionsgb.backend.LogcatMonitor.LogcatEntry;
 import com.spazedog.xposed.additionsgb.backend.PowerManager.PowerPlugConfig;
+import com.spazedog.xposed.additionsgb.backend.ssl.StateListenerProxy;
+import com.spazedog.xposed.additionsgb.backend.ssl.SystemStateProxy;
+import com.spazedog.xposed.additionsgb.backend.ssl.SystemStateProxy.SystemState;
 import com.spazedog.xposed.additionsgb.utils.AndroidHelper;
 import com.spazedog.xposed.additionsgb.utils.Constants;
 import com.spazedog.xposed.additionsgb.utils.Utils;
@@ -54,8 +59,6 @@ import com.spazedog.xposed.additionsgb.utils.Utils.Level;
 import com.spazedog.xposed.additionsgb.utils.Utils.Type;
 
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArraySet;
 
 public class BackendService extends BackendProxy.Stub {
     public static final String TAG = BackendService.class.getName();
@@ -66,36 +69,39 @@ public class BackendService extends BackendProxy.Stub {
     private static final int STATE_ACTIVE = 1;
     private static final int STATE_READY = 2;
 
-    private static class StateValues {
-        public int UserId = 0;
-        public int DebugFlags = 0;
-        public boolean OwnerLock = false;
-        public PowerPlugConfig PowerConfig;
-        public LayoutConfig LayoutConfig;
-    }
-
+    /*
+     * Content added by LogcatMonitor
+     */
     private List<LogcatEntry> mLogEntries = new SparseList<LogcatEntry>();
 
+    /*
+     * Service Properties
+     */
+    private Context mContext;
+    private List<String> mFeatureList = new SparseList<String>();
     private int mSystemUID = Process.SYSTEM_UID;
     private int mAppUID = 0;
     private int mVersion = 0;
-
     private int mState = 0;
 
-    private Context mContext;
-    private List<String> mFeatureList = new SparseList<String>();
-    private StateValues mValues = new StateValues();
-
-    private BackendService() {}
+    /*
+     * IInterface return values
+     *
+     *      Generated from application settings
+     */
+    private int mDebugFlags = 0;
+    private boolean mOwnerLock = false;
+    private PowerPlugConfig mPowerConfig;
+    private LayoutConfig mLayoutConfig;
 
     /*
-     * State Listener Values
-     *
-     *      TODO: Remove class 'StateValues'
+     * State Monitor
      */
+    private SystemStateProxy mStateMonitor;
+    private SystemState mSystemState;
 
-    private boolean mStateLockscreenLocked = false;
-    private boolean mStateDisplayOn = true;
+
+    private BackendService() {}
 
 
     /*
@@ -107,6 +113,7 @@ public class BackendService extends BackendProxy.Stub {
      */
 
     private Handler mListenerHandler;
+    private Handler mStateHandler;
 
     @SuppressLint("HandlerLeak")
     private class ListenerHandler extends ThreadHandler {
@@ -117,15 +124,25 @@ public class BackendService extends BackendProxy.Stub {
 
         @Override
         public void handleMessage(Message msg) {
-            HashBundle data = (HashBundle) msg.obj;
-            boolean system = msg.arg1 > 0;
             int type = msg.what;
+            HashBundle data = (HashBundle) msg.obj;
 
             switch (type) {
-                case Constants.BRC_SL_USERSWITCH: {
-                    if (data.getBoolean("switched", false)) {
-                        mValues.UserId = data.getInt("current_userid", 0);
-                        sendPreferenceRequest(FLAG_RELOAD_ALL);
+                case Constants.BRC_ATTACH_PROXY: {
+                    String descriptor = data.getString("descriptor");
+
+                    if (SystemStateProxy.class.getName().equals(descriptor)) {
+                        Utils.log(Type.SERVICES|Type.EXTENDED, Level.DEBUG, TAG, "Attaching State Monitor and parsing State Listener");
+
+                        mStateMonitor = SystemStateProxy.Stub.asInterface((IBinder) data.get("binder"));
+
+                        try {
+                            mStateMonitor.addStateListener(mStateListener);
+                            mSystemState = mStateMonitor.getSystemState();
+
+                        } catch (RemoteException e) {
+                            Utils.log(Level.ERROR, TAG, e.getMessage(), e);
+                        }
                     }
 
                 } break; case Constants.BRC_LOGCAT: {
@@ -155,17 +172,18 @@ public class BackendService extends BackendProxy.Stub {
                     int flags = data.getInt("flags", FLAG_RELOAD_ALL);
                     sendPreferenceRequest(flags);
 
-                    // This should not be parsed to listeners
+                    /* This should not be parsed to listeners.
+                     * They will be notified once the settings has been reloaded
+                     */
                     return;
                 }
             }
 
-            for (ListenerMonitor curMonitor : mListeners) {
+            for (ProxyWrapper<ListenerProxy> wrapper : mListeners) {
                 try {
-                    ListenerProxy proxy = curMonitor.getProxy();
-                    IBinder binder = proxy.asBinder();
+                    ListenerProxy proxy = wrapper.getProxy();
 
-                    if (binder != null && binder.pingBinder()) {
+                    if (proxy != null) {
                         proxy.onReceiveMsg(type, data);
                     }
 
@@ -173,6 +191,28 @@ public class BackendService extends BackendProxy.Stub {
             }
         }
     };
+
+    @SuppressLint("HandlerLeak")
+    private class StateHandler extends Handler {
+        @Override
+        public void handleMessage(Message msg) {
+            try {
+                mSystemState = mStateMonitor.getSystemState();
+
+                switch (msg.what) {
+                    /*
+                     * The user has changed, load new users config
+                     */
+                    case StateListenerProxy.STATE_STARTING_USER_SESSION: {
+                        sendPreferenceRequest(FLAG_RELOAD_ALL);
+                    }
+                }
+
+            } catch (RemoteException e) {
+                Utils.log(Level.ERROR, TAG, e.getMessage(), e);
+            }
+        }
+    }
 
 
     /*
@@ -201,6 +241,7 @@ public class BackendService extends BackendProxy.Stub {
 
         mContext = context;
         mListenerHandler = new ListenerHandler();
+        mStateHandler = new StateHandler();
 
 		/*
 		 * Add this service to the service manager
@@ -218,6 +259,22 @@ public class BackendService extends BackendProxy.Stub {
         } catch (ReflectException e) {
             Utils.log(Level.ERROR, TAG, e.getMessage(), e);
         }
+
+        /*
+         * Move temp log to this instance
+         */
+        synchronized (mLogEntries) {
+            List<LogcatEntry> logs = LogcatMonitor.buildLog();
+
+            for (LogcatEntry entry : logs) {
+                mLogEntries.add(entry);
+            }
+        }
+
+        /*
+         * The service is now accessible
+         */
+        mState = STATE_ACTIVE;
     }
 
 
@@ -244,22 +301,6 @@ public class BackendService extends BackendProxy.Stub {
                 Utils.log(Level.ERROR, TAG, "Could not find module package information", e);
             }
 
-			/*
-		 	 * Move temp log to this instance
-		 	 */
-            synchronized (mLogEntries) {
-                List<LogcatEntry> logs = LogcatMonitor.buildLog();
-
-                for (LogcatEntry entry : logs) {
-                    mLogEntries.add(entry);
-                }
-            }
-
-            /*
-             * The service is now accessible
-             */
-            mState = STATE_ACTIVE;
-
             sendPreferenceRequest(FLAG_RELOAD_ALL);
         }
     };
@@ -282,7 +323,7 @@ public class BackendService extends BackendProxy.Stub {
          * If settings has been locked by owner, do not
          * update anything unless the current user is the owner
          */
-        if (mValues.OwnerLock && mValues.UserId != 0) {
+        if (mOwnerLock && mSystemState.getUserId() != 0) {
             return;
         }
 
@@ -297,43 +338,61 @@ public class BackendService extends BackendProxy.Stub {
             public void onServiceConnected(ComponentName name, IBinder service) {
                 Utils.log(Type.SERVICES, Level.DEBUG, TAG, "Sending Application Preference Request with flags(" + flags + ")");
 
-                if (mState == STATE_ACTIVE) {
-                    mState = STATE_READY;
-                }
-
                 try {
                     PreferenceProxy proxy = PreferenceProxy.Stub.asInterface(service);
                     HashBundle data = new HashBundle();
+                    data.put("type", Constants.BRC_SERVICE_RELOAD);
                     data.put("flags", flags);
 
                     if ((flags & FLAG_RELOAD_CONFIG) != 0) {
+                        /*
+                         * Load USB Plug Settings
+                         */
                         int powerPlug = proxy.getIntConfig("power_plug", PowerPlugConfig.PLUGGED_DEFAULT);
                         int powerUnplug = proxy.getIntConfig("power_unplug", PowerPlugConfig.PLUGGED_DEFAULT);
+
+                        mPowerConfig = new PowerPlugConfig(powerPlug, powerUnplug);
+
+                        /*
+                         * Load Layout Settings
+                         */
                         boolean rotationOverwrite = proxy.getIntConfig("rotation_overwrite", 0) > 0;
                         List<String> rotationBlacklist = proxy.getStringListConfig("rotation_blacklist", null);
                         List<String> launchSelection = proxy.getStringListConfig("launch_selection", null);
 
-                        mValues.PowerConfig = new PowerPlugConfig(powerPlug, powerUnplug);
-                        mValues.LayoutConfig = new LayoutConfig(rotationOverwrite, rotationBlacklist, launchSelection);
+                        mLayoutConfig = new LayoutConfig(rotationOverwrite, rotationBlacklist, launchSelection);
 
-                        if (mValues.UserId == 0) {
-                            mValues.DebugFlags = proxy.getIntConfig("debug_flags", Constants.FORCE_DEBUG ? Type.ALL : Type.DISABLED);
-                            mValues.OwnerLock = proxy.getIntConfig("owner_lock", 0) > 0;
+                        /*
+                         * Update Owner Settings
+                         */
+                        if (mSystemState.getUserId() == 0) {
+                            mDebugFlags = proxy.getIntConfig("debug_flags", Constants.FORCE_DEBUG ? Type.ALL : Type.DISABLED);
+                            mOwnerLock = proxy.getIntConfig("owner_lock", 0) > 0;
                         }
 
-                        data.put("ownerLocked", mValues.OwnerLock);
-                        data.put("debugFlags", mValues.DebugFlags);
-                        data.put("powerConfig", mValues.PowerConfig);
-                        data.put("layoutConfig", mValues.LayoutConfig);
+                        /*
+                         * Send new config to listeners
+                         */
+                        data.put("ownerLocked", mOwnerLock);
+                        data.put("debugFlags", mDebugFlags);
+                        data.put("powerConfig", mPowerConfig);
+                        data.put("layoutConfig", mLayoutConfig);
                     }
 
                     sendListenerMsg(-1, data, true);
 
                 } catch (RemoteException e) {
-                    Utils.log(Level.INFO, TAG, e.getMessage(), e);
+                    Utils.log(Level.ERROR, TAG, e.getMessage(), e);
 
                 } finally {
                     mContext.unbindService(this);
+                }
+
+                /*
+                 * If this is the first run, mark the service as ready
+                 */
+                if (mState == STATE_ACTIVE) {
+                    mState = STATE_READY;
                 }
             }
 
@@ -341,7 +400,7 @@ public class BackendService extends BackendProxy.Stub {
             public void onServiceDisconnected(ComponentName name) {}
         };
 
-        if (!AndroidHelper.bindService(mContext, intent, connection, Context.BIND_AUTO_CREATE, mValues.UserId)) {
+        if (!AndroidHelper.bindService(mContext, intent, connection, Context.BIND_AUTO_CREATE, mSystemState.getUserId())) {
             Utils.log(Level.ERROR, TAG, "Tried to send Application Preference Request with flags(" + flags + "), but the Preference Service is not available");
         }
     }
@@ -352,78 +411,16 @@ public class BackendService extends BackendProxy.Stub {
      * LISTENERS
      */
 
-    private final Set<ListenerMonitor> mListeners = new CopyOnWriteArraySet<ListenerMonitor>();
-
-    private class ListenerMonitor implements IBinder.DeathRecipient {
-
-        ListenerProxy mProxy;
-
-        public ListenerMonitor(ListenerProxy proxy) throws RemoteException {
-            mProxy = proxy;
-
-            IBinder binder = mProxy.asBinder();
-            if (binder != mProxy) {
-                binder.linkToDeath(this, 0);
-            }
-        }
-
-        @Override
-        public void binderDied() {
-            try {
-                detachListener(mProxy);
-
-            } catch (RemoteException e) {}
-        }
-
-        public void release() {
-            IBinder binder = mProxy.asBinder();
-            if (binder != null) {
-                binder.unlinkToDeath(this, 0);
-            }
-
-            mProxy = null;
-        }
-
-        public ListenerProxy getProxy() {
-            return mProxy;
-        }
-
-        public IBinder getBinder() {
-            return mProxy.asBinder();
-        }
-    }
+    private final ProxyStorage<ListenerProxy> mListeners = new ProxyStorage<ListenerProxy>();
 
     @Override
     public void detachListener(ListenerProxy proxy) throws RemoteException {
-        synchronized (mListeners) {
-            IBinder binder = proxy.asBinder();
-            ListenerMonitor monitor = null;
-
-            for (ListenerMonitor curMonitor : mListeners) {
-                if (curMonitor.getBinder() == binder) {
-                    monitor = curMonitor; break;
-                }
-            }
-
-            if (monitor != null && mListeners.remove(monitor)) {
-                monitor.release();
-            }
-        }
+        mListeners.remove(proxy);
     }
 
     @Override
     public void attachListener(ListenerProxy proxy) throws RemoteException {
-        synchronized (mListeners) {
-            IBinder binder = proxy.asBinder();
-
-            for (ListenerMonitor curMonitor : mListeners) {
-                if (curMonitor.getBinder() == binder) {
-                    return;
-                }
-            }
-
-            mListeners.add( new ListenerMonitor(proxy) );
-        }
+        mListeners.add(proxy);
     }
 
     @Override
@@ -431,31 +428,27 @@ public class BackendService extends BackendProxy.Stub {
         sendListenerMsg(type, data, false);
     }
 
-    private void sendListenerMsg(int type, HashBundle data, boolean system) throws RemoteException {
-        synchronized (mListeners) {
-            if (type == -1 && !system) {
-                Utils.log(Level.ERROR, TAG, "Only the service can send messages as service to it's listeners\n\t\tPID: " + Binder.getCallingPid() + "\n\t\tUID: " + Binder.getCallingUid() + "\n\t\tMsg Type: " + type);
+    private synchronized void sendListenerMsg(int type, HashBundle data, boolean system) throws RemoteException {
+        if (type == -1 && !system) {
+            Utils.log(Level.ERROR, TAG, "Only the service can send messages as service to it's listeners\n\t\tPID: " + Binder.getCallingPid() + "\n\t\tUID: " + Binder.getCallingUid() + "\n\t\tMsg Type: " + type);
 
-            } else if (type < 0 && Binder.getCallingUid() != mSystemUID) {
-                Utils.log(Level.ERROR, TAG, "Msg types below 0 can only be sent by the system\n\t\tPID: " + Binder.getCallingPid() + "\n\t\tUID: " + Binder.getCallingUid() + "\n\t\tMsg Type: " + type);
+        } else if (type < 0 && Binder.getCallingUid() != mSystemUID) {
+            Utils.log(Level.ERROR, TAG, "Msg types below 0 can only be sent by the system\n\t\tPID: " + Binder.getCallingPid() + "\n\t\tUID: " + Binder.getCallingUid() + "\n\t\tMsg Type: " + type);
 
-            } else if (type > 0 && !checkPermission(Constants.PERMISSION_SETTINGS_RW)) {
-                Utils.log(Level.ERROR, TAG, "Msg types above 0 can only be sent by someone holding the permissions 'permissions.additionsgb.settings.rw'\n\t\tPID: " + Binder.getCallingPid() + "\n\t\tUID: " + Binder.getCallingUid() + "\n\t\tMsg Type: " + type);
+        } else if (type > 0 && !checkPermission(Constants.PERMISSION_SETTINGS_RW)) {
+            Utils.log(Level.ERROR, TAG, "Msg types above 0 can only be sent by someone holding the permissions 'permissions.additionsgb.settings.rw'\n\t\tPID: " + Binder.getCallingPid() + "\n\t\tUID: " + Binder.getCallingUid() + "\n\t\tMsg Type: " + type);
 
-            } else {
-                switch (type) {
-                    case Constants.BRC_SL_KEYGUARD: {
-                        mStateLockscreenLocked = data.getBoolean("keyguard_on", false);
-
-                    } break; case Constants.BRC_SL_DISPLAY: {
-                        mStateDisplayOn = data.getBoolean("screen_on", false);
-                    }
-                }
-
-                mListenerHandler.obtainMessage(type, system ? 1 : 0, 0, data).sendToTarget();
-            }
+        } else {
+            mListenerHandler.obtainMessage(type, 0, 0, data).sendToTarget();
         }
     }
+
+    private StateListenerProxy mStateListener = new StateListenerProxy.Stub() {
+        @Override
+        public void onStateChanged(int state) throws RemoteException {
+            mStateHandler.sendEmptyMessage(state);
+        }
+    };
 
 
     /*
@@ -480,27 +473,29 @@ public class BackendService extends BackendProxy.Stub {
 
     @Override
     public int getDebugFlags() throws RemoteException {
-        return mValues.DebugFlags;
+        return mDebugFlags;
     }
 
     @Override
     public List<LogcatEntry> getLogEntries() throws RemoteException {
-        return mLogEntries;
+        synchronized (mLogEntries) {
+            return mLogEntries;
+        }
     }
 
     @Override
     public PowerPlugConfig getPowerConfig() throws RemoteException {
-        return mValues.PowerConfig;
+        return mPowerConfig;
     }
 
     @Override
     public boolean isOwnerLocked() throws RemoteException {
-        return mValues.OwnerLock && mValues.UserId != 0;
+        return mOwnerLock && mSystemState.getUserId() != 0;
     }
 
     @Override
     public LayoutConfig getLayoutConfig() throws RemoteException {
-        return mValues.LayoutConfig;
+        return mLayoutConfig;
     }
 
     @Override
@@ -514,12 +509,7 @@ public class BackendService extends BackendProxy.Stub {
     }
 
     @Override
-    public boolean stateScreenLocked() throws RemoteException {
-        return mStateLockscreenLocked;
-    }
-
-    @Override
-    public boolean stateScreenOn() throws RemoteException {
-        return mStateDisplayOn;
+    public SystemState getSystemState() throws RemoteException {
+        return mSystemState;
     }
 }
