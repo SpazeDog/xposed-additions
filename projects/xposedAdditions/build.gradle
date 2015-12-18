@@ -11,8 +11,8 @@ android {
 
         minSdkVersion 9
         targetSdkVersion 22
-        versionCode 72
-        versionName "3.6.0"
+        versionCode 73
+        versionName "3.6.1"
     }
 
     sourceSets {
