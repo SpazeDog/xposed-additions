@@ -282,12 +282,10 @@ public final class PhoneWindowManager {
                         params.setResult(ORIGINAL.QUEUEING_ALLOW);
 						
 					} else if ((policyFlags & ORIGINAL.FLAG_INJECTED) != 0) {
-                        if ((keyFlags & EventKey.FLAG_CUSTOM) == EventKey.FLAG_CUSTOM) {
-                            /*
-                             * Some ROM's disables features on injected keys. So let's remove the flag.
-                             */
-                            params.args[policyFlagsPos] = policyFlags & ~ORIGINAL.FLAG_INJECTED;
-                        }
+                        /*
+                         * Some ROM's disables features on injected keys. So let's remove the flag.
+                         */
+                        params.args[policyFlagsPos] = policyFlags & ~ORIGINAL.FLAG_INJECTED;
 					}
 					
 				/*
@@ -426,7 +424,7 @@ public final class PhoneWindowManager {
 					}
 				}
 				
-				if ((policyFlags & ORIGINAL.FLAG_INJECTED) != 0 && (keyFlags & EventKey.FLAG_CUSTOM) != 0) {
+				if ((policyFlags & ORIGINAL.FLAG_INJECTED) != 0) {
                     params.args[policyFlagsPos] = policyFlags & ~ORIGINAL.FLAG_INJECTED;
 				}
 				
