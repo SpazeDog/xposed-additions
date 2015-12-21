@@ -286,7 +286,17 @@ public abstract class IMediatorSetup {
 		 * Get the Power Management tools
 		 */
 		mPowerManager = ReflectClass.fromReceiver(((Context) mContext.getReceiver()).getSystemService(Context.POWER_SERVICE));
-		mPowerManagerService = (ReflectClass) mPowerManager.findField("mService").getValue(Result.INSTANCE);
+
+        try {
+            mPowerManagerService = (ReflectClass) mPowerManager.findField("mService").getValue(Result.INSTANCE);
+
+        } catch (ReflectException e) {
+            /*
+             * This is a work-around for devices that is heavily modified, like Amazon Fire Phone where the above field for some reason returns NULL
+             */
+            mPowerManagerService = ReflectClass.fromName("android.os.IPowerManager").bindInterface("power");
+        }
+
 		mWakelock = ((PowerManager) mPowerManager.getReceiver()).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "HookedPhoneWindowManager");
 		
 		/*
